@@ -1,0 +1,295 @@
+/* =========================================
+   Панели (Cards)
+   ========================================= */
+.card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glow);
+  padding: 24px;
+  margin-bottom: 20px;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}
+.card.hidden { display: none; }
+
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #fff;
+  border-left: 4px solid #3498db;
+  padding-left: 12px;
+}
+
+/* =========================================
+   Поля ввода и формы
+   ========================================= */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.form input,
+.inline-form input {
+  padding: 12px 16px;
+  background: var(--bg-panel-light);
+  border: 1px solid var(--border-glow);
+  border-radius: 2px;
+  font-size: 1rem;
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form input:focus,
+.inline-form input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 8px rgba(52, 152, 219, 0.4);
+}
+
+.form input::placeholder,
+.inline-form input::placeholder {
+  color: var(--text-muted);
+}
+
+/* =========================================
+   Кнопки
+   ========================================= */
+.btn-primary {
+  padding: 10px 20px;
+  background: linear-gradient(to bottom, #2980b9, #1a5276);
+  color: white;
+  border: 1px solid #3498db;
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+.btn-primary:hover {
+  box-shadow: 0 0 12px rgba(52, 152, 219, 0.5);
+}
+.btn-primary:disabled {
+  background: #2c3e50;
+  border-color: #34495e;
+  color: #7f8c8d;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--text-secondary);
+  padding: 8px 16px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: var(--font-ui);
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+}
+.btn-secondary:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.05);
+}
+
+.btn-danger {
+  background: transparent;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 8px 16px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+}
+.btn-danger:hover {
+  background: rgba(231, 76, 60, 0.2);
+  box-shadow: 0 0 8px rgba(231, 76, 60, 0.4);
+}
+
+/* =========================================
+   Тексты и подсказки
+   ========================================= */
+.hint {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+}
+.hint a {
+  color: #3498db;
+  text-decoration: none;
+  font-weight: 600;
+}
+.hint a:hover {
+  text-decoration: underline;
+  text-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+}
+
+.error {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+  padding: 12px 16px;
+  border-left: 4px solid #e74c3c;
+  margin-bottom: 16px;
+  font-size: 0.95rem;
+  font-family: var(--font-ui);
+}
+.error.hidden { display: none; }
+
+/* =========================================
+   Toolbar
+   ========================================= */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.toolbar h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(52, 152, 219, 0.2);
+}
+
+.inline-form {
+  display: flex;
+  gap: 12px;
+}
+
+/* =========================================
+   Скелетон
+   ========================================= */
+.skeleton-card {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(90deg, #11151c 0%, #1a2029 50%, #11151c 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s infinite;
+  border-radius: 4px;
+  border: 1px solid var(--border-glow);
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* =========================================
+   Скелетоны (общие)
+   ========================================= */
+.skeleton {
+  background: linear-gradient(90deg, #11151c 0%, #1a2029 50%, #11151c 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s infinite;
+  border-radius: 3px;
+}
+
+/* Строка скелетона — для кнопок и небольших блоков */
+.skeleton-line {
+  height: 44px;
+  width: 220px;
+}
+
+/* Крупный блок скелетона */
+.skeleton-block {
+  height: 200px;
+  width: 100%;
+  border-radius: 4px;
+}
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Плавное появление контента */
+.fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   Кнопки внутри форм (без класса btn-*)
+   ========================================= */
+.form button,
+.inline-form button {
+  padding: 12px 24px;
+  background: linear-gradient(to bottom, #2980b9, #1a5276);
+  color: white;
+  border: 1px solid #3498db;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+
+.form button:hover,
+.inline-form button:hover {
+  background: linear-gradient(to bottom, #3498db, #2471a3);
+  box-shadow: 0 0 12px rgba(52, 152, 219, 0.5);
+}
+
+.form button:disabled,
+.inline-form button:disabled {
+  background: #2c3e50;
+  border-color: #34495e;
+  color: #7f8c8d;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* =========================================
+   Подавление стилей автозаполнения
+   ========================================= */
+.form input:-webkit-autofill,
+.form input:-webkit-autofill:hover,
+.form input:-webkit-autofill:focus,
+.form input:-webkit-autofill:active,
+.inline-form input:-webkit-autofill,
+.inline-form input:-webkit-autofill:hover,
+.inline-form input:-webkit-autofill:focus,
+.inline-form input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--text-primary);
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-panel-light) inset;
+  box-shadow: 0 0 0 1000px var(--bg-panel-light) inset;
+  caret-color: var(--text-primary);
+  /* Задержка появления фона — костыль против Chrome, но работает */
+  transition: background-color 9999s ease-out 0s;
+}
+
+/* Firefox — свой способ */
+.form input:autofill,
+.inline-form input:autofill {
+  filter: none;
+  background: var(--bg-panel-light);
+  color: var(--text-primary);
+}

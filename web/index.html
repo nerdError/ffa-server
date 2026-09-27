@@ -7,7 +7,7 @@
     <title>FFA League | StarCraft II Ratings</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Zekton:wght@500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
@@ -17,12 +17,14 @@
     </header>
 
     <main id="app">
-        <section id="screen-auth" class="screen">
+        <section id="screen-auth" class="screen hidden">
             <div class="card">
                 <h2>Вход</h2>
                 <form id="form-login" class="form">
-                    <input type="email" name="email" placeholder="Email" required />
-                    <input type="password" name="password" placeholder="Пароль" required minlength="6" />
+                    <input type="text" name="identifier" placeholder="Email или никнейм" required
+                        autocomplete="username" />
+                    <input type="password" name="password" placeholder="Пароль" required minlength="6"
+                        autocomplete="current-password" />
                     <button type="submit">Войти</button>
                 </form>
                 <p class="hint">Нет аккаунта? <a href="#" id="link-to-signup">Зарегистрироваться</a></p>
@@ -31,6 +33,8 @@
             <div class="card hidden" id="card-signup">
                 <h2>Регистрация</h2>
                 <form id="form-signup" class="form">
+                    <input type="text" name="username" placeholder="Никнейм (3-32 символа)" required minlength="3"
+                        maxlength="32" pattern="[a-zA-Z0-9_.\-]+" title="Латинские буквы, цифры, _, ., -" />
                     <input type="email" name="email" placeholder="Email" required />
                     <input type="password" name="password" placeholder="Пароль (мин. 6)" required minlength="6" />
                     <button type="submit">Создать аккаунт</button>
@@ -51,15 +55,15 @@
             <table class="players-table">
                 <thead>
                     <tr>
-                        <th>Имя</th>
-                        <th>Расы</th>
-                        <th>Голосов</th>
-                        <th>Adapt</th>
-                        <th>Greed</th>
-                        <th>Surv</th>
-                        <th>Turtle</th>
-                        <th>Aggr</th>
-                        <th>Var</th>
+                        <th data-sort-key="name" data-label="Игрок">Игрок</th>
+                        <th data-sort-key="races" data-label="Расы">Расы</th>
+                        <th data-sort-key="adaptiveness" data-label="Адаптивность">Адаптивность</th>
+                        <th data-sort-key="aggression" data-label="Агрессия">Агрессия</th>
+                        <th data-sort-key="turtle" data-label="Черепашность">Черепашность</th>
+                        <th data-sort-key="variety" data-label="Разнообразие">Разнообразие</th>
+                        <th data-sort-key="survival" data-label="Выживание">Выживание</th>
+                        <th data-sort-key="greed" data-label="Халява">Халява</th>
+                        <th data-sort-key="total" data-label="Итого" class="total-col">Итого</th>
                     </tr>
                 </thead>
                 <tbody id="players-tbody"></tbody>
@@ -69,17 +73,23 @@
         <section id="screen-player" class="screen hidden">
             <button id="btn-back" class="btn-secondary">← Назад</button>
 
-            <div class="player-layout">
-                <!-- Слева: карточка -->
-                <div id="player-card-pane" class="player-card-pane">
-                    <!-- сюда рендерится карточка -->
-                </div>
-
-                <!-- Справа: редактор + список оценок -->
-                <div class="player-edit-pane">
+            <div class="player-stage" id="player-stage">
+                <div class="player-card-pane" id="player-card-pane"></div>
+                <aside class="player-edit-pane" id="player-edit-pane">
                     <div id="rating-form-container"></div>
-                    <div id="ratings-list-container"></div>
-                </div>
+                </aside>
+            </div>
+
+            <div class="player-actions" id="player-actions"></div>
+
+            <div id="ratings-list-container" class="player-ratings-pane"></div>
+        </section>
+
+        <!-- Экран загрузки (показывается, пока валидируется токен) -->
+        <section id="screen-loading" class="screen">
+            <div class="loading-box">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">ЗАГРУЗКА…</div>
             </div>
         </section>
     </main>

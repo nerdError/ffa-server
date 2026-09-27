@@ -1,0 +1,56 @@
+/* =========================================
+   Шрифты
+   ========================================= */
+@font-face {
+  font-family: 'Zekton';
+  src: url('../../assets/fonts/zekton-rg.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* =========================================
+   Переменные
+   ========================================= */
+:root {
+  /* Фон */
+  --bg-deep: #0a0c10;
+  --bg-panel: #11151c;
+  --bg-panel-light: #1a2029;
+  --border-glow: #2a3a4a;
+
+  /* Функциональные */
+  --text-primary: #e0e6ed;
+  --text-secondary: #8899aa;
+  --text-muted: #556677;
+  --danger: #e74c3c;
+  --gold: #f1c40f;
+
+  /* Расы */
+  --race-terran: #3498db;
+  --race-zerg: #9b59b6;
+  --race-protoss: #f1c40f;
+  --race-random: #95a5a6;
+  --race-mixed: #95a5a6;
+
+  /* Шрифты */
+  --font-ui: 'Zekton', 'Segoe UI', sans-serif;
+  --font-mono: 'Consolas', monospace;
+}
+
+/* =========================================
+   Сброс и базовое
+   ========================================= */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  background: var(--bg-deep);
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  color: var(--text-primary);
+  min-height: 100vh;
+}

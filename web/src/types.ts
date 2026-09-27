@@ -2,9 +2,9 @@
 // Типы данных, соответствующие ответам API
 // ============================================================
 
-export type Race = 'T' | 'Z' | 'P';
+export type Race = 'T' | 'Z' | 'P' | 'R';
 
-export const RACES: readonly Race[] = ['T', 'Z', 'P'] as const;
+export const RACES: readonly Race[] = ['T', 'Z', 'P', 'R'] as const;
 
 export type StatKey =
   | 'adaptiveness'
@@ -37,11 +37,11 @@ export interface PlayerWithStats {
   variety: number | null;
 }
 
-/** Одна оценка пользователя (элемент ответа GET /api/players/:id/ratings) */
+/** Оценка в публичном списке — теперь с username */
 export interface Rating {
   id: number;
   user_id: string;
-  email: string;
+  username: string; // было email
   race: Race;
   adaptiveness: number;
   greed: number;
@@ -82,6 +82,8 @@ export interface RatingInput {
 export interface AuthUser {
   id: string;
   email: string;
+  username?: string; // опционально: приходит из signup
+
 }
 
 export interface LoginResponse {
@@ -92,15 +94,10 @@ export interface LoginResponse {
 }
 
 export interface SignupResponse {
-  user: AuthUser | null;
-  session: {
-    access_token: string;
-    refresh_token: string;
-    expires_at: number;
-  } | null;
+  user: (AuthUser & { username: string }) | null;
+  session: { access_token: string; refresh_token: string; expires_at: number } | null;
   note?: string;
 }
-
 // --- Ответы API ---
 
 export interface PlayersListResponse {

@@ -3,7 +3,7 @@ import './styles/radar.css';
 import './styles/card.css';
 
 import { apiRequest, ApiRequestError } from './api';
-import { state, clearSession } from './state';
+import { state, clearSession, saveSession } from './state';
 import { bindAuth } from './ui/auth';
 import { bindCreatePlayer, loadPlayers } from './ui/players';
 import { openPlayerScreen, showScreen } from './ui/player-detail';
@@ -52,7 +52,7 @@ async function openPlayersScreen(): Promise<void> {
 }
 
 // --- Инициализация ---
-function init(): void {
+async function init(): Promise<void> {
   bindAuth({
     renderUserBox,
     onLoginSuccess: () => {
@@ -70,22 +70,44 @@ function init(): void {
   });
 
   renderUserBox();
+  showScreen('screen-loading');
 
-  if (state.token && state.user) {
-    // Проверим токен запросом к защищённому эндпоинту
-    // (или просто попробуем загрузить список и поймаем 401)
-    apiRequest('/api/players')
-      .then(() => {
-        void openPlayersScreen();
-      })
-      .catch((err: unknown) => {
-        if (err instanceof ApiRequestError && err.status === 401) {
-          clearSession();
-        }
-        renderUserBox();
-        showScreen('screen-auth');
-      });
-  } else {
+  const minLoaderMs = 300;
+  const loaderStart = performance.now();
+  const waitMinLoader = async (): Promise<void> => {
+    const elapsed = performance.now() - loaderStart;
+    if (elapsed < minLoaderMs) {
+      await new Promise((r) => setTimeout(r, minLoaderMs - elapsed));
+    }
+  };
+
+  if (!state.token || !state.user) {
+    await waitMinLoader();
+    showScreen('screen-auth');
+    return;
+  }
+
+  try {
+    // Валидируем токен и заодно обновляем user (username, is_moderator)
+    const me = await apiRequest<{
+      user: { id: string; email: string; username: string | null; is_moderator: boolean };
+    }>('/api/auth/me', { token: state.token });
+
+    // Обновляем user в state (сохранится в localStorage через saveSession)
+    saveSession(
+      { id: me.user.id, email: me.user.email },
+      state.token
+    );
+    renderUserBox();
+
+    await waitMinLoader();
+    void openPlayersScreen();
+  } catch (err) {
+    await waitMinLoader();
+    if (err instanceof ApiRequestError && err.status === 401) {
+      clearSession();
+    }
+    renderUserBox();
     showScreen('screen-auth');
   }
 }

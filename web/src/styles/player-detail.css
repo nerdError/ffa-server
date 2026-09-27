@@ -1,0 +1,272 @@
+/* =========================================
+   Экран игрока: stage с карточкой и редактором
+   ========================================= */
+.player-stage {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0;
+  margin: 16px auto 24px;
+  width: 100%;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.player-card-pane {
+  flex: 0 0 960px;              /* ← было 640px */
+  max-width: 100%;
+  transition: transform 0.35s ease;
+}
+
+.player-edit-pane {
+  flex: 0 0 auto;
+  width: 0;
+  overflow: hidden;
+  opacity: 0;
+  margin-left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition:
+    width 0.35s ease,
+    opacity 0.3s ease,
+    margin-left 0.35s ease;
+}
+
+.player-edit-pane.is-open {
+  width: 480px;                                /* ← было 380px */
+  opacity: 1;
+  margin-left: 40px;                           /* ← было 32px */
+}
+
+.player-edit-pane > #rating-form-container {
+  width: 480px;                                /* ← было 380px */
+  box-sizing: border-box;
+}
+
+.player-edit-pane .card { margin: 0; }
+.player-edit-pane #ratings-list-container {
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+/* =========================================
+   Нижняя панель действий
+   ========================================= */
+.player-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 0 auto 24px;
+  min-height: 48px;              /* ← резервируем высоту, чтобы не «прыгало» */
+  transition: opacity 0.25s ease;
+}
+
+.player-actions .btn-primary,
+.player-actions .btn-secondary,
+.player-actions .btn-danger {
+  padding: 12px 24px;
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-family: var(--font-ui);
+  font-weight: 600;
+}
+
+/* =========================================
+   Список оценок
+   ========================================= */
+.player-ratings-pane {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 16px;
+  min-height: 100px;             /* ← резерв под таблицу */
+  transition: opacity 0.3s ease;
+}
+
+/* =========================================
+   Список оценок
+   ========================================= */
+.ratings-list {
+  margin-top: 20px;
+}
+
+.ratings-list h3 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.ratings-list table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glow);
+}
+
+.ratings-list th,
+.ratings-list td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-glow);
+  font-size: 0.9rem;
+}
+
+.ratings-list th {
+  background: #151b24;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+}
+
+.ratings-list tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ratings-list tbody tr:hover td {
+  background: rgba(52, 152, 219, 0.05);
+}
+
+
+
+/* =========================================
+   Экран игрока: базовый layout (просмотр)
+   ========================================= */
+.player-stage {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0;
+  margin: 16px auto 24px;
+  width: 100%;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.player-card-pane {
+  flex: 0 0 960px;
+  max-width: 100%;
+  transition: transform 0.35s ease;
+}
+
+/* Редактор — выезжает справа, если есть место */
+.player-edit-pane {
+  flex: 0 0 auto;
+  width: 0;
+  overflow: hidden;
+  opacity: 0;
+  margin-left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition:
+    width 0.35s ease,
+    opacity 0.3s ease,
+    margin-left 0.35s ease;
+}
+
+.player-stage.is-editing .player-edit-pane {
+  width: 480px;
+  opacity: 1;
+  margin-left: 40px;
+}
+
+.player-edit-pane > #rating-form-container {
+  width: 480px;
+  box-sizing: border-box;
+}
+
+/* =========================================
+   Узкие экраны + открытый редактор → column
+   ========================================= */
+@media (max-width: 1500px) {
+  .player-stage.is-editing {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .player-stage.is-editing .player-card-pane {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 960px;
+  }
+
+  .player-stage.is-editing .player-edit-pane {
+    width: 100%;
+    max-width: 960px;
+    margin-left: 0;
+    margin-top: 24px;
+    transform: none;
+    transition: opacity 0.3s ease, margin-top 0.35s ease;
+  }
+
+  .player-stage.is-editing .player-edit-pane > #rating-form-container {
+    width: 100%;
+  }
+}
+
+/* =========================================
+   Совсем узкие экраны (< 1000px) — всегда column
+   ========================================= */
+@media (max-width: 1000px) {
+  .player-stage {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .player-card-pane {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 960px;
+  }
+
+  .player-edit-pane,
+  .player-stage.is-editing .player-edit-pane {
+    width: 100%;
+    max-width: 960px;
+    margin-left: 0;
+    margin-top: 24px;
+  }
+
+  .player-edit-pane > #rating-form-container {
+    width: 100%;
+  }
+}
+
+/* =========================================
+   Нижняя панель действий и список оценок
+   ========================================= */
+.player-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 0 auto 24px;
+  min-height: 48px;
+  transition: opacity 0.25s ease;
+}
+
+.player-actions .btn-primary,
+.player-actions .btn-secondary,
+.player-actions .btn-danger {
+  padding: 12px 24px;
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-family: var(--font-ui);
+  font-weight: 600;
+}
+
+.player-ratings-pane {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 16px;
+  min-height: 100px;
+  transition: opacity 0.3s ease;
+}

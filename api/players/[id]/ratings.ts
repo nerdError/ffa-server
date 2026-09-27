@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { anonClient, authenticate } from '../../../lib/auth';
 import { jsonError, methodNotAllowed } from '../../../lib/http';
 
-const RACES = ['T', 'Z', 'P'] as const;
+const RACES = ['T', 'Z', 'P', 'R'] as const;
 const STATS = [
   'adaptiveness',
   'greed',
