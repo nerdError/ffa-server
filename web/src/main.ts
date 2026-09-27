@@ -113,3 +113,31 @@ async function init(): Promise<void> {
 }
 
 init();
+
+const copyDiscord = document.getElementById('copy-discord') as HTMLButtonElement | null;
+
+copyDiscord?.addEventListener('click', async () => {
+  const originalText = copyDiscord.dataset.originalText ?? copyDiscord.textContent ?? '';
+  // Сохраняем оригинальный текст один раз
+  if (!copyDiscord.dataset.originalText) {
+    copyDiscord.dataset.originalText = originalText;
+  }
+
+  try {
+    await navigator.clipboard.writeText('nerderror');
+    copyDiscord.textContent = '✓ Скопировано';
+    copyDiscord.classList.add('is-copied');
+
+    setTimeout(() => {
+      copyDiscord.textContent = copyDiscord.dataset.originalText ?? originalText;
+      copyDiscord.classList.remove('is-copied');
+    }, 1500);
+  } catch {
+    // Fallback — если clipboard API недоступен
+    const range = document.createRange();
+    range.selectNodeContents(copyDiscord);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  }
+});

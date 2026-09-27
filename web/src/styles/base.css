@@ -53,4 +53,13 @@ body {
   background-size: 40px 40px;
   color: var(--text-primary);
   min-height: 100vh;
+    display: flex;
+  flex-direction: column;
 }
+
+main {
+    flex: 1;
+}
+
+/* !!! Но помните: у вас main уже определён в layout.css
+   с max-width и margin: 32px auto. flex: 1 не сломает эти правила. */

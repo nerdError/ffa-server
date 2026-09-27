@@ -1,0 +1,120 @@
+/* =========================================
+   Футер сайта
+   ========================================= */
+.site-footer {
+  margin-top: auto;             /* прижимает к низу при flex-column body */
+  padding: 20px 32px;
+  border-top: 1px solid var(--border-glow);
+  background: linear-gradient(to top, #0d1117, transparent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.footer-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.footer-author {
+  color: var(--text-secondary);
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(52, 152, 219, 0.35);
+}
+
+.footer-year {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.footer-contacts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.footer-sep {
+  color: var(--border-glow);
+}
+
+.footer-link {
+  text-decoration: none;
+  transition: color 0.2s, text-shadow 0.2s;
+  cursor: pointer;
+}
+
+/* Telegram — в голубом */
+.footer-link--telegram {
+  color: #3498db;
+}
+.footer-link--telegram:hover {
+  color: #5dade2;
+  text-shadow: 0 0 8px rgba(52, 152, 219, 0.6);
+}
+
+/* =========================================
+   Кнопка Discord (с копированием)
+   ========================================= */
+.footer-link--discord {
+  /* Сброс браузерных стилей кнопки */
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 4px 10px;
+  border-radius: 3px;
+
+  /* Шрифт как у остальных ссылок в футере */
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+
+  /* Цвета Discord */
+  color: #9b59b6;
+  cursor: pointer;
+  user-select: none;
+
+  transition:
+    color 0.2s,
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.footer-link--discord:hover {
+  color: #bb8fce;
+  background: rgba(155, 89, 182, 0.1);
+  border-color: rgba(155, 89, 182, 0.5);
+  box-shadow: 0 0 10px rgba(155, 89, 182, 0.3);
+}
+
+.footer-link--discord:active {
+  background: rgba(155, 89, 182, 0.2);
+  transform: scale(0.98);
+}
+
+.footer-link--discord:focus-visible {
+  outline: none;
+  border-color: #9b59b6;
+  box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.3);
+}
+
+/* Состояние «скопировано» — зелёный акцент */
+.footer-link--discord.is-copied {
+  color: #2ecc71;
+  background: rgba(46, 204, 113, 0.1);
+  border-color: rgba(46, 204, 113, 0.5);
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+}
