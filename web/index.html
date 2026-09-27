@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FFA League | StarCraft II Ratings</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <header class="topbar">
+        <h1>FFA LEAGUE <span class="subtitle">// PLAYER DATABASE</span></h1>
+        <div id="user-box" class="user-box"></div>
+    </header>
+
+    <main id="app">
+        <section id="screen-auth" class="screen">
+            <div class="card">
+                <h2>Вход</h2>
+                <form id="form-login" class="form">
+                    <input type="email" name="email" placeholder="Email" required />
+                    <input type="password" name="password" placeholder="Пароль" required minlength="6" />
+                    <button type="submit">Войти</button>
+                </form>
+                <p class="hint">Нет аккаунта? <a href="#" id="link-to-signup">Зарегистрироваться</a></p>
+            </div>
+
+            <div class="card hidden" id="card-signup">
+                <h2>Регистрация</h2>
+                <form id="form-signup" class="form">
+                    <input type="email" name="email" placeholder="Email" required />
+                    <input type="password" name="password" placeholder="Пароль (мин. 6)" required minlength="6" />
+                    <button type="submit">Создать аккаунт</button>
+                </form>
+                <p class="hint">Уже есть аккаунт? <a href="#" id="link-to-login">Войти</a></p>
+            </div>
+        </section>
+
+        <section id="screen-players" class="screen hidden">
+            <div class="toolbar">
+                <h2>Игроки</h2>
+                <form id="form-create-player" class="inline-form">
+                    <input type="text" name="name" placeholder="Имя нового игрока" required maxlength="100" />
+                    <button type="submit">Добавить</button>
+                </form>
+            </div>
+            <div id="players-error" class="error hidden"></div>
+            <table class="players-table">
+                <thead>
+                    <tr>
+                        <th>Имя</th>
+                        <th>Расы</th>
+                        <th>Голосов</th>
+                        <th>Adapt</th>
+                        <th>Greed</th>
+                        <th>Surv</th>
+                        <th>Turtle</th>
+                        <th>Aggr</th>
+                        <th>Var</th>
+                    </tr>
+                </thead>
+                <tbody id="players-tbody"></tbody>
+            </table>
+        </section>
+
+        <section id="screen-player" class="screen hidden">
+            <button id="btn-back" class="btn-secondary">← Назад</button>
+
+            <div class="player-layout">
+                <!-- Слева: карточка -->
+                <div id="player-card-pane" class="player-card-pane">
+                    <!-- сюда рендерится карточка -->
+                </div>
+
+                <!-- Справа: редактор + список оценок -->
+                <div class="player-edit-pane">
+                    <div id="rating-form-container"></div>
+                    <div id="ratings-list-container"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>

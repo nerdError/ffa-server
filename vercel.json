@@ -1,0 +1,7 @@
+{
+  "buildCommand": "vite build",
+  "outputDirectory": "dist",
+  "devCommand": "vite --port $PORT",
+  "cleanUrls": true,
+  "trailingSlash": false
+}

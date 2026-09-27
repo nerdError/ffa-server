@@ -1,0 +1,209 @@
+/* =========================================
+   Карточка игрока 16:9
+   ========================================= */
+.player-card {
+  --race-color: #95a5a6;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #141a22 0%, #0a0c10 100%);
+  border: 1px solid #2a3a4a;
+  border-radius: 4px;
+  font-family: 'Rajdhani', system-ui, sans-serif;
+  color: #e0e6ed;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+}
+
+.player-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.player-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.player-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--race-color);
+  box-shadow: 0 0 12px var(--race-color);
+  z-index: 2;
+}
+
+/* --- Шапка --- */
+.pc-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.pc-icon-box {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #11151c;
+  border: 1.5px solid var(--race-color);
+  border-radius: 3px;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--race-color) 45%, transparent);
+  padding: 5px;
+  box-sizing: border-box;
+}
+
+.pc-icon { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+.pc-icon-mixed {
+  font-size: 22px;
+  color: var(--race-color);
+  line-height: 1;
+}
+
+.pc-title-block { flex: 1; min-width: 0; }
+
+.pc-name {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--race-color);  /* ← ник в цвет расы */
+  line-height: 1.05;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--race-color) 50%, transparent);
+}
+
+.pc-race {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2.5px;
+  color: #8899aa;
+  margin-top: 2px;
+  text-transform: uppercase;
+}
+
+.pc-votes { text-align: right; flex-shrink: 0; }
+
+.pc-votes-label {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: #556677;
+}
+
+.pc-votes-count {
+  font-family: 'Consolas', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: #e0e6ed;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+/* --- Тело: радар + легенда рядом --- */
+.pc-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+}
+
+.pc-radar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+}
+
+.pc-radar svg {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+}
+
+/* --- Легенда --- */
+.pc-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pc-legend-row {
+  --stat-color: #8899aa;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  padding: 3px 6px;
+  border-left: 3px solid var(--stat-color);
+  background: color-mix(in srgb, var(--stat-color) 8%, transparent);
+  border-radius: 2px;
+}
+
+.pc-legend-label {
+  color: var(--stat-color);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+.pc-legend-value {
+  font-family: 'Consolas', monospace;
+  font-weight: 700;
+  color: #e0e6ed;
+  font-size: 12px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.pc-legend-value--empty { color: #556677; }
+
+/* --- Компактный режим для OBS --- */
+.player-card--compact {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  aspect-ratio: auto;
+  width: 100vw;
+  height: 100vh;
+  padding: 24px;
+}
+
+.player-card--compact::before { display: none; }
+
+.player-card--compact .pc-name { font-size: 28px; }
+.player-card--compact .pc-icon-box { width: 56px; height: 56px; }
+.player-card--compact .pc-legend-row { font-size: 13px; padding: 4px 8px; }

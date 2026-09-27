@@ -3,11 +3,16 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
     "outDir": "./dist",
     "rootDir": "./",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "noUncheckedIndexedAccess": true
   },
-  "include": ["api/**/*.ts"]
+  "include": ["api/**/*.ts", "lib/**/*.ts"],
+  "exclude": ["node_modules", "web", "dist"]
 }
