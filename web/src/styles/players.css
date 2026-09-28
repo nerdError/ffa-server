@@ -25,6 +25,7 @@
   text-transform: uppercase;
   letter-spacing: 1px;
   border-bottom: 2px solid var(--border-glow);
+  white-space: nowrap;
 }
 
 .players-table tr:last-child td { border-bottom: none; }
@@ -93,11 +94,12 @@
 .players-table .total-col,
 .players-table .total-cell {
   text-align: right;
-  width: 80px;
+  width: 100px;               /* ← было 60px или 80px */
   font-family: var(--font-mono);
   font-weight: 700;
   color: var(--text-primary);
   font-size: 1rem;
+  white-space: nowrap;        /* ← запрещаем перенос */
 }
 
 .players-table .stat-cell {
@@ -112,6 +114,7 @@
   cursor: pointer;
   user-select: none;
   transition: filter 0.15s, background 0.15s;
+  white-space: nowrap;
 }
 
 .players-table th[data-sort-key]:hover {
