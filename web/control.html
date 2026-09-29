@@ -82,11 +82,32 @@
     <div class="control-current" id="control-current">Ничего не показывается</div>
   </section>
 
-  <!-- Секция: настройки -->
-  <section class="control-section">
-    <h2>Настройки</h2>
-    <!-- ... как было ... -->
-  </section>
+        <!-- Секция: настройки -->
+        <section class="control-section">
+            <h2>Настройки</h2>
+
+            <label class="control-label">
+                Анимация появления
+                <select id="setting-animation" class="control-select">
+                    <option value="fade">Fade</option>
+                    <option value="slide-left">Вылет слева</option>
+                    <option value="slide-right">Вылет справа</option>
+                    <option value="slide-up">Вылет снизу</option>
+                    <option value="slide-down">Вылет сверху</option>
+                    <option value="none">Без анимации</option>
+                </select>
+            </label>
+
+            <label class="control-label control-label--inline">
+                <input type="checkbox" id="setting-autohide" />
+                Автоматически скрывать
+            </label>
+
+            <label class="control-label">
+                Скрывать через (секунд)
+                <input type="number" id="setting-delay" class="control-input" min="1" max="600" value="10" />
+            </label>
+        </section>
 </main>
 
     <script type="module" src="/src/control.ts"></script>
