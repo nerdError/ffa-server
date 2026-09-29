@@ -6,12 +6,88 @@ import { fileURLToPath } from 'node:url';
 import { authRouter } from './routes/auth';
 import { playersRouter } from './routes/players';
 import { ratingsRouter } from './routes/ratings';
+import { promisify } from 'node:util';
+import { execFile } from 'node:child_process';
+
+const execFileAsync = promisify(execFile);
 
 // __dirname для ES-модулей
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// ============================================================
+// GitHub Webhook — ДО express.json(), потому что нужен raw body
+// ============================================================
+app.post(
+  '/api/deploy',
+  express.raw({ type: 'application/json' }),
+  async (req, res) => {
+    const signature = req.headers['x-hub-signature-256'] as string | undefined;
+    const event = req.headers['x-github-event'] as string | undefined;
+    const secret = process.env.GITHUB_WEBHOOK_SECRET;
+
+    // 1. Проверяем наличие секрета и подписи
+    if (!secret) {
+      console.error('[deploy] GITHUB_WEBHOOK_SECRET is not set');
+      return res.status(500).json({ error: 'Server configuration error' });
+    }
+    if (!signature) {
+      console.error('[deploy] Missing signature');
+      return res.status(401).json({ error: 'Missing signature' });
+    }
+
+    // 2. Вычисляем HMAC-SHA256 от СЫРОГО тела
+    const hmac = crypto.createHmac('sha256', secret);
+    hmac.update(req.body); // req.body здесь — Buffer, спасибо express.raw()
+    const digest = 'sha256=' + hmac.digest('hex');
+
+    // 3. Безопасное сравнение (защита от timing-атак)
+    const trusted = Buffer.from(digest, 'ascii');
+    const untrusted = Buffer.from(signature, 'ascii');
+
+    if (
+      trusted.length !== untrusted.length ||
+      !crypto.timingSafeEqual(trusted, untrusted)
+    ) {
+      console.error('[deploy] Invalid signature');
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
+
+    // 4. Проверяем, что это push и что ветка — main
+    if (event !== 'push') {
+      console.log(`[deploy] Ignoring event: ${event}`);
+      return res.status(200).json({ received: true, ignored: true });
+    }
+
+    const payload = JSON.parse(req.body.toString());
+    const ref = payload.ref as string | undefined;
+
+    if (ref !== 'refs/heads/main') {
+      console.log(`[deploy] Ignoring push to: ${ref}`);
+      return res.status(200).json({ received: true, ignored: true });
+    }
+
+    // 5. Отвечаем GitHub СРАЗУ, чтобы не было таймаута
+    res.status(200).json({ received: true, deploying: true });
+
+    // 6. Запускаем деплой в фоне
+    console.log('[deploy] Triggering deployment...');
+    try {
+      const { stdout, stderr } = await execFileAsync(
+        '/home/admin/web/ffa-server.ru/nodeapp/deploy.sh',
+        [],
+        { timeout: 120_000 } // 2 минуты
+      );
+      console.log('[deploy] stdout:', stdout);
+      if (stderr) console.error('[deploy] stderr:', stderr);
+      console.log('[deploy] Deployment finished successfully');
+    } catch (err) {
+      console.error('[deploy] Deployment failed:', err);
+    }
+  }
+);
 
 // ============================================================
 // Глобальные middleware
