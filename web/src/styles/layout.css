@@ -54,6 +54,7 @@ main {
   transition: opacity 0.15s ease;
 }
 
+.hidden { display: none; }
 .screen.hidden { display: none; }
 
 @keyframes fade-in {

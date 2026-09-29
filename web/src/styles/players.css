@@ -466,3 +466,43 @@
   align-items: center;
   gap: 6px;
 }
+
+/* =========================================
+   Переключатель видов (таблица / стена)
+   ========================================= */
+.view-toggle {
+  display: inline-flex;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glow);
+  border-radius: 3px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.view-toggle-btn {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.view-toggle-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.view-toggle-btn.is-active {
+  color: var(--gold);
+  background: rgba(241, 196, 15, 0.1);
+  text-shadow: 0 0 6px rgba(241, 196, 15, 0.4);
+}

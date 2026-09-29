@@ -27,7 +27,7 @@ const LEVEL_LETTERS: Record<number, string> = {
     1: 'E', 2: 'D', 3: 'C', 4: 'B', 5: 'A',
 };
 
-function dominantRace(races: Race[]): Race | 'MIXED' {
+export function dominantRace(races: Race[]): Race | 'MIXED' {
   if (races.length === 0) return 'MIXED';
   if (races.length === 1) return races[0] ?? 'MIXED';
   return 'MIXED';

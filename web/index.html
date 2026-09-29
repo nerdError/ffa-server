@@ -46,31 +46,44 @@
         <section id="screen-players" class="screen hidden">
             <div class="toolbar">
                 <h2>Игроки</h2>
-                <div class="toolbar-actions">
-                    <a href="/players" class="btn-secondary">🖼 Все стили игры</a>
-                    <form id="form-create-player" class="inline-form">
-                        <input type="text" name="name" placeholder="Имя нового игрока" required maxlength="100" />
-                        <button type="submit">Добавить</button>
-                    </form>
+
+                <div class="view-toggle" id="view-toggle">
+                    <button type="button" class="view-toggle-btn is-active" data-view="table">☰ Таблица</button>
+                    <button type="button" class="view-toggle-btn" data-view="wall">◈ Стили игры</button>
                 </div>
+
+                <form id="form-create-player" class="inline-form">
+                    <input type="text" name="name" placeholder="Имя нового игрока" required maxlength="100" />
+                    <button type="submit">Добавить</button>
+                </form>
             </div>
+
             <div id="players-error" class="error hidden"></div>
-            <table class="players-table">
-                <thead>
-                    <tr>
-                        <th data-sort-key="name" data-label="Игрок">Игрок</th>
-                        <th data-sort-key="races" data-label="Расы">Расы</th>
-                        <th data-sort-key="adaptiveness" data-label="Адаптивность">Адаптивность</th>
-                        <th data-sort-key="aggression" data-label="Агрессия">Агрессия</th>
-                        <th data-sort-key="turtle" data-label="Черепашность">Черепашность</th>
-                        <th data-sort-key="variety" data-label="Разнообразие">Разнообразие</th>
-                        <th data-sort-key="survival" data-label="Выживание">Выживание</th>
-                        <th data-sort-key="greed" data-label="Халява">Халява</th>
-                        <th data-sort-key="total" data-label="Итого" class="total-col">Итого</th>
-                    </tr>
-                </thead>
-                <tbody id="players-tbody"></tbody>
-            </table>
+
+            <!-- Вид 1: таблица (существующая) -->
+            <div id="players-table-view">
+                <table class="players-table">
+                    <thead>
+                        <tr>
+                            <th data-sort-key="name" data-label="Игрок">Игрок</th>
+                            <th data-sort-key="races" data-label="Расы">Расы</th>
+                            <th data-sort-key="adaptiveness" data-label="Адаптивность">Адаптивность</th>
+                            <th data-sort-key="aggression" data-label="Агрессия">Агрессия</th>
+                            <th data-sort-key="turtle" data-label="Черепашность">Черепашность</th>
+                            <th data-sort-key="variety" data-label="Разнообразие">Разнообразие</th>
+                            <th data-sort-key="survival" data-label="Выживание">Выживание</th>
+                            <th data-sort-key="greed" data-label="Халява">Халява</th>
+                            <th data-sort-key="total" data-label="Итого" class="total-col">Итого</th>
+                        </tr>
+                    </thead>
+                    <tbody id="players-tbody"></tbody>
+                </table>
+            </div>
+
+            <!-- Вид 2: стена со стилями игры -->
+            <div id="players-wall-view" class="hidden">
+                <div id="players-wall" class="players-wall"></div>
+            </div>
         </section>
 
         <section id="screen-player" class="screen hidden">
@@ -103,6 +116,9 @@
         <div class="footer-line">
             Made by <span class="footer-author">nerdError</span>
             <span class="footer-year">2026</span>
+        </div>
+        <div class="footer-line">
+            Inspired by <span class="footer-author2">Asfarion</span>
         </div>
         <div class="footer-contacts">
             <a class="footer-link footer-link--telegram" href="https://t.me/nerderror404" target="_blank"

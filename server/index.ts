@@ -114,10 +114,6 @@ app.get('/api/health', (_req, res) => {
 const distDir = path.resolve(__dirname, '..', 'dist');
 
 // Явные страницы (до express.static и до SPA-фолбэка!)
-app.get('/players', (_req, res) => {
-  res.sendFile(path.join(distDir, 'players.html'));
-});
-
 app.get('/overlay', (_req, res) => {
   res.sendFile(path.join(distDir, 'overlay.html'));
 });

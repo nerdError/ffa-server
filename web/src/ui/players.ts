@@ -6,8 +6,12 @@ import terranIcon from '../../assets/race/terran.svg';
 import zergIcon from '../../assets/race/zerg.svg';
 import protossIcon from '../../assets/race/protoss.svg';
 import type { Race, StatKey } from '../types';
-import { pickRaceColor, STAT_ORDER } from '../radar';
+import { buildRadarSVG, pickRaceColor, STAT_ORDER } from '../radar';
 import randomIcon from '../../assets/race/random.svg';
+import { dominantRace } from '../card';
+import { openPlayerScreen } from './player-detail';
+
+let viewInitialized = false;
 
 const RACE_ICON_URL: Record<Race, string> = {
     T: terranIcon,
@@ -83,10 +87,18 @@ export async function loadPlayers(cb: PlayersCallbacks): Promise<void> {
         const { players } = await apiRequest<PlayersListResponse>('/api/players');
         cachedPlayers = players;
 
-        // Применяем дефолтную сортировку
-        const sorted = sortPlayers(cachedPlayers, sortKey, sortDirection);
-        renderPlayersTable(sorted, cb);
-        bindSorting(cb);
+        // 1. Навешиваем обработчики ОДИН РАЗ
+        bindViewToggle();
+
+        // 2. Определяем сохранённый вид (если ещё не задан)
+        if (!viewInitialized) {
+            const saved = localStorage.getItem('playersView');
+            if (saved === 'table' || saved === 'wall') currentView = saved;
+            viewInitialized = true;
+        }
+
+        // 3. Применяем вид
+        setView(currentView);
     } catch (err) {
         errBox.textContent =
             'Не удалось загрузить игроков: ' +
@@ -275,36 +287,36 @@ function sortPlayers(
 ): PlayerWithStats[] {
     // --- Сортировка по расам: своя логика ---
     if (key === 'races') {
-  const popularity = countRacePopularity(players);
+        const popularity = countRacePopularity(players);
 
-  // Порядок рас: сначала по популярности, потом алфавит для стабильности
-  const raceOrder = Object.keys(popularity).sort((a, b) => {
-    const diff = (popularity[b] ?? 0) - (popularity[a] ?? 0);
-    return diff !== 0 ? diff : a.localeCompare(b);
-  });
+        // Порядок рас: сначала по популярности, потом алфавит для стабильности
+        const raceOrder = Object.keys(popularity).sort((a, b) => {
+            const diff = (popularity[b] ?? 0) - (popularity[a] ?? 0);
+            return diff !== 0 ? diff : a.localeCompare(b);
+        });
 
-  // Если сортировка по возрастанию — переворачиваем порядок рас
-  const orderedRaces = dir === 'asc' ? raceOrder : [...raceOrder].reverse();
+        // Если сортировка по возрастанию — переворачиваем порядок рас
+        const orderedRaces = dir === 'asc' ? raceOrder : [...raceOrder].reverse();
 
-  const raceIndex: Record<string, number> = {};
-  orderedRaces.forEach((r, i) => {
-    raceIndex[r] = i;
-  });
+        const raceIndex: Record<string, number> = {};
+        orderedRaces.forEach((r, i) => {
+            raceIndex[r] = i;
+        });
 
-  return [...players].sort((a, b) => {
-    const ra = primaryRace(a, popularity);
-    const rb = primaryRace(b, popularity);
+        return [...players].sort((a, b) => {
+            const ra = primaryRace(a, popularity);
+            const rb = primaryRace(b, popularity);
 
-    const ia = raceIndex[ra] ?? 999;
-    const ib = raceIndex[rb] ?? 999;
+            const ia = raceIndex[ra] ?? 999;
+            const ib = raceIndex[rb] ?? 999;
 
-    // Сначала по индексу расы
-    if (ia !== ib) return ia - ib;
+            // Сначала по индексу расы
+            if (ia !== ib) return ia - ib;
 
-    // Внутри одной расы — алфавит по имени (всегда по возрастанию)
-    return a.name.localeCompare(b.name, 'ru');
-  });
-}
+            // Внутри одной расы — алфавит по имени (всегда по возрастанию)
+            return a.name.localeCompare(b.name, 'ru');
+        });
+    }
 
     // --- Обычная сортировка ---
     const mult = dir === 'asc' ? 1 : -1;
@@ -339,24 +351,24 @@ function bindSorting(cb: PlayersCallbacks): void {
 
     const headers = table.querySelectorAll<HTMLTableCellElement>('th[data-sort-key]');
     headers.forEach((th) => {
-  th.addEventListener('click', () => {
-    const key = th.dataset.sortKey as SortKey | undefined;
-    if (!key) return;
+        th.addEventListener('click', () => {
+            const key = th.dataset.sortKey as SortKey | undefined;
+            if (!key) return;
 
-    if (sortKey === key) {
-      // тот же столбец — меняем направление
-      sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-    } else {
-      // новый столбец — начинаем с убывания
-      sortKey = key;
-      sortDirection = 'desc';
-    }
+            if (sortKey === key) {
+                // тот же столбец — меняем направление
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                // новый столбец — начинаем с убывания
+                sortKey = key;
+                sortDirection = 'desc';
+            }
 
-    const sorted = sortPlayers(cachedPlayers, sortKey, sortDirection);
-    renderPlayersTable(sorted, cb);
-    updateSortIndicators();
-  });
-});
+            const sorted = sortPlayers(cachedPlayers, sortKey, sortDirection);
+            renderPlayersTable(sorted, cb);
+            updateSortIndicators();
+        });
+    });
 
     updateSortIndicators();
 }
@@ -388,3 +400,172 @@ function updateSortIndicators(): void {
     });
 }
 
+// ============================================================
+// Вид «Стили игры» (стена)
+// ============================================================
+
+type ViewMode = 'table' | 'wall';
+
+let currentView: ViewMode = 'table';
+
+/**
+ * Строит одну плитку игрока для стены.
+ */
+function buildTile(player: PlayerWithStats): HTMLAnchorElement {
+    const race = dominantRace(player.races);
+    const color = pickRaceColor(player.races);
+
+    const tile = document.createElement('a');
+    tile.className = 'player-tile';
+    tile.href = `/?player=${player.id}`;
+    tile.style.setProperty('--race-color', color);
+
+    // Шапка: иконка + ник
+    const header = document.createElement('div');
+    header.className = 'player-tile-header';
+
+    if (race !== 'MIXED') {
+        const img = document.createElement('img');
+        img.src = RACE_ICON_URL[race];
+        img.alt = RACE_LABELS[race];
+        img.className = 'player-tile-icon';
+        header.appendChild(img);
+    }
+
+    const name = document.createElement('span');
+    name.className = 'player-tile-name';
+    name.textContent = player.name;
+    header.appendChild(name);
+
+    tile.appendChild(header);
+
+    // Радар
+    const radarWrap = document.createElement('div');
+    radarWrap.className = 'player-tile-radar';
+    radarWrap.innerHTML = buildRadarSVG({
+        stats: player,
+        color,
+        size: 330,
+        uniqueId: `player-${player.id}`,
+        showVertices: false,
+    });
+    tile.appendChild(radarWrap);
+
+    // Подвал: голоса + итого
+    const footer = document.createElement('div');
+    footer.className = 'player-tile-footer';
+
+    const total = calcTotal(player);
+
+    const votes = document.createElement('span');
+    votes.innerHTML = `Голосов: <strong>${player.vote_count}</strong>`;
+
+    const totalEl = document.createElement('span');
+    totalEl.innerHTML = `Итого: <strong>${total !== null ? total.toFixed(2) : '—'}</strong>`;
+
+    footer.append(votes, totalEl);
+    tile.appendChild(footer);
+
+    return tile;
+}
+
+/**
+ * Рендерит стену из массива игроков.
+ */
+function renderWall(players: PlayerWithStats[]): void {
+    const wall = document.getElementById('players-wall');
+    if (!wall) return;
+
+    wall.innerHTML = '';
+
+    if (players.length === 0) {
+        wall.innerHTML = '<p class="hint">Пока нет игроков.</p>';
+        return;
+    }
+
+    // Сортируем по «Итого» по убыванию
+    const sorted = [...players].sort((a, b) => {
+        const at = calcTotal(a) ?? -1;
+        const bt = calcTotal(b) ?? -1;
+        return bt - at;
+    });
+
+    for (const p of sorted) {
+        wall.appendChild(buildTile(p));
+    }
+}
+
+/**
+ * Переключает вид: table ↔ wall.
+ */
+function setView(view: ViewMode): void {
+  console.log('[players] setView called:', view);
+
+  currentView = view;
+
+  const tableView = document.getElementById('players-table-view');
+  const wallView = document.getElementById('players-wall-view');
+
+  console.log('[players] setView — elements:', {
+    tableView: !!tableView,
+    wallView: !!wallView,
+  });
+
+  if (!tableView || !wallView) {
+    console.error('[players] setView: missing #players-table-view or #players-wall-view');
+    return;
+  }
+
+  if (view === 'table') {
+    tableView.classList.remove('hidden');
+    wallView.classList.add('hidden');
+    renderPlayersTable(
+      sortPlayers(cachedPlayers, sortKey, sortDirection),
+      { onOpenPlayer: (id) => void openPlayerScreen(id) }
+    );
+  } else {
+    tableView.classList.add('hidden');
+    wallView.classList.remove('hidden');
+    renderWall(cachedPlayers);
+  }
+
+  document.querySelectorAll<HTMLButtonElement>('.view-toggle-btn').forEach((btn) => {
+    btn.classList.toggle('is-active', btn.dataset.view === view);
+  });
+
+  localStorage.setItem('playersView', view);
+}
+
+/**
+ * Навешивает обработчики на переключатель видов.
+ */
+let viewToggleBound = false;
+
+function bindViewToggle(): void {
+  if (viewToggleBound) return;
+
+  const toggle = document.getElementById('view-toggle');
+  if (!toggle) {
+    console.warn('[players] #view-toggle not found');
+    return;
+  }
+
+  toggle.addEventListener('click', (e) => {
+    const target = (e.target as HTMLElement).closest('.view-toggle-btn') as HTMLElement | null;
+    console.log('[players] toggle clicked', {
+      target: e.target,
+      closestBtn: target,
+      view: target?.dataset.view,
+    });
+
+    if (!target) return;
+
+    const view = target.dataset.view as ViewMode | undefined;
+    if (view === 'table' || view === 'wall') {
+      console.log('[players] switching to view:', view);
+      setView(view);
+    }
+  });
+
+  viewToggleBound = true;
+}

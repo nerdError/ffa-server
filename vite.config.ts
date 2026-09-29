@@ -12,7 +12,6 @@ export default defineConfig({
             input: {
                 main: resolve(__dirname, 'web/index.html'),
                 overlay: resolve(__dirname, 'web/overlay.html'),
-                players: resolve(__dirname, 'web/players.html'),
             },
         },
     },
