@@ -8,6 +8,7 @@ import { playersRouter } from './routes/players';
 import { ratingsRouter } from './routes/ratings';
 import { promisify } from 'node:util';
 import { execFile } from 'node:child_process';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 
 const execFileAsync = promisify(execFile);
 
@@ -39,7 +40,7 @@ app.post(
     }
 
     // 2. Вычисляем HMAC-SHA256 от СЫРОГО тела
-    const hmac = crypto.createHmac('sha256', secret);
+    const hmac = createHmac('sha256', secret);
     hmac.update(req.body); // req.body здесь — Buffer, спасибо express.raw()
     const digest = 'sha256=' + hmac.digest('hex');
 
@@ -49,7 +50,7 @@ app.post(
 
     if (
       trusted.length !== untrusted.length ||
-      !crypto.timingSafeEqual(trusted, untrusted)
+      !timingSafeEqual(trusted, untrusted)
     ) {
       console.error('[deploy] Invalid signature');
       return res.status(401).json({ error: 'Invalid signature' });
@@ -76,7 +77,7 @@ app.post(
     console.log('[deploy] Triggering deployment...');
     try {
       const { stdout, stderr } = await execFileAsync(
-        '/home/admin/web/ffa-server.ru/nodeapp/deploy.sh',
+        '/home/admin/web/sc2-ffa-league.ru/nodeapp/deploy.sh',
         [],
         { timeout: 120_000 } // 2 минуты
       );
