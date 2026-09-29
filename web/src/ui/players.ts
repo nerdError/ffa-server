@@ -1,6 +1,6 @@
 import { apiRequest } from '../api';
 import { state } from '../state';
-import { STAT_KEYS, type PlayerWithStats, type PlayersListResponse } from '../types';
+import { type PlayerWithStats, type PlayersListResponse } from '../types';
 
 import terranIcon from '../../assets/race/terran.svg';
 import zergIcon from '../../assets/race/zerg.svg';

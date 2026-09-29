@@ -17,11 +17,11 @@ export const STAT_ORDER: readonly StatAxis[] = [
 ] as const;
 
 const RACE_COLORS: Record<Race | 'MIXED', string> = {
-  T: '#3498db',  // Terran — синий
-  Z: '#9b59b6',  // Zerg — фиолетовый
-  P: '#f1c40f',  // Protoss — жёлтый
-  R: '#95a5a6',  // Random — серый (тот же, что MIXED)
-  MIXED: '#95a5a6',
+    T: '#3498db',  // Terran — синий
+    Z: '#9b59b6',  // Zerg — фиолетовый
+    P: '#f1c40f',  // Protoss — жёлтый
+    R: '#95a5a6',  // Random — серый (тот же, что MIXED)
+    MIXED: '#95a5a6',
 };
 export function pickRaceColor(races: Race[]): string {
     if (races.length === 0) return RACE_COLORS.MIXED;
@@ -37,10 +37,17 @@ interface RadarOptions {
     color: string;
     size?: number;
     maxLevel?: number;
+    uniqueId?: string;   // ← НОВОЕ
+    showVertices?: boolean;
 }
 
 export function buildRadarSVG(opts: RadarOptions): string {
-    const { stats, color, size = 480, maxLevel = 5 } = opts;
+    const { stats, color, size = 480, maxLevel = 5, uniqueId, showVertices } = opts;
+
+    // Уникальный суффикс для id внутри этого SVG
+    const uid = uniqueId ?? `r${Math.random().toString(36).slice(2, 9)}`;
+    const glowId = `glow-${uid}`;
+    const gradId = `fillGradient-${uid}`;
 
     const cx = size / 2;
     const cy = size / 2;
@@ -62,14 +69,14 @@ export function buildRadarSVG(opts: RadarOptions): string {
 
     parts.push(`
     <defs>
-      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <filter id="${glowId}" x="-50%" y="-50%" width="200%" height="200%">
         <feGaussianBlur stdDeviation="5" result="blur"/>
         <feMerge>
           <feMergeNode in="blur"/>
           <feMergeNode in="SourceGraphic"/>
         </feMerge>
       </filter>
-      <radialGradient id="fillGradient" cx="50%" cy="50%" r="50%">
+      <radialGradient id="${gradId}" cx="50%" cy="50%" r="50%">
         <stop offset="0%" stop-color="${color}" stop-opacity="0.45"/>
         <stop offset="100%" stop-color="${color}" stop-opacity="0.10"/>
       </radialGradient>
@@ -166,20 +173,22 @@ export function buildRadarSVG(opts: RadarOptions): string {
     if (hasData) {
         parts.push(
             `<polygon points="${polygonPoints}"
-        fill="url(#fillGradient)"
-        stroke="${color}" stroke-width="2.5"
-        stroke-linejoin="round"
-        filter="url(#glow)" />`
+    fill="url(#${gradId})"
+    stroke="${color}" stroke-width="2.5"
+    stroke-linejoin="round"
+    filter="url(#${glowId})" />`
         );
-        STAT_ORDER.forEach((axis, i) => {
-            const pt = dataPoints[i];
-            if (!pt) return;
-            const [x, y] = pt;
-            parts.push(
-                `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="4"
+        if (showVertices !== false) {
+            STAT_ORDER.forEach((axis, i) => {
+                const pt = dataPoints[i];
+                if (!pt) return;
+                const [x, y] = pt;
+                parts.push(
+                    `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="4"
           fill="${axis.color}" stroke="#0a0c10" stroke-width="1.5" />`
-            );
-        });
+                );
+            });
+        }
     } else {
         parts.push(
             `<polygon points="${polygonPoints}"

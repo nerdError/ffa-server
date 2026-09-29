@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FFA League | StarCraft II Ratings</title>
+    <title>SC2 FFA League | StarCraft II Ratings</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Zekton:wght@500;600;700&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 
 <body>
     <header class="topbar">
-        <h1>FFA LEAGUE <span class="subtitle">// PLAYER DATABASE</span></h1>
+        <h1>SC2 FFA LEAGUE <span class="subtitle">// PLAYER DATABASE</span></h1>
         <div id="user-box" class="user-box"></div>
     </header>
 
@@ -46,10 +46,13 @@
         <section id="screen-players" class="screen hidden">
             <div class="toolbar">
                 <h2>Игроки</h2>
-                <form id="form-create-player" class="inline-form">
-                    <input type="text" name="name" placeholder="Имя нового игрока" required maxlength="100" />
-                    <button type="submit">Добавить</button>
-                </form>
+                <div class="toolbar-actions">
+                    <a href="/players" class="btn-secondary">🖼 Все стили игры</a>
+                    <form id="form-create-player" class="inline-form">
+                        <input type="text" name="name" placeholder="Имя нового игрока" required maxlength="100" />
+                        <button type="submit">Добавить</button>
+                    </form>
+                </div>
             </div>
             <div id="players-error" class="error hidden"></div>
             <table class="players-table">

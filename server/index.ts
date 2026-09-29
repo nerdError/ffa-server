@@ -35,6 +35,9 @@ app.get('/api/health', (_req, res) => {
 // Статика: раздаём собранный фронтенд из dist/
 // ============================================================
 const distDir = path.resolve(__dirname, '..', 'dist');
+
+
+
 app.use(express.static(distDir));
 
 // SPA-фолбэк: любые GET, не начинающиеся с /api, отдают index.html

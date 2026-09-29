@@ -297,3 +297,172 @@
 .players-table th:nth-child(9) {
   color: var(--text-primary);     /* Итого — нейтральный или золотой */
 }
+
+
+
+/* =========================================
+   Стена игроков (/players)
+   ========================================= */
+.players-wall-main {
+  max-width: 1600px;              /* ← было 1400px */
+  margin: 32px auto;
+  padding: 0 32px;                /* ← было 24px */
+  flex: 1;
+}
+
+.players-wall-header {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.players-wall-header h2 {
+  margin: 0 0 8px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 0 15px rgba(52, 152, 219, 0.3);
+}
+
+.players-wall-count {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+
+/* Сетка: 3 колонки на широких экранах */
+.players-wall {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px 32px;                 /* ← 40px по вертикали, 32px по горизонтали */
+  width: 100%;
+}
+
+@media (max-width: 1200px) {
+  .players-wall { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .players-wall { grid-template-columns: 1fr; }
+}
+
+/* Карточка-плитка */
+.player-tile {
+  position: relative;
+  background: linear-gradient(135deg, #141a22 0%, #0a0c10 100%);
+  border: 1px solid var(--border-glow);
+  border-radius: 4px;
+  padding: 22px 18px 16px;        /* ← было 16px 12px 12px */
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.2s ease;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;                      /* ← было 8px */
+}
+
+.player-tile:hover {
+  transform: translateY(-4px);
+  border-color: var(--race-color, #3498db);
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.5),
+    0 0 20px color-mix(in srgb, var(--race-color, #3498db) 30%, transparent);
+}
+
+/* Тонкая полоска сверху в цвет расы */
+.player-tile::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--race-color, #8899aa);
+  box-shadow: 0 0 10px var(--race-color, #8899aa);
+}
+
+/* Шапка плитки — ник + иконка расы */
+.player-tile-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.player-tile-icon {
+  width: 28px;                    /* ← было 24px */
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+  /* filter: drop-shadow(0 0 2px var(--race-color, #8899aa)); */
+  opacity: 0.9;
+}
+
+.player-tile-name {
+  font-size: 1.1rem;              /* ← было 1rem */
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--race-color, #e0e6ed);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--race-color, #3498db) 50%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Радар внутри плитки */
+.player-tile-radar {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 0;                 /* ← небольшой воздух вокруг радара */
+}
+
+.player-tile-radar svg {
+  width: 100%;
+  height: auto;
+  max-width: 300px;               /* ← было 200-220px */
+  display: block;
+  overflow: visible;
+}
+
+/* Подвал плитки — голоса и итого */
+.player-tile-footer {
+  display: flex;
+  justify-content: center;
+  gap: 16px;                      /* ← было 12px */
+  font-family: var(--font-mono);
+  font-size: 0.8rem;              /* ← было 0.75rem */
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  width: 100%;
+  padding-top: 10px;              /* ← было 6px */
+  border-top: 1px solid var(--border-glow);
+  margin-top: 4px;                /* ← небольшой отступ от радара */
+}
+
+.player-tile-footer strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.toolbar-actions .btn-secondary {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
