@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Overlay Control | SC2 FFA League</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zekton&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/styles/main.css" />
+</head>
+
+<body class="control-body">
+    <header class="control-header">
+        <a href="/" class="control-back" title="Вернуться на главную">
+            <span class="control-back-arrow">←</span>
+            <span class="control-back-label">На главную</span>
+        </a>
+        <h1>OVERLAY CONTROL</h1>
+        <div class="control-status" id="control-status">—</div>
+    </header>
+
+<main class="control-main">
+  <!-- Панель оверлея: ссылка для OBS -->
+  <section class="control-section control-overlay-panel">
+    <h2>OBS Browser Source</h2>
+    <p class="control-overlay-hint">
+      Скопируйте ссылку ниже и вставьте её в OBS как <strong>Browser Source</strong>.
+      Оставьте источник включённым — карточки будут появляться автоматически.
+    </p>
+
+    <div class="control-overlay-url">
+      <input
+        type="text"
+        id="overlay-url"
+        class="control-input control-overlay-input"
+        readonly
+        value=""
+      />
+      <button
+        type="button"
+        id="btn-copy-url"
+        class="control-copy-btn"
+        title="Скопировать ссылку"
+      >
+        <span class="control-copy-icon">⧉</span>
+        <span class="control-copy-label">Копировать</span>
+      </button>
+      <a
+        href="/overlay"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="control-open-btn"
+        title="Открыть оверлей в новой вкладке"
+      >
+        <span class="control-open-icon">↗</span>
+        <span class="control-open-label">Открыть</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Секция: игроки -->
+  <section class="control-section">
+    <h2>Игроки</h2>
+    <input
+      type="text"
+      id="control-search"
+      class="control-search"
+      placeholder="Поиск игрока…"
+      autocomplete="off"
+    />
+    <div id="control-players" class="control-players"></div>
+  </section>
+
+  <!-- Секция: управление показом -->
+  <section class="control-section">
+    <h2>Показ</h2>
+    <div class="control-actions">
+      <button type="button" id="btn-hide" class="btn-danger">✕ Скрыть карточку</button>
+    </div>
+    <div class="control-current" id="control-current">Ничего не показывается</div>
+  </section>
+
+  <!-- Секция: настройки -->
+  <section class="control-section">
+    <h2>Настройки</h2>
+    <!-- ... как было ... -->
+  </section>
+</main>
+
+    <script type="module" src="/src/control.ts"></script>
+</body>
+
+</html>

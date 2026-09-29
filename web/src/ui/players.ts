@@ -499,20 +499,12 @@ function renderWall(players: PlayerWithStats[]): void {
  * Переключает вид: table ↔ wall.
  */
 function setView(view: ViewMode): void {
-  console.log('[players] setView called:', view);
-
   currentView = view;
 
   const tableView = document.getElementById('players-table-view');
   const wallView = document.getElementById('players-wall-view');
 
-  console.log('[players] setView — elements:', {
-    tableView: !!tableView,
-    wallView: !!wallView,
-  });
-
   if (!tableView || !wallView) {
-    console.error('[players] setView: missing #players-table-view or #players-wall-view');
     return;
   }
 
@@ -552,17 +544,10 @@ function bindViewToggle(): void {
 
   toggle.addEventListener('click', (e) => {
     const target = (e.target as HTMLElement).closest('.view-toggle-btn') as HTMLElement | null;
-    console.log('[players] toggle clicked', {
-      target: e.target,
-      closestBtn: target,
-      view: target?.dataset.view,
-    });
-
     if (!target) return;
 
     const view = target.dataset.view as ViewMode | undefined;
     if (view === 'table' || view === 'wall') {
-      console.log('[players] switching to view:', view);
       setView(view);
     }
   });

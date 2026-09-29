@@ -1,0 +1,448 @@
+/* =========================================
+   Панель управления оверлеем (мобильная)
+   ========================================= */
+.control-body {
+  background: #0a0c10;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  min-height: 100vh;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+}
+
+.control-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: linear-gradient(to bottom, #1a2029, #0d1117);
+  border-bottom: 2px solid var(--border-glow);
+}
+
+.control-header h1 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.control-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+.control-status.is-ok   { color: #2ecc71; }
+.control-status.is-error { color: #e74c3c; }
+
+.control-main {
+  width: 100%;
+  max-width: 900px;   /* ← было 640px — теперь шире на больших экранах */
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-sizing: border-box;
+}
+
+/* На телефоне — реально вся ширина */
+@media (max-width: 640px) {
+  .control-main {
+    max-width: none;
+    padding: 12px;
+  }
+}
+
+/* =========================================
+   Секции
+   ========================================= */
+.control-section {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glow);
+  border-radius: 4px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.control-section h2 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding-left: 10px;
+  border-left: 3px solid var(--gold);
+}
+
+/* =========================================
+   Поиск
+   ========================================= */
+.control-search {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--bg-panel-light);
+  border: 1px solid var(--border-glow);
+  border-radius: 3px;
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+.control-search:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 8px rgba(241, 196, 15, 0.3);
+}
+
+/* =========================================
+   Список игроков (мобильный)
+   ========================================= */
+.control-players {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+@media (max-width: 480px) {
+  .control-players { grid-template-columns: 1fr; }
+}
+
+.control-player-btn {
+  --race-color: #8899aa;
+
+  appearance: none;
+  padding: 16px 14px;
+  background: #1a2029;
+  border: 1.5px solid var(--border-glow);
+  border-left: 4px solid var(--race-color);   /* ← акцентная полоска слева */
+  border-radius: 4px;
+  color: var(--race-color);                   /* ← ник в цвет расы */
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-height: 56px;
+  text-shadow: 0 0 8px color-mix(in srgb, var(--race-color) 40%, transparent);
+}
+
+.control-player-btn:hover,
+.control-player-btn:active {
+  background: #232b36;
+  border-color: var(--race-color);
+  border-left-color: var(--race-color);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--race-color) 25%, transparent);
+}
+
+.control-player-btn.is-active {
+  background: color-mix(in srgb, var(--race-color) 15%, #1a2029);
+  border-color: var(--race-color);
+  border-left-color: var(--race-color);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--race-color) 50%, transparent);
+}
+
+/* =========================================
+   Кнопки действий
+   ========================================= */
+.control-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.control-actions .btn-danger {
+  padding: 16px 20px;
+  font-size: 1rem;
+  letter-spacing: 1.5px;
+  min-height: 56px;
+  border-width: 2px;
+  font-weight: 700;
+}
+
+.control-current {
+  padding: 14px 16px;
+  background: #11151c;
+  border: 1px solid var(--border-glow);
+  border-radius: 3px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+.control-current.is-active {
+  color: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 0 8px rgba(241, 196, 15, 0.2);
+}
+
+/* =========================================
+   Настройки (слайдеры, чекбоксы, селекты)
+   ========================================= */
+.control-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.control-label--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 8px 0;
+}
+
+.control-label--inline input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+
+.control-select,
+.control-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--bg-panel-light);
+  border: 1px solid var(--border-glow);
+  border-radius: 3px;
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  color: var(--text-primary);
+  box-sizing: border-box;
+  appearance: none;
+}
+
+.control-select {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3e%3cpath d='M1 1l5 5 5-5' stroke='%238899aa' stroke-width='2' fill='none' stroke-linecap='round'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
+}
+
+.control-select:focus,
+.control-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 8px rgba(241, 196, 15, 0.3);
+}
+
+/* =========================================
+   Адаптив для планшетов
+   ========================================= */
+@media (min-width: 640px) {
+  .control-main { padding: 24px; }
+  .control-header h1 { font-size: 1.3rem; }
+}
+
+
+
+
+.control-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.control-header-link {
+  padding: 8px 12px;
+  background: rgba(241, 196, 15, 0.1);
+  border: 1px solid rgba(241, 196, 15, 0.4);
+  border-radius: 3px;
+  color: var(--gold);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.15s;
+}
+.control-header-link:hover {
+  background: rgba(241, 196, 15, 0.2);
+  box-shadow: 0 0 8px rgba(241, 196, 15, 0.4);
+}
+
+.control-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glow);
+  border-radius: 4px;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.control-back:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 0 8px rgba(241, 196, 15, 0.2);
+}
+
+.control-back-arrow {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.control-back-label {
+  font-size: 0.75rem;
+}
+
+/* На очень узких экранах — оставляем только стрелку */
+@media (max-width: 420px) {
+  .control-back-label { display: none; }
+  .control-back { padding: 10px 12px; }
+}
+
+/* =========================================
+   Панель оверлея (ссылка для OBS)
+   ========================================= */
+.control-overlay-panel {
+  /* чуть выделяется на фоне остальных секций */
+  background: linear-gradient(135deg, #141a22, #0f1318);
+  border-color: rgba(241, 196, 15, 0.35);
+}
+
+.control-overlay-panel h2 {
+  border-left-color: var(--gold);
+  color: var(--gold);
+}
+
+.control-overlay-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  letter-spacing: 0.3px;
+}
+
+.control-overlay-hint strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.control-overlay-url {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: stretch;
+}
+
+@media (max-width: 560px) {
+  .control-overlay-url {
+    grid-template-columns: 1fr;
+  }
+}
+
+.control-overlay-input {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  padding: 14px 14px;
+  cursor: text;
+  user-select: all;
+  color: var(--gold);
+  border-color: rgba(241, 196, 15, 0.3);
+}
+
+.control-copy-btn,
+.control-open-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 18px;
+  border-radius: 3px;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  min-height: 48px;
+  border: 1.5px solid;
+}
+
+/* Копировать — золотая */
+.control-copy-btn {
+  background: rgba(241, 196, 15, 0.1);
+  border-color: rgba(241, 196, 15, 0.5);
+  color: var(--gold);
+}
+
+.control-copy-btn:hover {
+  background: rgba(241, 196, 15, 0.2);
+  border-color: var(--gold);
+  box-shadow: 0 0 12px rgba(241, 196, 15, 0.4);
+}
+
+.control-copy-btn.is-copied {
+  background: rgba(46, 204, 113, 0.15);
+  border-color: #2ecc71;
+  color: #2ecc71;
+  box-shadow: 0 0 12px rgba(46, 204, 113, 0.4);
+}
+
+/* Открыть — нейтральная */
+.control-open-btn {
+  background: rgba(52, 152, 219, 0.1);
+  border-color: rgba(52, 152, 219, 0.5);
+  color: #5dade2;
+  text-decoration: none;
+}
+
+.control-open-btn:hover {
+  background: rgba(52, 152, 219, 0.2);
+  border-color: #3498db;
+  color: #5dade2;
+  box-shadow: 0 0 12px rgba(52, 152, 219, 0.4);
+}
+
+.control-copy-icon,
+.control-open-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* На узких экранах — только иконки */
+@media (max-width: 420px) {
+  .control-copy-label,
+  .control-open-label {
+    display: none;
+  }
+  .control-copy-btn,
+  .control-open-btn {
+    padding: 14px 16px;
+  }
+}

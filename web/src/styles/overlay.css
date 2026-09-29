@@ -1,0 +1,128 @@
+/* =========================================
+   Оверлей для OBS
+   ========================================= */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  font-family: var(--font-ui);
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
+}
+
+#root .player-card {
+  width: 960px;
+  height: 540px;
+  flex-shrink: 0;
+  transform-origin: center center;
+  animation-fill-mode: both;
+  animation-duration: 450ms;
+  animation-timing-function: cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+#root .pc-scaler {
+  width: 960px;
+  height: 540px;
+  flex-shrink: 0;
+  transform-origin: center center;
+  transition: transform 0.2s ease;
+}
+
+#root .player-card {
+  width: 100%;
+  height: 100%;
+  animation-duration: 450ms;
+  animation-timing-function: cubic-bezier(0.4, 0.0, 0.2, 1);
+  animation-fill-mode: both;
+}
+
+/* =========================================
+   Keyframes: FADE
+   ========================================= */
+@keyframes pc-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes pc-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.anim-fade-in  { animation-name: pc-fade-in; }
+.anim-fade-out { animation-name: pc-fade-out; }
+
+/* =========================================
+   Keyframes: SLIDE LEFT (выезжает слева)
+   ========================================= */
+@keyframes pc-slide-left-in {
+  from { opacity: 0; transform: translateX(-100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes pc-slide-left-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-100%); }
+}
+
+.anim-slide-left-in  { animation-name: pc-slide-left-in; }
+.anim-slide-left-out { animation-name: pc-slide-left-out; }
+
+/* =========================================
+   Keyframes: SLIDE RIGHT
+   ========================================= */
+@keyframes pc-slide-right-in {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes pc-slide-right-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(100%); }
+}
+
+.anim-slide-right-in  { animation-name: pc-slide-right-in; }
+.anim-slide-right-out { animation-name: pc-slide-right-out; }
+
+/* =========================================
+   Keyframes: SLIDE UP (выезжает снизу)
+   ========================================= */
+@keyframes pc-slide-up-in {
+  from { opacity: 0; transform: translateY(100%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pc-slide-up-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(100%); }
+}
+
+.anim-slide-up-in  { animation-name: pc-slide-up-in; }
+.anim-slide-up-out { animation-name: pc-slide-up-out; }
+
+/* =========================================
+   Keyframes: SLIDE DOWN (выезжает сверху)
+   ========================================= */
+@keyframes pc-slide-down-in {
+  from { opacity: 0; transform: translateY(-100%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pc-slide-down-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-100%); }
+}
+
+.anim-slide-down-in  { animation-name: pc-slide-down-in; }
+.anim-slide-down-out { animation-name: pc-slide-down-out; }
+
+/* =========================================
+   Без анимации
+   ========================================= */
+.anim-none { animation: none; }

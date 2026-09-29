@@ -28,7 +28,7 @@
 .footer-author {
   color: var(--text-secondary);
   font-weight: 700;
-  text-shadow: 0 0 8px rgba(255, 59, 138, 0.749);
+  text-shadow: 0 0 1px rgba(255, 92, 157, 0.749);
 }
 
 .footer-year {

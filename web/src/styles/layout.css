@@ -103,3 +103,38 @@ main {
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
 }
+
+/* =========================================
+   Верхняя панель — ссылки и ник
+   ========================================= */
+.topbar-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(241, 196, 15, 0.1);
+  border: 1px solid rgba(241, 196, 15, 0.5);
+  border-radius: 3px;
+  color: var(--gold);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.15s;
+}
+
+.topbar-link:hover {
+  background: rgba(241, 196, 15, 0.2);
+  border-color: var(--gold);
+  box-shadow: 0 0 12px rgba(241, 196, 15, 0.4);
+  transform: translateY(-1px);
+}
+
+.topbar-username {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 0 8px;
+}

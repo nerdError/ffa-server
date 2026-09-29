@@ -47,3 +47,18 @@ export function clearSession(): void {
   localStorage.removeItem(STORAGE_USER);
   localStorage.removeItem(STORAGE_TOKEN);
 }
+
+interface OverlayState {
+  // Кто сейчас показывается (null = скрыто)
+  currentPlayerId: number | null;
+
+  // Настройки анимации
+  settings: {
+    animation: 'fade' | 'slide-left' | 'slide-right' | 'slide-up' | 'slide-down' | 'none';
+    autoHide: boolean;
+    autoHideDelay: number; // в секундах
+  };
+
+  // Внутреннее: счётчик для уникальных событий
+  version: number;
+}

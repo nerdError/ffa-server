@@ -9,6 +9,8 @@ import { ratingsRouter } from './routes/ratings';
 import { promisify } from 'node:util';
 import { execFile } from 'node:child_process';
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { controlRouter } from './routes/control.js';
+import { overlayRouter } from './routes/overlay.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -58,7 +60,6 @@ app.post(
 
     // 4. Проверяем, что это push и что ветка — main
     if (event !== 'push') {
-      console.log(`[deploy] Ignoring event: ${event}`);
       return res.status(200).json({ received: true, ignored: true });
     }
 
@@ -66,7 +67,6 @@ app.post(
     const ref = payload.ref as string | undefined;
 
     if (ref !== 'refs/heads/main') {
-      console.log(`[deploy] Ignoring push to: ${ref}`);
       return res.status(200).json({ received: true, ignored: true });
     }
 
@@ -74,14 +74,13 @@ app.post(
     res.status(200).json({ received: true, deploying: true });
 
     // 6. Запускаем деплой в фоне
-    console.log('[deploy] Triggering deployment...');
     try {
       const { stdout, stderr } = await execFileAsync(
         '/home/admin/web/sc2-ffa-league.ru/nodeapp/deploy.sh',
         [],
         { timeout: 120_000 } // 2 минуты
       );
-      console.log('[deploy] stdout:', stdout);
+    //   console.log('[deploy] stdout:', stdout);
       if (stderr) console.error('[deploy] stderr:', stderr);
       console.log('[deploy] Deployment finished successfully');
     } catch (err) {
@@ -102,6 +101,8 @@ app.use(express.json({ limit: '1mb' }));
 app.use('/api/auth', authRouter);
 app.use('/api/players', playersRouter);
 app.use('/api/players', ratingsRouter); // ratings вложены в players
+app.use('/api/control', controlRouter);
+app.use('/api/overlay', overlayRouter);
 
 // Health-check
 app.get('/api/health', (_req, res) => {
@@ -116,6 +117,10 @@ const distDir = path.resolve(__dirname, '..', 'dist');
 // Явные страницы (до express.static и до SPA-фолбэка!)
 app.get('/overlay', (_req, res) => {
   res.sendFile(path.join(distDir, 'overlay.html'));
+});
+
+app.get('/control', (_req, res) => {
+  res.sendFile(path.join(distDir, 'control.html'));
 });
 
 // Общая статика (assets, favicon и т.д.)

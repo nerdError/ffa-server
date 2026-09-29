@@ -50,6 +50,26 @@ export function bindAuth(cb: AuthCallbacks): void {
                 body: { identifier, password },
             });
             saveSession(res.user, res.access_token);
+
+            try {
+                const me = await apiRequest<{
+                    user: { 
+                        id: string; 
+                        email: string; 
+                        username: string | null 
+                    };
+                }>('/api/auth/me', { token: res.access_token });
+
+                saveSession(
+                    { 
+                        id: me.user.id, 
+                        email: me.user.email, 
+                        username: me.user.username 
+                    },
+                    res.access_token
+                );
+            } catch { }
+
             cb.renderUserBox();
             cb.onLoginSuccess();
         } catch (err) {

@@ -8,6 +8,10 @@ import { bindAuth } from './ui/auth';
 import { bindCreatePlayer, loadPlayers } from './ui/players';
 import { openPlayerScreen, showScreen } from './ui/player-detail';
 
+function getUsername(): string {
+    return state.user?.username || state.user?.email || '—';
+}
+
 // --- User box в шапке ---
 function renderUserBox(): void {
     const box = document.getElementById('user-box');
@@ -15,8 +19,16 @@ function renderUserBox(): void {
     box.innerHTML = '';
 
     if (state.user) {
+        // Ссылка на /control (для стримеров)
+        const controlLink = document.createElement('a');
+        controlLink.href = '/control';
+        controlLink.className = 'topbar-link';
+        controlLink.textContent = '🎬 Режим стримера';
+
+        // Ник пользователя (или email, если ник не загружен)
         const span = document.createElement('span');
-        span.textContent = state.user.email;
+        span.className = 'topbar-username';
+        span.textContent = state.user.username || state.user.email;
 
         const btn = document.createElement('button');
         btn.textContent = 'Выйти';
@@ -28,16 +40,14 @@ function renderUserBox(): void {
                         method: 'POST',
                         token: state.token,
                     });
-                } catch {
-                    /* игнорируем — токен всё равно протухнет */
-                }
+                } catch { }
                 clearSession();
                 renderUserBox();
                 showScreen('screen-auth');
             })();
         });
 
-        box.append(span, btn);
+        box.append(controlLink, span, btn);
     } else {
         const span = document.createElement('span');
         span.textContent = 'Вы не авторизованы';
@@ -106,7 +116,11 @@ async function init(): Promise<void> {
 
         // Обновляем user в state (сохранится в localStorage через saveSession)
         saveSession(
-            { id: me.user.id, email: me.user.email },
+            {
+                id: me.user.id,
+                email: me.user.email,
+                username: me.user.username,
+            },
             state.token
         );
         renderUserBox();
@@ -117,14 +131,14 @@ async function init(): Promise<void> {
         } else {
             void openPlayersScreen();
         }
-    } 
+    }
     catch (err) {
         await waitMinLoader();
         if (err instanceof ApiRequestError && err.status === 401) {
             clearSession();
         }
         renderUserBox();
-        
+
         if (playerIdFromUrl !== null) {
             void openPlayerScreen(playerIdFromUrl);
         } else {
