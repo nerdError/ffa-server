@@ -135,32 +135,54 @@ function handleState(state: OverlayState): void {
     currentPlayerId = state.currentPlayerId;
 }
 
-function connectSSE(): void {
-    const es = new EventSource('/api/overlay/stream');
+function connectSSE(token: string): void {
+  const url = `/api/overlay/stream?token=${encodeURIComponent(token)}`;
+  const es = new EventSource(url);
 
-    es.addEventListener('message', (e) => {
-        try {
-            const state = JSON.parse(e.data) as OverlayState;
-            handleState(state);
-        } catch (err) {
-            console.error('[overlay] failed to parse SSE message', err);
-        }
-    });
+  es.addEventListener('message', (e) => {
+    try {
+      const state = JSON.parse(e.data) as OverlayState;
+      handleState(state);
+    } catch (err) {
+      console.error('[overlay] failed to parse SSE message', err);
+    }
+  });
 
-    es.addEventListener('error', () => {
-        console.warn('[overlay] SSE error, reconnecting…');
-    });
+  es.addEventListener('error', () => {
+    console.warn('[overlay] SSE error, reconnecting…');
+  });
+}
+
+/**
+ * Читает токен из URL: /overlay?token=abc123
+ */
+function getTokenFromUrl(): string | null {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+  return token && token.length > 0 ? token : null;
 }
 
 async function init(): Promise<void> {
-    try {
-        const state = await apiRequest<OverlayState>('/api/overlay/state');
-        handleState(state);
-    } catch (err) {
-        console.warn('[overlay] failed to fetch initial state', err);
-    }
+  const token = getTokenFromUrl();
+  if (!token) {
+    showError('Не указан токен оверлея. Получите ссылку в панели управления.');
+    return;
+  }
 
-    connectSSE();
+  // Загружаем начальное состояние
+  try {
+    const state = await apiRequest<OverlayState>(
+      `/api/overlay/state?token=${encodeURIComponent(token)}`
+    );
+    handleState(state);
+  } catch (err) {
+    console.error('[overlay] failed to fetch initial state', err);
+    showError('Неверный токен оверлея. Перевыпустите токен в панели управления.');
+    return;
+  }
+
+  // Подключаем SSE
+  connectSSE(token);
 }
 
 const CARD_BASE_W = 960;
@@ -176,6 +198,22 @@ function fitCardToScreen(scaler: HTMLElement): void {
   };
   update();
   window.addEventListener('resize', update);
+}
+
+/**
+ * Показывает сообщение об ошибке поверх оверлея (полезно для отладки).
+ */
+function showError(message: string): void {
+  if (!root) return;
+  root.innerHTML = `
+    <div style="
+      color: #e74c3c;
+      font-family: 'Zekton', sans-serif;
+      font-size: 20px;
+      text-align: center;
+      padding: 40px;
+    ">${message}</div>
+  `;
 }
 
 void init();

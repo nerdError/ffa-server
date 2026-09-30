@@ -31,33 +31,42 @@
     </p>
 
     <div class="control-overlay-url">
-      <input
-        type="text"
-        id="overlay-url"
-        class="control-input control-overlay-input"
-        readonly
-        value=""
-      />
-      <button
-        type="button"
-        id="btn-copy-url"
-        class="control-copy-btn"
-        title="Скопировать ссылку"
-      >
-        <span class="control-copy-icon">⧉</span>
-        <span class="control-copy-label">Копировать</span>
-      </button>
-      <a
-        href="/overlay"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="control-open-btn"
-        title="Открыть оверлей в новой вкладке"
-      >
-        <span class="control-open-icon">↗</span>
-        <span class="control-open-label">Открыть</span>
-      </a>
-    </div>
+  <input
+    type="text"
+    id="overlay-url"
+    class="control-input control-overlay-input"
+    readonly
+    value=""
+  />
+  <button
+    type="button"
+    id="btn-copy-url"
+    class="control-copy-btn"
+    title="Скопировать ссылку"
+  >
+    <span class="control-copy-icon">⧉</span>
+    <span class="control-copy-label">Копировать</span>
+  </button>
+  <a
+    href="/overlay"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="control-open-btn"
+    title="Открыть оверлей в новой вкладке"
+  >
+    <span class="control-open-icon">↗</span>
+    <span class="control-open-label">Открыть</span>
+  </a>
+  <button
+    type="button"
+    id="btn-regenerate-token"
+    class="control-regen-btn"
+    title="Перевыпустить токен (старая ссылка перестанет работать)"
+  >
+    <span class="control-regen-icon">↻</span>
+    <span class="control-regen-label">Перевыпустить</span>
+  </button>
+</div>
   </section>
 
   <!-- Секция: игроки -->

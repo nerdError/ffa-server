@@ -353,14 +353,28 @@
 
 .control-overlay-url {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto auto auto;
   gap: 8px;
   align-items: stretch;
+}
+
+
+@media (max-width: 900px) {
+  .control-overlay-url {
+    grid-template-columns: 1fr auto auto;
+  }
+  /* «Перевыпустить» переносится на следующую строку */
+  .control-regen-btn {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 560px) {
   .control-overlay-url {
     grid-template-columns: 1fr;
+  }
+  .control-regen-btn {
+    grid-column: auto;
   }
 }
 
@@ -445,4 +459,48 @@
   .control-open-btn {
     padding: 14px 16px;
   }
+}
+
+.control-regen-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 18px;
+  border-radius: 3px;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  min-height: 48px;
+  border: 1.5px solid;
+  background: rgba(231, 76, 60, 0.1);
+  border-color: rgba(231, 76, 60, 0.5);
+  color: #e74c3c;
+}
+
+.control-regen-btn:hover {
+  background: rgba(231, 76, 60, 0.2);
+  border-color: #e74c3c;
+  box-shadow: 0 0 12px rgba(231, 76, 60, 0.4);
+}
+
+.control-regen-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.control-regen-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+@media (max-width: 420px) {
+  .control-regen-label { display: none; }
+  .control-regen-btn { padding: 14px 16px; }
 }

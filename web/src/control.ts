@@ -3,6 +3,7 @@ import './styles/control.css';
 import { apiRequest } from './api';
 import type { PlayerWithStats, PlayersListResponse } from './types';
 import { pickRaceColor } from './radar';
+import { state } from './state';
 
 interface OverlaySettings {
     animation: 'fade' | 'slide-left' | 'slide-right' | 'slide-up' | 'slide-down' | 'none';
@@ -192,25 +193,49 @@ const copyUrlBtn = document.getElementById('btn-copy-url') as HTMLButtonElement 
 /**
  * Собирает URL оверлея на основе текущего origin.
  */
-function buildOverlayUrl(): string {
-    return `${window.location.origin}/overlay`;
+function buildOverlayUrl(token: string): string {
+    const origin = window.location.origin;
+    return `${origin}/overlay?token=${token}`;
 }
 
 /**
  * Настраивает панель с ссылкой для OBS.
  */
-function setupOverlayPanel(): void {
-    const url = buildOverlayUrl();
-    if (overlayUrlInput) {
-        overlayUrlInput.value = url;
-        // Клик по полю — выделяем всё, чтобы легко скопировать вручную
-        overlayUrlInput.addEventListener('focus', () => overlayUrlInput.select());
+async function setupOverlayPanel(): Promise<void> {
+    const overlayUrlInput = document.getElementById('overlay-url') as HTMLInputElement | null;
+    const copyUrlBtn = document.getElementById('btn-copy-url') as HTMLButtonElement | null;
+    const regenBtn = document.getElementById('btn-regenerate-token') as HTMLButtonElement | null;
+
+    if (!overlayUrlInput || !copyUrlBtn || !regenBtn) return;
+
+    let currentUrl = '';
+
+    const updateUrl = (token: string): void => {
+        currentUrl = `${window.location.origin}/overlay?token=${token}`;
+        overlayUrlInput.value = currentUrl;
+    };
+
+    // Загружаем (или создаём) токен
+    try {
+        const res = await apiRequest<{ token: string }>('/api/control/token', {
+            token: state.token,
+        });
+        currentToken = res.token;
+        updateUrl(res.token);
+        // подписываемся на SSE
+        connectControlSSE(res.token);
+    } catch (err) {
+        console.error('[control] failed to fetch overlay token:', err);
+        overlayUrlInput.value = '— ошибка загрузки токена —';
     }
 
-    copyUrlBtn?.addEventListener('click', async () => {
+    overlayUrlInput.addEventListener('focus', () => overlayUrlInput.select());
+
+    // Копирование
+    copyUrlBtn.addEventListener('click', async () => {
+        if (!currentUrl) return;
         try {
-            await navigator.clipboard.writeText(url);
-            // Визуальный фидбэк
+            await navigator.clipboard.writeText(currentUrl);
             copyUrlBtn.classList.add('is-copied');
             const label = copyUrlBtn.querySelector('.control-copy-label');
             const icon = copyUrlBtn.querySelector('.control-copy-icon');
@@ -225,13 +250,66 @@ function setupOverlayPanel(): void {
                 if (icon) icon.textContent = originalIcon;
             }, 1800);
         } catch {
-            // Fallback — выделить текст в поле
-            if (overlayUrlInput) {
-                overlayUrlInput.focus();
-                overlayUrlInput.select();
-                alert('Скопируйте ссылку вручную (Ctrl+C / Cmd+C)');
-            }
+            overlayUrlInput.focus();
+            overlayUrlInput.select();
+            alert('Скопируйте ссылку вручную (Ctrl+C / Cmd+C)');
         }
+    });
+
+    // Перевыпуск
+    regenBtn.addEventListener('click', async () => {
+        const confirmed = confirm(
+            'Перевыпустить токен?\n\n' +
+            'Старая ссылка для OBS перестанет работать. ' +
+            'Вам нужно будет обновить её в источнике OBS.'
+        );
+        if (!confirmed) return;
+
+        try {
+            regenBtn.disabled = true;
+            const originalLabel = regenBtn.querySelector('.control-regen-label')?.textContent ?? '';
+            const label = regenBtn.querySelector('.control-regen-label');
+            if (label) label.textContent = 'Обновление…';
+
+            const res = await apiRequest<{ token: string }>('/api/control/token/regenerate', {
+                method: 'POST',
+                token: state.token,
+            });
+
+            updateUrl(res.token);
+
+            if (label) {
+                label.textContent = 'Готово';
+                setTimeout(() => {
+                    label.textContent = originalLabel;
+                }, 1500);
+            }
+        } catch (err) {
+            alert('Не удалось перевыпустить токен: ' +
+                (err instanceof Error ? err.message : String(err)));
+        } finally {
+            regenBtn.disabled = false;
+        }
+    });
+}
+
+let currentToken: string | null = null;
+
+function connectControlSSE(token: string): void {
+    const url = `/api/overlay/stream?token=${encodeURIComponent(token)}`;
+    const es = new EventSource(url);
+
+    es.addEventListener('message', (e) => {
+        try {
+            const state = JSON.parse(e.data) as OverlayState;
+            renderState(state);
+        } catch (err) {
+            console.error('[control] failed to parse SSE message', err);
+        }
+    });
+
+    es.addEventListener('error', () => {
+        console.warn('[control] SSE error, reconnecting…');
     });
 }
 

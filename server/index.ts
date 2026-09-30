@@ -11,6 +11,8 @@ import { execFile } from 'node:child_process';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { controlRouter } from './routes/control.js';
 import { overlayRouter } from './routes/overlay.js';
+import { supabaseAdmin } from '../lib/supabase-admin';
+import { authenticate } from '../lib/auth';
 
 const execFileAsync = promisify(execFile);
 
@@ -108,6 +110,32 @@ app.use('/api/overlay', overlayRouter);
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, ts: Date.now() });
 });
+
+// app.get('/api/debug/admin-check', async (_req, res) => {
+//   try {
+//     const { data, error } = await supabaseAdmin
+//       .from('overlay_tokens')
+//       .select('user_id, token')
+//       .limit(1);
+
+//     if (error) {
+//       return res.status(500).json({ ok: false, error: error.message });
+//     }
+
+//     res.json({ ok: true, count: data?.length ?? 0 });
+//   } catch (err) {
+//     res.status(500).json({
+//       ok: false,
+//       error: err instanceof Error ? err.message : String(err),
+//     });
+//   }
+// });
+
+// app.get('/api/debug/whoami', async (req, res) => {
+//   const auth = await authenticate(req);
+//   if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+//   res.json({ id: auth.user.id, email: auth.user.email });
+// });
 
 // ============================================================
 // Статика: раздаём собранный фронтенд из dist/
