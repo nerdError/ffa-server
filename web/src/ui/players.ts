@@ -225,7 +225,7 @@ function renderPlayersTable(
 
         // Итого — сумма всех средних
         const tdTotal = document.createElement('td');
-        tdTotal.className = 'total-cell';
+        tdTotal.className = 'total-cell col-mobile-hide';
 
         const total = STAT_ORDER.reduce((sum, axis) => {
             const v = p[axis.key];

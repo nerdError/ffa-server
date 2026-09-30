@@ -608,4 +608,8 @@
   .players-table .col-mobile-hide {
     display: none;
   }
+
+ .players-table .col-mobile-hide {
+    display: none;
+  }
 }
