@@ -53,6 +53,8 @@ export function bindAuth(cb: AuthCallbacks): void {
             saveSession(res.user, res.access_token, res.refresh_token);
 
             try {
+                console.log("apiRequest('/api/auth/me')");
+
                 const me = await apiRequest<{
                     user: {
                         id: string;

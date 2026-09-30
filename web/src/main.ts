@@ -188,6 +188,9 @@ async function init(): Promise<void> {
 
     // Залогинен — валидируем токен
     try {
+
+        console.log("apiRequest('/api/auth/me')");
+        
         const me = await apiRequest<{
             user: { id: string; email: string; username: string | null; is_moderator: boolean, is_admin: boolean };
         }>('/api/auth/me', { token: state.token });

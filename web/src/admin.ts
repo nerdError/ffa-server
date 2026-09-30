@@ -27,6 +27,8 @@ interface AdminUsersResponse {
 async function checkAdmin(): Promise<boolean> {
     if (!state.token || !state.user) return false;
     try {
+        console.log("apiRequest('/api/auth/me')");
+
         const me = await apiRequest<{
             user: { id: string; is_admin: boolean };
         }>('/api/auth/me', { token: state.token });
