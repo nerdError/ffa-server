@@ -180,8 +180,8 @@ async function init(): Promise<void> {
         if (playerIdFromUrl !== null) {
             void openPlayerScreen(playerIdFromUrl);
         } else {
-            // navigateTo('screen-auth');
-            void openPlayersScreen();
+            navigateTo('screen-auth');
+            // void openPlayersScreen();
         }
         return;
     }
@@ -190,7 +190,7 @@ async function init(): Promise<void> {
     try {
 
         console.log("apiRequest('/api/auth/me')");
-        
+
         const me = await apiRequest<{
             user: { id: string; email: string; username: string | null; is_moderator: boolean, is_admin: boolean };
         }>('/api/auth/me', { token: state.token });
@@ -213,6 +213,7 @@ async function init(): Promise<void> {
             void openPlayerScreen(playerIdFromUrl);
         } else {
             void openPlayersScreen();
+            //  navigateTo('screen-auth');
         }
     } catch (err) {
         await waitMinLoader();
@@ -224,8 +225,8 @@ async function init(): Promise<void> {
         if (playerIdFromUrl !== null) {
             void openPlayerScreen(playerIdFromUrl);
         } else {
-            // navigateTo('screen-auth');
-            void openPlayersScreen();
+            navigateTo('screen-auth');
+            // void openPlayersScreen();
         }
     }
 

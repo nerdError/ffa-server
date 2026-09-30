@@ -48,20 +48,20 @@ export async function apiRequest<T>(
     let res = await fetch(path, init);
 
     // Если 401 — пробуем обновить токен и повторить
-    // if (
-    //     res.status === 401 &&
-    //     options.token &&
-    //     state.refreshToken &&
-    //     !path.includes('/api/auth/refresh')   // ← ЗАЩИТА ОТ РЕКУРСИИ
-    // ) {
-    //     const newToken = await refreshAccessToken();
-    //     if (newToken) {
-    //         // Повторяем запрос с новым токеном
-    //         const retryHeaders: Record<string, string> = { ...headers };
-    //         retryHeaders['Authorization'] = `Bearer ${newToken}`;
-    //         res = await fetch(path, { ...init, headers: retryHeaders });
-    //     }
-    // }
+    if (
+        res.status === 401 &&
+        options.token &&
+        state.refreshToken &&
+        !path.includes('/api/auth/refresh')   // ← ЗАЩИТА ОТ РЕКУРСИИ
+    ) {
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+            // Повторяем запрос с новым токеном
+            const retryHeaders: Record<string, string> = { ...headers };
+            retryHeaders['Authorization'] = `Bearer ${newToken}`;
+            res = await fetch(path, { ...init, headers: retryHeaders });
+        }
+    }
 
     let payload: unknown = null;
     const text = await res.text();
