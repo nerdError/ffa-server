@@ -5,6 +5,10 @@ import type { PlayerWithStats, PlayersListResponse } from './types';
 import { pickRaceColor } from './radar';
 import { state } from './state';
 
+console.log('[control] token:', state.token);   // временно
+
+const openBtn = document.getElementById('btn-open-overlay') as HTMLAnchorElement | null;
+
 interface OverlaySettings {
     animation: 'fade' | 'slide-left' | 'slide-right' | 'slide-up' | 'slide-down' | 'none';
     autoHide: boolean;
@@ -96,8 +100,11 @@ function renderState(state: OverlayState): void {
 
 async function fetchState(): Promise<void> {
     try {
-        const state = await apiRequest<OverlayState>('/api/control/state');
-        renderState(state);
+        const stateRes = await apiRequest<OverlayState>('/api/control/state', {
+            token: state.token,
+        });
+
+        renderState(stateRes);
         if (statusBox) {
             statusBox.textContent = '● Подключено';
             statusBox.classList.remove('is-error');
@@ -115,6 +122,7 @@ async function fetchState(): Promise<void> {
 async function showPlayer(playerId: number): Promise<void> {
     try {
         const res = await apiRequest<{ state: OverlayState }>('/api/control/show', {
+            token: state.token,
             method: 'POST',
             body: { playerId },
         });
@@ -127,6 +135,7 @@ async function showPlayer(playerId: number): Promise<void> {
 async function hidePlayer(): Promise<void> {
     try {
         const res = await apiRequest<{ state: OverlayState }>('/api/control/hide', {
+            token: state.token,
             method: 'POST',
         });
         renderState(res.state);
@@ -138,6 +147,7 @@ async function hidePlayer(): Promise<void> {
 async function updateSettings(patch: Partial<OverlaySettings>): Promise<void> {
     try {
         const res = await apiRequest<{ state: OverlayState }>('/api/control/settings', {
+            token: state.token,
             method: 'POST',
             body: patch,
         });
@@ -174,7 +184,9 @@ async function init(): Promise<void> {
     setupOverlayPanel();   // ← НОВОЕ
 
     try {
-        const res = await apiRequest<PlayersListResponse>('/api/players');
+        const res = await apiRequest<PlayersListResponse>('/api/players', {
+            token: state.token,
+        });
         cachedPlayers = res.players.filter((p) => p.vote_count > 0);
         renderPlayers('');
     } catch {
@@ -213,6 +225,7 @@ async function setupOverlayPanel(): Promise<void> {
     const updateUrl = (token: string): void => {
         currentUrl = `${window.location.origin}/overlay?token=${token}`;
         overlayUrlInput.value = currentUrl;
+        if (openBtn) openBtn.href = currentUrl;   // ← обновляем href
     };
 
     // Загружаем (или создаём) токен
@@ -220,6 +233,9 @@ async function setupOverlayPanel(): Promise<void> {
         const res = await apiRequest<{ token: string }>('/api/control/token', {
             token: state.token,
         });
+
+        console.log('[control] token:', state.token);   // временно
+
         currentToken = res.token;
         updateUrl(res.token);
         // подписываемся на SSE
