@@ -14,5 +14,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
  * Используется для регистрации/логина и для анонимных запросов на чтение.
  */
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: { persistSession: false, autoRefreshToken: false },
+  auth: {
+    persistSession: true,        // ← обязательно, чтобы сессия сохранялась
+    autoRefreshToken: true,      // ← включает автообновление
+    detectSessionInUrl: true,    // ← нужно для подтверждения email и OAuth
+  },
 });
