@@ -70,30 +70,32 @@
 
             <!-- Вид 1: таблица (существующая) -->
             <div id="players-table-view">
-                <table class="players-table">
-                    <thead>
-                        <tr>
-                            <th data-sort-key="name" data-label="Игрок">Игрок</th>
-                            <th class="col-mobile-hide">Расы</th>
+                <div class="players-table-wrap">
+                    <table class="players-table">
+                        <thead>
+                            <tr>
+                                <th data-sort-key="name" data-label="Игрок">Игрок</th>
+                                <th class="col-mobile-hide">Расы</th>
 
-                            <!-- Десктопные колонки статов -->
-                            <th class="col-desktop" data-sort-key="adaptiveness" data-label="Адаптивность">Адаптивность
-                            </th>
-                            <th class="col-desktop" data-sort-key="aggression" data-label="Агрессия">Агрессия</th>
-                            <th class="col-desktop" data-sort-key="turtle" data-label="Черепашность">Черепашность</th>
-                            <th class="col-desktop" data-sort-key="variety" data-label="Разнообразие">Разнообразие</th>
-                            <th class="col-desktop" data-sort-key="survival" data-label="Выживание">Выживание</th>
-                            <th class="col-desktop" data-sort-key="greed" data-label="Халява">Халява</th>
+                                <!-- Десктопные колонки статов -->
+                                <th class="col-desktop" data-sort-key="adaptiveness" data-label="Адаптивность">Адаптивность
+                                </th>
+                                <th class="col-desktop" data-sort-key="aggression" data-label="Агрессия">Агрессия</th>
+                                <th class="col-desktop" data-sort-key="turtle" data-label="Черепашность">Черепашность</th>
+                                <th class="col-desktop" data-sort-key="variety" data-label="Разнообразие">Разнообразие</th>
+                                <th class="col-desktop" data-sort-key="survival" data-label="Выживание">Выживание</th>
+                                <th class="col-desktop" data-sort-key="greed" data-label="Халява">Халява</th>
 
-                            <!-- Мобильная колонка со статами (по умолчанию скрыта) -->
-                            <th class="col-mobile">Статы</th>
+                                <!-- Мобильная колонка со статами (по умолчанию скрыта) -->
+                                <th class="col-mobile">Статы</th>
 
-                            <th data-sort-key="total" data-label="Итого" class="total-col col-mobile-hide">Итого</th>
-                            <th class="players-actions-header"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="players-tbody"></tbody>
-                </table>
+                                <th data-sort-key="total" data-label="Итого" class="total-col col-mobile-hide">Итого</th>
+                                <th class="players-actions-header"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="players-tbody"></tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Вид 2: стена со стилями игры -->
