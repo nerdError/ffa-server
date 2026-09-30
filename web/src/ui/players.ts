@@ -183,7 +183,10 @@ function renderPlayersTable(
         tr.appendChild(tdName);
 
         // Расы
-        tr.appendChild(fmtRaceCells(p.races));
+        // Расы (скрывается на мобиле)
+        const tdRaces = fmtRaceCells(p.races);
+        tdRaces.classList.add('col-mobile-hide');
+        tr.appendChild(tdRaces);
 
         // --- Мобильная ячейка со статами: цепочка букв ---
         const tdStatsMobile = document.createElement('td');

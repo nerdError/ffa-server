@@ -603,3 +603,9 @@
 .players-table td.stat-cell {
   border-bottom: none;
 }
+
+@media (max-width: 700px) {
+  .players-table .col-mobile-hide {
+    display: none;
+  }
+}
