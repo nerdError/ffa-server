@@ -54,17 +54,14 @@ export function renderUserBox(): void {
         btn.addEventListener('click', () => {
             void (async () => {
                 try {
-                    await apiRequest('/api/auth/logout', {
-                        method: 'POST',
-                        token: state.token,
-                    });
+                    await apiRequest('/api/auth/logout', { method: 'POST', token: state.token });
                 } catch { }
                 clearSession();
-                renderUserBox();
-                showScreen('screen-auth');
+                showScreen('screen-auth');   // ← СНАЧАЛА меняем экран
+                renderUserBox();             // ← ПОТОМ перерисовываем шапку
             })();
         });
-        
+
         box.append(controlLink);
         if (adminBtn) box.append(adminBtn);
         box.append(nameWrap, btn);
@@ -260,20 +257,24 @@ copyDiscord?.addEventListener('click', async () => {
 });
 
 window.addEventListener('popstate', () => {
-  const params = new URLSearchParams(window.location.search);
-  const playerParam = params.get('player');
+    const params = new URLSearchParams(window.location.search);
+    const playerParam = params.get('player');
 
-  if (!playerParam) {
-    // Вернулись к списку
-    void openPlayersScreen();
-    return;
-  }
-
-  // Открываем карточку игрока
-  void (async () => {
-    const id = await resolvePlayerIdFromParam(playerParam);
-    if (id !== null) {
-      void openPlayerScreen(id);
+    if (!playerParam) {
+        // Вернулись к списку
+        void openPlayersScreen();
+        return;
     }
-  })();
+
+    // Открываем карточку игрока
+    void (async () => {
+        const id = await resolvePlayerIdFromParam(playerParam);
+        if (id !== null) {
+            void openPlayerScreen(id);
+        }
+    })();
+});
+
+window.addEventListener('session:changed', () => {
+  renderUserBox();
 });

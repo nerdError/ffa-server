@@ -540,3 +540,34 @@
   color: #e74c3c;
   box-shadow: 0 0 8px rgba(231, 76, 60, 0.4);
 }
+
+/* =========================================
+   Поиск игроков на главной
+   ========================================= */
+/* =========================================
+   Поиск игроков на главной
+   ========================================= */
+.players-search {
+  flex: 1;
+  min-width: 220px;
+  max-width: 340px;
+  padding: 10px 14px;
+  background: var(--bg-panel-light);
+  border: 1px solid var(--border-glow);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  letter-spacing: 0.3px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.players-search::placeholder {
+  color: var(--text-muted);
+}
+
+.players-search:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 8px rgba(241, 196, 15, 0.3);
+}

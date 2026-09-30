@@ -13,7 +13,7 @@
 <body>
     <header class="topbar">
         <h1>SC2 FFA LEAGUE <span class="subtitle">// PLAYER DATABASE</span></h1>
-       <div id="user-box" class="user-box"></div>
+        <div id="user-box" class="user-box"></div>
     </header>
 
     <main id="app">
@@ -46,16 +46,19 @@
         <section id="screen-players" class="screen hidden">
             <div class="toolbar">
                 <h2>Игроки</h2>
+                <div class="toolbar-actions">
+                    <input type="text" id="players-search" class="players-search" placeholder="Поиск по имени или aka…"
+                        autocomplete="off" />
+                    <div class="view-toggle" id="view-toggle">
+                        <button type="button" class="view-toggle-btn is-active" data-view="table">☰ Таблица</button>
+                        <button type="button" class="view-toggle-btn" data-view="wall">◈ Карточки</button>
+                    </div>
 
-                <div class="view-toggle" id="view-toggle">
-                    <button type="button" class="view-toggle-btn is-active" data-view="table">☰ Таблица</button>
-                    <button type="button" class="view-toggle-btn" data-view="wall">◈ Стили игры</button>
+                    <form id="form-create-player" class="inline-form">
+                        <input type="text" name="name" placeholder="Имя нового игрока" required maxlength="100" />
+                        <button type="submit">Добавить</button>
+                    </form>
                 </div>
-
-                <form id="form-create-player" class="inline-form">
-                    <input type="text" name="name" placeholder="Имя нового игрока" required maxlength="100" />
-                    <button type="submit">Добавить</button>
-                </form>
             </div>
 
             <div id="players-error" class="error hidden"></div>

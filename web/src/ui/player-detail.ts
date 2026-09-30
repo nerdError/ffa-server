@@ -314,6 +314,7 @@ function renderCard(pane: HTMLElement, player: PlayerWithStats): void {
 export function showScreen(id: string): void {
     document.querySelectorAll('.screen').forEach((s) => s.classList.add('hidden'));
     document.getElementById(id)?.classList.remove('hidden');
+    window.dispatchEvent(new Event('session:changed'));
 }
 
 export function navigateTo(id: string): void {

@@ -49,22 +49,27 @@ export function bindAuth(cb: AuthCallbacks): void {
                 method: 'POST',
                 body: { identifier, password },
             });
+
             saveSession(res.user, res.access_token);
 
             try {
                 const me = await apiRequest<{
-                    user: { 
-                        id: string; 
-                        email: string; 
-                        username: string | null 
+                    user: {
+                        id: string;
+                        email: string;
+                        username: string | null;
+                        is_moderator: boolean;
+                        is_admin: boolean;
                     };
                 }>('/api/auth/me', { token: res.access_token });
 
                 saveSession(
-                    { 
-                        id: me.user.id, 
-                        email: me.user.email, 
+                    {
+                        id: me.user.id,
+                        email: me.user.email,
                         username: me.user.username,
+                        is_moderator: me.user.is_moderator,
+                        is_admin: me.user.is_admin,
                     },
                     res.access_token
                 );

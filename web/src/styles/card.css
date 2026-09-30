@@ -247,3 +247,13 @@
 .player-card--compact .pc-name { font-size: 28px; }
 .player-card--compact .pc-icon-box { width: 64; height: 64px; }
 .player-card--compact .pc-legend-row { font-size: 13px; padding: 4px 8px; }
+
+.pc-aka {
+  font-size: 0.65em;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  margin-left: 6px;
+  text-transform: none;
+  opacity: 0.8;
+}

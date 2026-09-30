@@ -83,12 +83,20 @@ export async function loadPlayers(cb: PlayersCallbacks): Promise<void> {
     errBox.classList.add('hidden');
     tbody.innerHTML = '<tr><td colspan="10">Загрузка…</td></tr>';
 
+    const searchInput = document.getElementById('players-search') as HTMLInputElement | null;
+
+    searchInput?.addEventListener('input', () => {
+        searchQuery = searchInput.value.trim().toLowerCase();
+        // Перерисовываем текущий вид — таблицу или стену
+        setView(currentView, cb);
+    });
+
     try {
         const { players } = await apiRequest<PlayersListResponse>('/api/players');
         cachedPlayers = players;
 
         // 1. Навешиваем обработчики ОДИН РАЗ
-        bindViewToggle();
+        bindViewToggle(cb);
 
         // 2. Определяем сохранённый вид (если ещё не задан)
         if (!viewInitialized) {
@@ -98,7 +106,7 @@ export async function loadPlayers(cb: PlayersCallbacks): Promise<void> {
         }
 
         // 3. Применяем вид
-        setView(currentView);
+        setView(currentView, cb);
     } catch (err) {
         errBox.textContent =
             'Не удалось загрузить игроков: ' +
@@ -109,48 +117,53 @@ export async function loadPlayers(cb: PlayersCallbacks): Promise<void> {
 }
 
 function fmtRaceCells(races: PlayerWithStats['races']): HTMLTableCellElement {
-  const td = document.createElement('td');
-  td.className = 'races-cell';
+    const td = document.createElement('td');
+    td.className = 'races-cell';
 
-  if (races.length === 0) {
-    td.textContent = '—';
+    if (races.length === 0) {
+        td.textContent = '—';
+        return td;
+    }
+
+    // Внутренняя обёртка — flex-контейнер, а сам td остаётся table-cell
+    const inner = document.createElement('div');
+    inner.className = 'races-cell-inner';
+
+    for (const r of races) {
+        const img = document.createElement('img');
+        img.src = RACE_ICON_URL[r];
+        img.alt = RACE_LABELS[r];
+        img.title = RACE_LABELS[r];
+        img.className = `race-icon race-icon-${r}`;
+        inner.appendChild(img);
+    }
+
+    td.appendChild(inner);
     return td;
-  }
-
-  // Внутренняя обёртка — flex-контейнер, а сам td остаётся table-cell
-  const inner = document.createElement('div');
-  inner.className = 'races-cell-inner';
-
-  for (const r of races) {
-    const img = document.createElement('img');
-    img.src = RACE_ICON_URL[r];
-    img.alt = RACE_LABELS[r];
-    img.title = RACE_LABELS[r];
-    img.className = `race-icon race-icon-${r}`;
-    inner.appendChild(img);
-  }
-
-  td.appendChild(inner);
-  return td;
 }
 
 function renderPlayersTable(
-    players: PlayerWithStats[],
+    _players: PlayerWithStats[],
     cb: PlayersCallbacks
 ): void {
     const tbody = document.getElementById('players-tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
 
+    const filtered = searchQuery
+        ? _players.filter((p) =>
+            p.name.toLowerCase().includes(searchQuery) ||
+            (p.aka ?? '').toLowerCase().includes(searchQuery)
+        )
+        : _players;
 
-
-    if (players.length === 0) {
+    if (filtered.length === 0) {
         tbody.innerHTML =
             '<tr><td colspan="9" class="hint">Пока нет игроков.</td></tr>';
         return;
     }
 
-    for (const p of players) {
+    for (const p of filtered) {
         const tr = document.createElement('tr');
 
         // Имя (ссылка) — в цвет расы
@@ -471,6 +484,8 @@ type ViewMode = 'table' | 'wall';
 
 let currentView: ViewMode = 'table';
 
+let searchQuery = '';
+
 /**
  * Строит одну плитку игрока для стены.
  */
@@ -535,19 +550,28 @@ function buildTile(player: PlayerWithStats): HTMLAnchorElement {
 /**
  * Рендерит стену из массива игроков.
  */
-function renderWall(players: PlayerWithStats[]): void {
+function renderWall(_players: PlayerWithStats[]): void {
     const wall = document.getElementById('players-wall');
     if (!wall) return;
 
+    const filtered = searchQuery
+        ? _players.filter((p) =>
+            p.name.toLowerCase().includes(searchQuery) ||
+            (p.aka ?? '').toLowerCase().includes(searchQuery)
+        )
+        : _players;
+
+
     wall.innerHTML = '';
 
-    if (players.length === 0) {
-        wall.innerHTML = '<p class="hint">Пока нет игроков.</p>';
+    if (filtered.length === 0) {
+        wall.innerHTML = searchQuery
+            ? '<p class="hint">Ничего не найдено</p>'
+            : '<p class="hint">Пока нет игроков</p>';
         return;
     }
-
     // Сортируем по «Итого» по убыванию
-    const sorted = [...players].sort((a, b) => {
+    const sorted = [...filtered].sort((a, b) => {
         const at = calcTotal(a) ?? -1;
         const bt = calcTotal(b) ?? -1;
         return bt - at;
@@ -561,32 +585,27 @@ function renderWall(players: PlayerWithStats[]): void {
 /**
  * Переключает вид: table ↔ wall.
  */
-function setView(view: ViewMode): void {
+function setView(view: ViewMode, cb: PlayersCallbacks): void {
     currentView = view;
 
     const tableView = document.getElementById('players-table-view');
     const wallView = document.getElementById('players-wall-view');
-
-    if (!tableView || !wallView) {
-        return;
-    }
+    if (!tableView || !wallView) return;
 
     if (view === 'table') {
         tableView.classList.remove('hidden');
         wallView.classList.add('hidden');
         renderPlayersTable(
             sortPlayers(cachedPlayers, sortKey, sortDirection),
-            { 
-                onOpenPlayer: (id) => void openPlayerScreen(id) 
-            }
+            cb
         );
-    } 
-    else {
+    } else {
         tableView.classList.add('hidden');
         wallView.classList.remove('hidden');
         renderWall(cachedPlayers);
     }
 
+    // Обновляем активную кнопку
     document.querySelectorAll<HTMLButtonElement>('.view-toggle-btn').forEach((btn) => {
         btn.classList.toggle('is-active', btn.dataset.view === view);
     });
@@ -599,7 +618,7 @@ function setView(view: ViewMode): void {
  */
 let viewToggleBound = false;
 
-function bindViewToggle(): void {
+function bindViewToggle(cb: PlayersCallbacks): void {
     if (viewToggleBound) return;
 
     const toggle = document.getElementById('view-toggle');
@@ -614,7 +633,7 @@ function bindViewToggle(): void {
 
         const view = target.dataset.view as ViewMode | undefined;
         if (view === 'table' || view === 'wall') {
-            setView(view);
+            setView(view, cb);
         }
     });
 

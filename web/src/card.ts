@@ -9,18 +9,18 @@ import protossIconUrl from '../assets/race/protoss.svg';
 import randomIconUrl from '../assets/race/random.svg';
 
 const RACE_ICON_URL: Record<Race, string> = {
-  T: terranIconUrl,
-  Z: zergIconUrl,
-  P: protossIconUrl,
-  R: randomIconUrl,
+    T: terranIconUrl,
+    Z: zergIconUrl,
+    P: protossIconUrl,
+    R: randomIconUrl,
 };
 
 const RACE_NAMES: Record<Race | 'MIXED', string> = {
-  T: 'Terran',
-  Z: 'Zerg',
-  P: 'Protoss',
-  R: 'Random',
-  MIXED: 'Mixed',
+    T: 'Terran',
+    Z: 'Zerg',
+    P: 'Protoss',
+    R: 'Random',
+    MIXED: 'Mixed',
 };
 
 const LEVEL_LETTERS: Record<number, string> = {
@@ -28,9 +28,9 @@ const LEVEL_LETTERS: Record<number, string> = {
 };
 
 export function dominantRace(races: Race[]): Race | 'MIXED' {
-  if (races.length === 0) return 'MIXED';
-  if (races.length === 1) return races[0] ?? 'MIXED';
-  return 'MIXED';
+    if (races.length === 0) return 'MIXED';
+    if (races.length === 1) return races[0] ?? 'MIXED';
+    return 'MIXED';
 }
 
 /**
@@ -75,6 +75,15 @@ export function buildPlayerCardElement(
     const nameEl = document.createElement('div');
     nameEl.className = 'pc-name';
     nameEl.textContent = player.name;
+
+    // aka — если есть
+    if (player.aka) {
+        const akaEl = document.createElement('span');
+        akaEl.className = 'pc-aka';
+        akaEl.textContent = ` aka ${player.aka}`;
+        nameEl.appendChild(akaEl);
+    }
+    
     const raceEl = document.createElement('div');
     raceEl.className = 'pc-race';
     raceEl.textContent = RACE_NAMES[race].toUpperCase() +

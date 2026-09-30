@@ -27,6 +27,7 @@ export const STAT_KEYS: readonly StatKey[] = [
 export interface PlayerWithStats {
   id: number;
   name: string;
+  aka: string | null;   // ← НОВОЕ
   races: Race[];
   vote_count: number;
   adaptiveness: number | null;
