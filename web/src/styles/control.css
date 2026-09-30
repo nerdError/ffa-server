@@ -21,6 +21,66 @@
   border-bottom: 2px solid var(--border-glow);
 }
 
+@media (max-width: 700px) {
+  .control-header {
+    padding: 12px 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .control-header h1 {
+    font-size: 0.95rem;
+    letter-spacing: 1.5px;
+    order: 3;
+    width: 100%;
+    text-align: center;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-glow);
+  }
+
+  .control-back {
+    padding: 8px 12px;
+    font-size: 0.75rem;
+  }
+
+  .control-back-label {
+    display: none;   /* только стрелка */
+  }
+
+  .control-status {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .control-overlay-input {
+    font-size: 0.7rem;      /* ← было 0.85 */
+    padding: 10px 10px;
+    word-break: break-all;   /* переносить длинные строки */
+  }
+
+  /* Сетку в столбик — уже сделано, проверим что работает */
+  .control-overlay-url {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  /* Кнопки — компактнее */
+  .control-copy-btn,
+  .control-open-btn,
+  .control-regen-btn {
+    padding: 12px 14px;
+    font-size: 0.75rem;
+  }
+
+  /* На очень узких — только иконки */
+  .control-copy-label,
+  .control-open-label,
+  .control-regen-label {
+    display: none;
+  }
+}
+
 .control-header h1 {
   margin: 0;
   font-size: 1.1rem;
@@ -371,10 +431,38 @@
 
 @media (max-width: 560px) {
   .control-overlay-url {
-    grid-template-columns: 1fr;
+    /* Все 4 элемента в одну строку: input + 3 кнопки */
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    gap: 6px;
   }
+
+  .control-overlay-input {
+    font-size: 0.7rem;
+    padding: 10px 10px;
+    min-width: 0;
+  }
+
+  .control-copy-btn,
+  .control-open-btn,
   .control-regen-btn {
-    grid-column: auto;
+    padding: 10px;
+    min-width: 44px;
+    min-height: 44px;
+    gap: 0;
+  }
+
+  /* Прячем тексты у кнопок, остаются только иконки */
+  .control-copy-label,
+  .control-open-label,
+  .control-regen-label {
+    display: none;
+  }
+
+  /* Увеличиваем иконки, чтобы были заметны */
+  .control-copy-icon,
+  .control-open-icon,
+  .control-regen-icon {
+    font-size: 1.1rem;
   }
 }
 
@@ -503,4 +591,13 @@
 @media (max-width: 420px) {
   .control-regen-label { display: none; }
   .control-regen-btn { padding: 14px 16px; }
+}
+
+.players-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Небольшая тень справа — намёк на скролл */
+  background:
+    linear-gradient(to right, transparent 0, transparent calc(100% - 20px), rgba(0,0,0,0.4) 100%);
+  background-attachment: local, scroll;
 }

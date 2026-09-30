@@ -7,6 +7,7 @@
   border-collapse: collapse;
   border: 1px solid var(--border-glow);
   box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  table-layout: auto;
 }
 
 .players-table th,
@@ -24,13 +25,31 @@
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 1px;
-  border-bottom: 2px solid var(--border-glow);
   white-space: nowrap;
 }
 
-.players-table tr:last-child td { border-bottom: none; }
-.players-table tbody tr:hover td { background: rgba(52, 152, 219, 0.05); }
+.players-table tr:last-child td {
+  border-bottom: none;
+}
 
+.players-table tbody tr:hover td {
+  background: rgba(52, 152, 219, 0.05);
+}
+
+/* =========================================
+   Ячейки статов — БЕЗ лишней полоски снизу
+   ========================================= */
+.players-table .stat-cell,
+.players-table td.col-desktop {
+  /* padding по вертикали = 8px, чтобы полоска не сливалась с border-bottom ячейки */
+  padding: 8px 14px;
+  min-width: 130px;
+  vertical-align: middle;
+}
+
+/* =========================================
+   Имя игрока
+   ========================================= */
 .player-name-link {
   color: inherit;
   cursor: pointer;
@@ -66,21 +85,18 @@
   border-color: var(--race-terran);
   text-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
 }
-
 .race-badge.race-Z {
   background: rgba(155, 89, 182, 0.15);
   color: var(--race-zerg);
   border-color: var(--race-zerg);
   text-shadow: 0 0 5px rgba(155, 89, 182, 0.5);
 }
-
 .race-badge.race-P {
   background: rgba(241, 196, 15, 0.15);
   color: var(--race-protoss);
   border-color: var(--race-protoss);
   text-shadow: 0 0 5px rgba(241, 196, 15, 0.5);
 }
-
 .race-badge.race-R {
   background: rgba(149, 165, 166, 0.15);
   color: var(--race-random);
@@ -89,26 +105,21 @@
 }
 
 /* =========================================
-   Колонка «Итого» — сумма всех параметров
+   Колонка «Итого»
    ========================================= */
 .players-table .total-col,
 .players-table .total-cell {
   text-align: right;
-  width: 100px;               /* ← было 60px или 80px */
+  width: 100px;
   font-family: var(--font-mono);
   font-weight: 700;
   color: var(--text-primary);
   font-size: 1rem;
-  white-space: nowrap;        /* ← запрещаем перенос */
-}
-
-.players-table .stat-cell {
-  padding: 8px 10px;
-  min-width: 130px;
+  white-space: nowrap;
 }
 
 /* =========================================
-   Кликабельные заголовки с сортировкой
+   Кликабельные заголовки
    ========================================= */
 .players-table th[data-sort-key] {
   cursor: pointer;
@@ -122,7 +133,6 @@
   filter: brightness(1.3);
 }
 
-/* Активный (отсортированный) столбец — чуть ярче и с подчёркиванием снизу */
 .players-table th.is-sorted {
   background: #1a2029;
   filter: brightness(1.2);
@@ -134,23 +144,22 @@
   border-bottom-color: #3498db;
 }
 
-/* Стрелка — чуть отодвинута и в акцентном цвете */
-.players-table th.is-sorted::after {
-  content: '';
-}
+/* =========================================
+   Цвета заголовков по параметрам
+   ========================================= */
+.players-table th:nth-child(1) { color: var(--text-secondary); }
+.players-table th:nth-child(2) { color: var(--text-secondary); }
+.players-table th:nth-child(3) { color: #e67e22; }
+.players-table th:nth-child(4) { color: #e74c3c; }
+.players-table th:nth-child(5) { color: #2ecc71; }
+.players-table th:nth-child(6) { color: #9b59b6; }
+.players-table th:nth-child(7) { color: #3498db; }
+.players-table th:nth-child(8) { color: #f1c40f; }
+.players-table th:nth-child(9) { color: var(--text-primary); }
 
-/* Общий стиль для стрелки (задаётся через textContent в JS, но можно и так) */
-.players-table th.is-sorted {
-  color: #3498db;
-}
-
-.players-table th.is-sorted-asc {
-  color: #2ecc71; /* зелёный для возрастания */
-}
-.players-table th.is-sorted-desc {
-  color: #e74c3c; /* красный для убывания */
-}
-
+/* =========================================
+   Полоски статов (десктоп)
+   ========================================= */
 .stat-bar-wrap {
   --stat-color: #8899aa;
   display: block;
@@ -163,7 +172,6 @@
   background: #1a2029;
   border-radius: 3px;
   overflow: hidden;
-  box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.7);
 }
 
 .stat-bar-fill {
@@ -179,45 +187,26 @@
   box-shadow: none;
 }
 
-/* Сама ячейка — обычный table-cell, БЕЗ flex */
+/* =========================================
+   Расы в таблице
+   ========================================= */
 .players-table .races-cell {
-  /* Никаких display: flex — иначе ломается высота строки */
   vertical-align: middle;
 }
 
-/* Внутренняя обёртка — flex-контейнер */
 .races-cell-inner {
   display: inline-flex;
   gap: 4px;
   align-items: center;
 }
 
-/* =========================================
-   Иконки рас в таблице игроков
-   ========================================= */
 .race-icon {
   width: 22px;
   height: 22px;
   object-fit: contain;
   display: block;
-  /* Никаких filter, drop-shadow, свечений */
   filter: none;
 }
-
-/* Модификаторы по расам — оставляем для возможного использования,
-   но без свечения */
-.race-icon-T,
-.race-icon-Z,
-.race-icon-P,
-.race-icon-R {
-  filter: none;
-}
-
-/* Опционально: тонкий drop-shadow без размытия */
-/* .race-icon-T { filter: drop-shadow(0 0 1px rgba(52, 152, 219, 0.8)); }
-.race-icon-Z { filter: drop-shadow(0 0 1px rgba(155, 89, 182, 0.8)); }
-.race-icon-P { filter: drop-shadow(0 0 1px rgba(241, 196, 15, 0.8)); }
-.race-icon-R { filter: drop-shadow(0 0 1px rgba(149, 165, 166, 0.8)); } */
 
 /* =========================================
    Стат-пилюли (для списка оценок)
@@ -255,65 +244,12 @@
 }
 
 /* =========================================
-   Цвета заголовков по параметрам
-   =========================================
-   Порядок колонок в таблице:
-   1. Игрок
-   2. Расы
-   3. Адаптивность — #e67e22
-   4. Агрессия    — #e74c3c
-   5. Черепашность — #2ecc71
-   6. Разнообразие — #9b59b6
-   7. Выживание   — #3498db
-   8. Халява      — #f1c40f
-   9. Итого       — нейтральный / золотой
-*/
-
-.players-table th:nth-child(1) {
-  color: var(--text-secondary);   /* Игрок */
-}
-
-.players-table th:nth-child(2) {
-  color: var(--text-secondary);   /* Расы */
-}
-
-.players-table th:nth-child(3) {
-  color: #e67e22;                 /* Адаптивность */
-}
-
-.players-table th:nth-child(4) {
-  color: #e74c3c;                 /* Агрессия */
-}
-
-.players-table th:nth-child(5) {
-  color: #2ecc71;                 /* Черепашность */
-}
-
-.players-table th:nth-child(6) {
-  color: #9b59b6;                 /* Разнообразие */
-}
-
-.players-table th:nth-child(7) {
-  color: #3498db;                 /* Выживание */
-}
-
-.players-table th:nth-child(8) {
-  color: #f1c40f;                 /* Халява */
-}
-
-.players-table th:nth-child(9) {
-  color: var(--text-primary);     /* Итого — нейтральный или золотой */
-}
-
-
-
-/* =========================================
-   Стена игроков (/players)
+   Стена игроков
    ========================================= */
 .players-wall-main {
-  max-width: 1600px;              /* ← было 1400px */
+  max-width: 1600px;
   margin: 32px auto;
-  padding: 0 32px;                /* ← было 24px */
+  padding: 0 32px;
   flex: 1;
 }
 
@@ -338,11 +274,10 @@
   letter-spacing: 1px;
 }
 
-/* Сетка: 3 колонки на широких экранах */
 .players-wall {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 40px 32px;                 /* ← 40px по вертикали, 32px по горизонтали */
+  gap: 40px 32px;
   width: 100%;
 }
 
@@ -354,13 +289,12 @@
   .players-wall { grid-template-columns: 1fr; }
 }
 
-/* Карточка-плитка */
 .player-tile {
   position: relative;
   background: linear-gradient(135deg, #141a22 0%, #0a0c10 100%);
   border: 1px solid var(--border-glow);
   border-radius: 4px;
-  padding: 22px 18px 16px;        /* ← было 16px 12px 12px */
+  padding: 22px 18px 16px;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.2s ease;
   overflow: hidden;
@@ -369,7 +303,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;                      /* ← было 8px */
+  gap: 12px;
+  min-width: 0;
 }
 
 .player-tile:hover {
@@ -380,7 +315,6 @@
     0 0 20px color-mix(in srgb, var(--race-color, #3498db) 30%, transparent);
 }
 
-/* Тонкая полоска сверху в цвет расы */
 .player-tile::before {
   content: '';
   position: absolute;
@@ -392,7 +326,6 @@
   box-shadow: 0 0 10px var(--race-color, #8899aa);
 }
 
-/* Шапка плитки — ник + иконка расы */
 .player-tile-header {
   display: flex;
   align-items: center;
@@ -400,19 +333,19 @@
   width: 100%;
   justify-content: center;
   padding: 0 4px;
+  min-width: 0;
 }
 
 .player-tile-icon {
-  width: 28px;                    /* ← было 24px */
+  width: 28px;
   height: 28px;
   object-fit: contain;
   flex-shrink: 0;
-  /* filter: drop-shadow(0 0 2px var(--race-color, #8899aa)); */
   opacity: 0.9;
 }
 
 .player-tile-name {
-  font-size: 1.1rem;              /* ← было 1rem */
+  font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -421,38 +354,38 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
-/* Радар внутри плитки */
 .player-tile-radar {
   width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 4px 0;                 /* ← небольшой воздух вокруг радара */
+  padding: 4px 0;
+  min-width: 0;
 }
 
 .player-tile-radar svg {
   width: 100%;
   height: auto;
-  max-width: 300px;               /* ← было 200-220px */
+  max-width: 300px;
   display: block;
   overflow: visible;
 }
 
-/* Подвал плитки — голоса и итого */
 .player-tile-footer {
   display: flex;
   justify-content: center;
-  gap: 16px;                      /* ← было 12px */
+  gap: 16px;
   font-family: var(--font-mono);
-  font-size: 0.8rem;              /* ← было 0.75rem */
+  font-size: 0.8rem;
   color: var(--text-muted);
   letter-spacing: 1px;
   width: 100%;
-  padding-top: 10px;              /* ← было 6px */
+  padding-top: 10px;
   border-top: 1px solid var(--border-glow);
-  margin-top: 4px;                /* ← небольшой отступ от радара */
+  margin-top: 4px;
 }
 
 .player-tile-footer strong {
@@ -460,11 +393,15 @@
   font-weight: 700;
 }
 
+/* =========================================
+   Тулбар
+   ========================================= */
 .toolbar-actions {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .toolbar-actions .btn-secondary {
@@ -475,7 +412,7 @@
 }
 
 /* =========================================
-   Переключатель видов (таблица / стена)
+   Переключатель видов
    ========================================= */
 .view-toggle {
   display: inline-flex;
@@ -484,6 +421,8 @@
   border-radius: 3px;
   padding: 2px;
   gap: 2px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .view-toggle-btn {
@@ -501,6 +440,9 @@
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .view-toggle-btn:hover {
@@ -514,6 +456,9 @@
   text-shadow: 0 0 6px rgba(241, 196, 15, 0.4);
 }
 
+/* =========================================
+   Удаление игрока (админ/модератор)
+   ========================================= */
 .players-actions-cell {
   width: 50px;
   text-align: center;
@@ -542,10 +487,7 @@
 }
 
 /* =========================================
-   Поиск игроков на главной
-   ========================================= */
-/* =========================================
-   Поиск игроков на главной
+   Поиск игроков
    ========================================= */
 .players-search {
   flex: 1;
@@ -560,6 +502,7 @@
   font-size: 0.9rem;
   letter-spacing: 0.3px;
   transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
 }
 
 .players-search::placeholder {
@@ -570,4 +513,93 @@
   outline: none;
   border-color: var(--gold);
   box-shadow: 0 0 8px rgba(241, 196, 15, 0.3);
+}
+
+/* =========================================
+   Мобильная колонка статов
+   ========================================= */
+.players-table .col-mobile {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .players-table .col-desktop {
+    display: none;
+  }
+  .players-table .col-mobile {
+    display: table-cell;
+  }
+}
+
+.stats-cell-mobile {
+  padding: 8px 10px;
+}
+
+.stat-letters {
+  display: flex;
+  gap: 2px;
+  font-family: 'Zekton', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.stat-letter {
+  display: inline-block;
+  text-shadow: 0 0 6px currentColor;
+}
+
+/* =========================================
+   Тулбар на мобильных
+   ========================================= */
+@media (max-width: 900px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .toolbar h2 {
+    font-size: 1.2rem;
+    text-align: left;
+    margin: 0;
+  }
+
+  .toolbar-actions {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .players-search {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .view-toggle {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .view-toggle-btn {
+    flex: 1;
+    padding: 10px 8px;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+  }
+
+  /* Форма добавления игрока — только на десктопе */
+  .inline-form {
+    display: none;
+  }
+}
+
+.players-table td.stat-cell {
+  border-bottom: none;
 }

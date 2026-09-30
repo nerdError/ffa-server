@@ -20,7 +20,7 @@ export function renderUserBox(): void {
         const controlLink = document.createElement('a');
         controlLink.href = '/control';
         controlLink.className = 'topbar-link';
-        controlLink.textContent = '🎬 Режим стримера';
+        controlLink.innerHTML = '🎬 <span class="btn-label">Режим стримера</span>';
 
         // Ник с бейджем роли
         const nameWrap = document.createElement('span');
@@ -45,7 +45,7 @@ export function renderUserBox(): void {
             adminBtn = document.createElement('a');
             adminBtn.href = '/admin';
             adminBtn.className = 'topbar-link topbar-link--admin';
-            adminBtn.textContent = '⚙ Админ';
+            adminBtn.innerHTML = '⚙ <span class="btn-label">Админ</span>';
         }
 
         const btn = document.createElement('button');
@@ -276,5 +276,5 @@ window.addEventListener('popstate', () => {
 });
 
 window.addEventListener('session:changed', () => {
-  renderUserBox();
+    renderUserBox();
 });

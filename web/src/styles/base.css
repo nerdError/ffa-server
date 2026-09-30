@@ -13,13 +13,11 @@
    Переменные
    ========================================= */
 :root {
-  /* Фон */
   --bg-deep: #0a0c10;
   --bg-panel: #11151c;
   --bg-panel-light: #1a2029;
   --border-glow: #2a3a4a;
 
-  /* Функциональные */
   --text-primary: #e0e6ed;
   --text-secondary: #8899aa;
   --text-asfarion: #d3b2d1;
@@ -27,25 +25,33 @@
   --danger: #e74c3c;
   --gold: #f1c40f;
 
-  /* Расы */
   --race-terran: #3498db;
   --race-zerg: #9b59b6;
   --race-protoss: #f1c40f;
   --race-random: #95a5a6;
   --race-mixed: #95a5a6;
 
-  /* Шрифты */
   --font-ui: 'Zekton', 'Segoe UI', sans-serif;
   --font-mono: 'Consolas', monospace;
 }
 
 /* =========================================
-   Сброс и базовое
+   Сброс
    ========================================= */
-* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+  min-width: 0;   /* разрешает flex/grid-элементам сжиматься */
+}
 
 body {
-  margin: 0;
   font-family: var(--font-ui);
   background: var(--bg-deep);
   background-image:
@@ -54,13 +60,13 @@ body {
   background-size: 40px 40px;
   color: var(--text-primary);
   min-height: 100vh;
-    display: flex;
+  display: flex;
   flex-direction: column;
 }
 
 main {
-    flex: 1;
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
-
-/* !!! Но помните: у вас main уже определён в layout.css
-   с max-width и margin: 32px auto. flex: 1 не сломает эти правила. */

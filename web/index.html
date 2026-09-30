@@ -47,13 +47,12 @@
             <div class="toolbar">
                 <h2>Игроки</h2>
                 <div class="toolbar-actions">
-                    <input type="text" id="players-search" class="players-search" placeholder="Поиск по имени или aka…"
-                        autocomplete="off" />
+                    <input type="text" id="players-search" class="players-search"
+                        placeholder="Поиск по имени или aka…" />
                     <div class="view-toggle" id="view-toggle">
                         <button type="button" class="view-toggle-btn is-active" data-view="table">☰ Таблица</button>
                         <button type="button" class="view-toggle-btn" data-view="wall">◈ Карточки</button>
                     </div>
-
                     <form id="form-create-player" class="inline-form">
                         <input type="text" name="name" placeholder="Имя нового игрока" required maxlength="100" />
                         <button type="submit">Добавить</button>
@@ -69,13 +68,20 @@
                     <thead>
                         <tr>
                             <th data-sort-key="name" data-label="Игрок">Игрок</th>
-                            <th data-sort-key="races" data-label="Расы">Расы</th>
-                            <th data-sort-key="adaptiveness" data-label="Адаптивность">Адаптивность</th>
-                            <th data-sort-key="aggression" data-label="Агрессия">Агрессия</th>
-                            <th data-sort-key="turtle" data-label="Черепашность">Черепашность</th>
-                            <th data-sort-key="variety" data-label="Разнообразие">Разнообразие</th>
-                            <th data-sort-key="survival" data-label="Выживание">Выживание</th>
-                            <th data-sort-key="greed" data-label="Халява">Халява</th>
+                            <th>Расы</th>
+
+                            <!-- Десктопные колонки статов -->
+                            <th class="col-desktop" data-sort-key="adaptiveness" data-label="Адаптивность">Адаптивность
+                            </th>
+                            <th class="col-desktop" data-sort-key="aggression" data-label="Агрессия">Агрессия</th>
+                            <th class="col-desktop" data-sort-key="turtle" data-label="Черепашность">Черепашность</th>
+                            <th class="col-desktop" data-sort-key="variety" data-label="Разнообразие">Разнообразие</th>
+                            <th class="col-desktop" data-sort-key="survival" data-label="Выживание">Выживание</th>
+                            <th class="col-desktop" data-sort-key="greed" data-label="Халява">Халява</th>
+
+                            <!-- Мобильная колонка со статами (по умолчанию скрыта) -->
+                            <th class="col-mobile">Статы</th>
+
                             <th data-sort-key="total" data-label="Итого" class="total-col">Итого</th>
                             <th class="players-actions-header"></th>
                         </tr>

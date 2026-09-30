@@ -9,7 +9,6 @@ import type { Race, StatKey } from '../types';
 import { buildRadarSVG, pickRaceColor, STAT_ORDER } from '../radar';
 import randomIcon from '../../assets/race/random.svg';
 import { dominantRace } from '../card';
-import { openPlayerScreen } from './player-detail';
 
 let viewInitialized = false;
 
@@ -186,9 +185,39 @@ function renderPlayersTable(
         // Расы
         tr.appendChild(fmtRaceCells(p.races));
 
+        // --- Мобильная ячейка со статами: цепочка букв ---
+        const tdStatsMobile = document.createElement('td');
+        tdStatsMobile.className = 'col-mobile stats-cell-mobile';
+
+        const letters: Record<number, string> = {
+            1: 'E', 2: 'D', 3: 'C', 4: 'B', 5: 'A',
+        };
+
+        // Обёртка — чтобы буквы шли в строку
+        const lettersWrap = document.createElement('div');
+        lettersWrap.className = 'stat-letters';
+
+        for (const axis of STAT_ORDER) {
+            const val = p[axis.key];
+            if (typeof val !== 'number') continue;
+
+            const span = document.createElement('span');
+            span.className = 'stat-letter';
+            span.style.color = axis.color;
+            span.title = `${axis.ru}: ${val.toFixed(2)} (${letters[Math.round(val)] ?? '?'})`;
+            span.textContent = letters[Math.round(val)] ?? '?';
+            lettersWrap.appendChild(span);
+        }
+
+        tdStatsMobile.appendChild(lettersWrap);
+        tr.appendChild(tdStatsMobile);
+
         // Статы — в порядке STAT_ORDER
         for (const axis of STAT_ORDER) {
-            tr.appendChild(statBarCell(p[axis.key], axis.color));
+            const td = document.createElement('td');
+            td.className = 'col-desktop';
+            td.appendChild(statBarCell(p[axis.key], axis.color));
+            tr.appendChild(td);
         }
 
         // Итого — сумма всех средних
