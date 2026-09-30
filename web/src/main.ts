@@ -180,7 +180,8 @@ async function init(): Promise<void> {
         if (playerIdFromUrl !== null) {
             void openPlayerScreen(playerIdFromUrl);
         } else {
-            navigateTo('screen-auth');
+            // navigateTo('screen-auth');
+            void openPlayersScreen();
         }
         return;
     }
@@ -220,7 +221,8 @@ async function init(): Promise<void> {
         if (playerIdFromUrl !== null) {
             void openPlayerScreen(playerIdFromUrl);
         } else {
-            navigateTo('screen-auth');
+            // navigateTo('screen-auth');
+            void openPlayersScreen();
         }
     }
 

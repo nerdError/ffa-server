@@ -50,7 +50,7 @@ export function bindAuth(cb: AuthCallbacks): void {
                 body: { identifier, password },
             });
 
-            saveSession(res.user, res.access_token);
+            saveSession(res.user, res.access_token, res.refresh_token);
 
             try {
                 const me = await apiRequest<{
@@ -71,7 +71,8 @@ export function bindAuth(cb: AuthCallbacks): void {
                         is_moderator: me.user.is_moderator,
                         is_admin: me.user.is_admin,
                     },
-                    res.access_token
+                    res.access_token,
+                    res.refresh_token
                 );
             } catch { }
 

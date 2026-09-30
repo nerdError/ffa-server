@@ -10,9 +10,9 @@ import { renderUserBox } from '../main';
 
 // Обёртка: открывает карточку и меняет URL на имя игрока
 async function openPlayerByName(player: { id: number; name: string }): Promise<void> {
-  // Обновляем URL (без перезагрузки страницы)
-  window.history.pushState({}, '', `/?player=${encodeURIComponent(player.name)}`);
-  await openPlayerScreen(player.id);
+    // Обновляем URL (без перезагрузки страницы)
+    window.history.pushState({}, '', `/?player=${encodeURIComponent(player.name)}`);
+    await openPlayerScreen(player.id);
 }
 
 export async function openPlayerScreen(playerId: number): Promise<void> {
@@ -64,12 +64,12 @@ async function fetchInitialRating(playerId: number): Promise<RatingInput> {
     }
     return {
         race: 'T',
-        adaptiveness: 3,
-        greed: 3,
-        survival: 3,
-        turtle: 3,
-        aggression: 3,
-        variety: 3,
+        adaptiveness: 1,
+        greed: 1,
+        survival: 1,
+        turtle: 1,
+        aggression: 1,
+        variety: 1,
     };
 }
 
@@ -90,215 +90,250 @@ async function hasMyRating(playerId: number): Promise<boolean> {
 }
 
 export async function loadPlayerDetail(playerId: number): Promise<void> {
-  const pane = document.getElementById('player-card-pane');
-  const editPane = document.getElementById('player-edit-pane');
-  const actions = document.getElementById('player-actions');
-  const ratingsContainer = document.getElementById('ratings-list-container');
+    const pane = document.getElementById('player-card-pane');
+    const editPane = document.getElementById('player-edit-pane');
+    const actions = document.getElementById('player-actions');
+    const ratingsContainer = document.getElementById('ratings-list-container');
 
-  if (!pane || !editPane || !actions || !ratingsContainer) return;
+    if (!pane || !editPane || !actions || !ratingsContainer) return;
 
-  // ============================================================
-  // Скелетоны — сразу, пока грузим данные
-  // ============================================================
-  pane.innerHTML = '<div class="skeleton-card"></div>';
-  editPane.classList.remove('is-open');
-  actions.innerHTML = `
+    // ============================================================
+    // Скелетоны — сразу, пока грузим данные
+    // ============================================================
+    pane.innerHTML = '<div class="skeleton-card"></div>';
+    editPane.classList.remove('is-open');
+    actions.innerHTML = `
     <div class="skeleton skeleton-line"></div>
     <div class="skeleton skeleton-line" style="width: 180px;"></div>
   `;
-  ratingsContainer.innerHTML = `
+    ratingsContainer.innerHTML = `
     <div class="skeleton skeleton-block"></div>
   `;
 
-  try {
-    const { player } = await apiRequest<PlayerResponse>(
-      `/api/players/${playerId}`
-    );
+    try {
+        const { player } = await apiRequest<PlayerResponse>(
+            `/api/players/${playerId}`
+        );
 
-    // Карточка
-    renderCard(pane, player);
+        // Карточка
+        renderCard(pane, player);
 
-    // Залогинен ли пользователь
-    const isAuthed = Boolean(state.token && state.user);
-    const mine = isAuthed ? await hasMyRating(playerId) : false;
+        // Залогинен ли пользователь
+        const isAuthed = Boolean(state.token && state.user);
+        const mine = isAuthed ? await hasMyRating(playerId) : false;
 
-    // ============================================================
-    // Вспомогательные рендеры кнопок
-    // ============================================================
+        // ============================================================
+        // Вспомогательные рендеры кнопок
+        // ============================================================
 
-    /** Подсказка «Войдите, чтобы оценивать игроков» */
-    const renderLoginHint = (): void => {
-      actions.innerHTML = '';
+        /** Подсказка «Войдите, чтобы оценивать игроков» */
+        const renderLoginHint = (): void => {
+            actions.innerHTML = '';
 
-      const hint = document.createElement('p');
-      hint.className = 'hint fade-in';
-      hint.innerHTML = 'Войдите, чтобы оценивать игроков. ';
+            const hint = document.createElement('p');
+            hint.className = 'hint fade-in';
+            hint.innerHTML = 'Войдите, чтобы оценивать игроков. ';
 
-      const loginLink = document.createElement('a');
-      loginLink.href = '#';
-      loginLink.textContent = 'Войти';
-      loginLink.className = 'hint-link';
-      loginLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.querySelectorAll('.screen').forEach((s) => s.classList.add('hidden'));
-        document.getElementById('screen-auth')?.classList.remove('hidden');
-      });
+            const loginLink = document.createElement('a');
+            loginLink.href = '#';
+            loginLink.textContent = 'Войти';
+            loginLink.className = 'hint-link';
+            loginLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.screen').forEach((s) => s.classList.add('hidden'));
+                document.getElementById('screen-auth')?.classList.remove('hidden');
+            });
 
-      hint.appendChild(loginLink);
-      actions.appendChild(hint);
-    };
+            hint.appendChild(loginLink);
+            actions.appendChild(hint);
+        };
 
-    /** Кнопки «Изменить»/«Добавить» + «Удалить» */
-    const renderViewActions = (): void => {
-      editPane.classList.remove('is-open');
-      actions.innerHTML = '';
+        /** Кнопки «Изменить»/«Добавить» + «Удалить» */
+        const renderViewActions = (): void => {
+            editPane.classList.remove('is-open');
+            actions.innerHTML = '';
 
-      const editBtn = document.createElement('button');
-      editBtn.type = 'button';
-      editBtn.className = 'btn-primary fade-in';
-      editBtn.textContent = mine ? '✎ Изменить мою оценку' : '+ Добавить оценку';
-      editBtn.addEventListener('click', () => void enterEditMode());
-      actions.appendChild(editBtn);
+            const editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.className = 'btn-primary fade-in';
+            editBtn.textContent = mine ? '✎ Изменить мою оценку' : '+ Добавить оценку';
+            editBtn.addEventListener('click', () => void enterEditMode());
+            actions.appendChild(editBtn);
 
-      if (mine) {
-        const delBtn = document.createElement('button');
-        delBtn.type = 'button';
-        delBtn.className = 'btn-danger fade-in';
-        delBtn.textContent = '🗑 Удалить мою оценку';
-        delBtn.addEventListener('click', () => {
-          void (async () => {
-            if (!confirm('Удалить вашу оценку?')) return;
-            try {
-              delBtn.disabled = true;
-              delBtn.textContent = 'Удаление…';
-              await apiRequest(`/api/players/${playerId}/my-rating`, {
-                method: 'DELETE',
-                token: state.token,
-              });
-              await loadPlayerDetail(playerId);
-            } catch (err) {
-              delBtn.disabled = false;
-              delBtn.textContent = '🗑 Удалить мою оценку';
-              alert(
-                'Не удалось удалить: ' +
-                  (err instanceof Error ? err.message : String(err))
-              );
+            // Кнопка редактирования aka — только для модераторов/админов
+            const canEditAka = Boolean(state.user?.is_moderator || state.user?.is_admin);
+            if (canEditAka) {
+                const akaBtn = document.createElement('button');
+                akaBtn.type = 'button';
+                akaBtn.className = 'btn-secondary fade-in';
+                akaBtn.textContent = '✎ Aka';
+                akaBtn.title = 'Изменить альтернативные имена';
+                akaBtn.addEventListener('click', () => {
+                    void (async () => {
+                        const current = player.aka ?? '';
+                        const next = prompt(
+                            `Альтернативные имена для "${player.name}" (через запятую):`,
+                            current
+                        );
+                        if (next === null) return; // отмена
+
+                        const trimmed = next.trim();
+
+                        try {
+                            await apiRequest(`/api/players/${player.id}/aka`, {
+                                method: 'PATCH',
+                                token: state.token,
+                                body: { aka: trimmed || null },
+                            });
+                            // Перезагружаем карточку
+                            await loadPlayerDetail(playerId);
+                        } catch (err) {
+                            alert('Не удалось сохранить: ' +
+                                (err instanceof Error ? err.message : String(err)));
+                        }
+                    })();
+                });
+                actions.appendChild(akaBtn);
             }
-          })();
-        });
-        actions.appendChild(delBtn);
-      }
-    };
 
-    /** Кнопки «Сохранить»/«Отмена» для режима редактирования */
-    const renderEditActions = (onSave: () => void, onCancel: () => void): void => {
-      actions.innerHTML = '';
+            if (mine) {
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'btn-danger fade-in';
+                delBtn.textContent = '🗑 Удалить мою оценку';
+                delBtn.addEventListener('click', () => {
+                    void (async () => {
+                        if (!confirm('Удалить вашу оценку?')) return;
+                        try {
+                            delBtn.disabled = true;
+                            delBtn.textContent = 'Удаление…';
+                            await apiRequest(`/api/players/${playerId}/my-rating`, {
+                                method: 'DELETE',
+                                token: state.token,
+                            });
+                            await loadPlayerDetail(playerId);
+                        } catch (err) {
+                            delBtn.disabled = false;
+                            delBtn.textContent = '🗑 Удалить мою оценку';
+                            alert(
+                                'Не удалось удалить: ' +
+                                (err instanceof Error ? err.message : String(err))
+                            );
+                        }
+                    })();
+                });
+                actions.appendChild(delBtn);
+            }
+        };
 
-      const saveBtn = document.createElement('button');
-      saveBtn.type = 'button';
-      saveBtn.className = 'btn-primary fade-in';
-      saveBtn.textContent = 'Сохранить';
-      saveBtn.addEventListener('click', onSave);
-      actions.appendChild(saveBtn);
+        /** Кнопки «Сохранить»/«Отмена» для режима редактирования */
+        const renderEditActions = (onSave: () => void, onCancel: () => void): void => {
+            actions.innerHTML = '';
 
-      const cancelBtn = document.createElement('button');
-      cancelBtn.type = 'button';
-      cancelBtn.className = 'btn-secondary fade-in';
-      cancelBtn.textContent = 'Отмена';
-      cancelBtn.addEventListener('click', onCancel);
-      actions.appendChild(cancelBtn);
-    };
+            const saveBtn = document.createElement('button');
+            saveBtn.type = 'button';
+            saveBtn.className = 'btn-primary fade-in';
+            saveBtn.textContent = 'Сохранить';
+            saveBtn.addEventListener('click', onSave);
+            actions.appendChild(saveBtn);
 
-    /** Верхнеуровневый выбор: показать подсказку или кнопки */
-    const renderActions = (): void => {
-      if (!isAuthed) {
-        renderLoginHint();
-      } else {
-        renderViewActions();
-      }
-    };
+            const cancelBtn = document.createElement('button');
+            cancelBtn.type = 'button';
+            cancelBtn.className = 'btn-secondary fade-in';
+            cancelBtn.textContent = 'Отмена';
+            cancelBtn.addEventListener('click', onCancel);
+            actions.appendChild(cancelBtn);
+        };
 
-    // ============================================================
-    // Вход в режим редактирования
-    // ============================================================
-    const enterEditMode = async (): Promise<void> => {
-      const formContainer = document.getElementById('rating-form-container');
+        /** Верхнеуровневый выбор: показать подсказку или кнопки */
+        const renderActions = (): void => {
+            if (!isAuthed) {
+                renderLoginHint();
+            } else {
+                renderViewActions();
+            }
+        };
 
-      // Скелетон в редакторе
-      if (formContainer) {
-        formContainer.innerHTML = `
+        // ============================================================
+        // Вход в режим редактирования
+        // ============================================================
+        const enterEditMode = async (): Promise<void> => {
+            const formContainer = document.getElementById('rating-form-container');
+
+            // Скелетон в редакторе
+            if (formContainer) {
+                formContainer.innerHTML = `
           <div class="skeleton skeleton-block" style="height: 480px;"></div>
         `;
-      }
-
-      // Открываем панель сразу
-      editPane.classList.add('is-open');
-
-      // Загружаем начальные данные
-      const initial = await fetchInitialRating(playerId);
-
-      let currentDraft: RatingInput = initial;
-
-      const handleSave = (): void => {
-        void (async () => {
-          const saveBtn = actions.querySelector('.btn-primary') as HTMLButtonElement | null;
-          if (saveBtn) {
-            saveBtn.disabled = true;
-            saveBtn.textContent = 'Сохранение…';
-          }
-          try {
-            await apiRequest(`/api/players/${playerId}/ratings`, {
-              method: 'POST',
-              token: state.token,
-              body: currentDraft,
-            });
-            await loadPlayerDetail(playerId);
-          } catch (err) {
-            if (saveBtn) {
-              saveBtn.disabled = false;
-              saveBtn.textContent = 'Сохранить';
             }
-            alert(
-              'Не удалось сохранить: ' +
-                (err instanceof Error ? err.message : String(err))
-            );
-          }
-        })();
-      };
 
-      const handleCancel = (): void => {
-        renderCard(pane, player);
-        void loadPlayerDetail(playerId);
-      };
+            // Открываем панель сразу
+            editPane.classList.add('is-open');
 
-      // Ставим кнопки «Сохранить»/«Отмена»
-      renderEditActions(handleSave, handleCancel);
+            // Загружаем начальные данные
+            const initial = await fetchInitialRating(playerId);
 
-      // Рендерим сам редактор
-      renderRatingEditor(initial, (draft) => {
-        currentDraft = draft;
-        const preview = mergePlayerWithDraft(player, draft);
-        renderCard(pane, preview);
-      });
+            let currentDraft: RatingInput = initial;
 
-      // Плавное появление формы
-      if (formContainer) {
-        formContainer.firstElementChild?.classList.add('fade-in');
-      }
-    };
+            const handleSave = (): void => {
+                void (async () => {
+                    const saveBtn = actions.querySelector('.btn-primary') as HTMLButtonElement | null;
+                    if (saveBtn) {
+                        saveBtn.disabled = true;
+                        saveBtn.textContent = 'Сохранение…';
+                    }
+                    try {
+                        await apiRequest(`/api/players/${playerId}/ratings`, {
+                            method: 'POST',
+                            token: state.token,
+                            body: currentDraft,
+                        });
+                        await loadPlayerDetail(playerId);
+                    } catch (err) {
+                        if (saveBtn) {
+                            saveBtn.disabled = false;
+                            saveBtn.textContent = 'Сохранить';
+                        }
+                        alert(
+                            'Не удалось сохранить: ' +
+                            (err instanceof Error ? err.message : String(err))
+                        );
+                    }
+                })();
+            };
 
-    // ============================================================
-    // Первичный рендер
-    // ============================================================
-    renderActions();
-    await renderRatingsList(playerId);
-  } catch (err) {
-    pane.innerHTML = `<p class="error fade-in">Ошибка: ${
-      err instanceof Error ? err.message : String(err)
-    }</p>`;
-    actions.innerHTML = '';
-    ratingsContainer.innerHTML = '';
-  }
+            const handleCancel = (): void => {
+                renderCard(pane, player);
+                void loadPlayerDetail(playerId);
+            };
+
+            // Ставим кнопки «Сохранить»/«Отмена»
+            renderEditActions(handleSave, handleCancel);
+
+            // Рендерим сам редактор
+            renderRatingEditor(initial, (draft) => {
+                currentDraft = draft;
+                const preview = mergePlayerWithDraft(player, draft);
+                renderCard(pane, preview);
+            });
+
+            // Плавное появление формы
+            if (formContainer) {
+                formContainer.firstElementChild?.classList.add('fade-in');
+            }
+        };
+
+        // ============================================================
+        // Первичный рендер
+        // ============================================================
+        renderActions();
+        await renderRatingsList(playerId);
+    } catch (err) {
+        pane.innerHTML = `<p class="error fade-in">Ошибка: ${err instanceof Error ? err.message : String(err)
+            }</p>`;
+        actions.innerHTML = '';
+        ratingsContainer.innerHTML = '';
+    }
 }
 
 function renderCard(pane: HTMLElement, player: PlayerWithStats): void {

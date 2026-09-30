@@ -84,3 +84,50 @@ playersRouter.delete('/:id', async (req, res) => {
   }
   return res.status(200).json({ deleted: data });
 });
+
+// ============================================================
+// PATCH /api/players/:id/aka
+// Обновить aka игрока (только модератор/админ)
+// ============================================================
+playersRouter.patch('/:id/aka', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid player id' });
+  }
+
+  const auth = await authenticate(req);
+  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+
+  // Проверка: модератор или админ
+  const { data: isMod } = await auth.client.rpc('is_moderator');
+  if (!isMod) {
+    return res.status(403).json({ error: 'Moderator access required' });
+  }
+
+  const aka = req.body?.aka;
+  if (aka !== null && typeof aka !== 'string') {
+    return res.status(400).json({ error: 'aka must be a string or null' });
+  }
+
+  const trimmed = typeof aka === 'string' ? aka.trim() : null;
+  if (trimmed && trimmed.length > 100) {
+    return res.status(400).json({ error: 'aka is too long (max 100)' });
+  }
+
+  const { data, error } = await auth.client
+    .from('players')
+    .update({ aka: trimmed || null })
+    .eq('id', id)
+    .select()
+    .maybeSingle();
+
+  if (error) {
+    console.error('[players/aka] error:', error);
+    return res.status(500).json({ error: 'DB error' });
+  }
+  if (!data) {
+    return res.status(404).json({ error: 'Player not found' });
+  }
+
+  res.json({ ok: true, player: data });
+});
