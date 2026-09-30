@@ -51,8 +51,20 @@ export function renderUserBox(): void {
         const btn = document.createElement('button');
         btn.textContent = 'Выйти';
         btn.className = 'btn-secondary';
-        btn.addEventListener('click', () => { /* ... */ });
-
+        btn.addEventListener('click', () => {
+            void (async () => {
+                try {
+                    await apiRequest('/api/auth/logout', {
+                        method: 'POST',
+                        token: state.token,
+                    });
+                } catch { }
+                clearSession();
+                renderUserBox();
+                showScreen('screen-auth');
+            })();
+        });
+        
         box.append(controlLink);
         if (adminBtn) box.append(adminBtn);
         box.append(nameWrap, btn);
@@ -87,7 +99,13 @@ export function renderUserBox(): void {
 // --- Навигация ---
 async function openPlayersScreen(): Promise<void> {
     navigateTo('screen-players');
-    await loadPlayers({ onOpenPlayer: (id) => void openPlayerScreen(id) });
+    await loadPlayers({
+        onOpenPlayer: (id, name) => {
+            // Меняем URL на имя и открываем карточку
+            window.history.pushState({}, '', `/?player=${encodeURIComponent(name)}`);
+            void openPlayerScreen(id);
+        },
+    });
 }
 
 /**
@@ -137,6 +155,8 @@ async function init(): Promise<void> {
 
     const backBtn = document.getElementById('btn-back');
     backBtn?.addEventListener('click', () => {
+        // Сбрасываем query-параметр player, оставляя только путь
+        window.history.pushState({}, '', '/');
         void openPlayersScreen();
     });
 
@@ -237,4 +257,23 @@ copyDiscord?.addEventListener('click', async () => {
         selection?.removeAllRanges();
         selection?.addRange(range);
     }
+});
+
+window.addEventListener('popstate', () => {
+  const params = new URLSearchParams(window.location.search);
+  const playerParam = params.get('player');
+
+  if (!playerParam) {
+    // Вернулись к списку
+    void openPlayersScreen();
+    return;
+  }
+
+  // Открываем карточку игрока
+  void (async () => {
+    const id = await resolvePlayerIdFromParam(playerParam);
+    if (id !== null) {
+      void openPlayerScreen(id);
+    }
+  })();
 });

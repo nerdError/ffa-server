@@ -8,6 +8,13 @@ import {
 } from './ratings';
 import { renderUserBox } from '../main';
 
+// Обёртка: открывает карточку и меняет URL на имя игрока
+async function openPlayerByName(player: { id: number; name: string }): Promise<void> {
+  // Обновляем URL (без перезагрузки страницы)
+  window.history.pushState({}, '', `/?player=${encodeURIComponent(player.name)}`);
+  await openPlayerScreen(player.id);
+}
+
 export async function openPlayerScreen(playerId: number): Promise<void> {
     navigateTo('screen-player');
     await loadPlayerDetail(playerId);

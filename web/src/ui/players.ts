@@ -72,7 +72,7 @@ function statBarCell(value: number | null, color: string): HTMLTableCellElement 
 }
 
 interface PlayersCallbacks {
-    onOpenPlayer: (id: number) => void;
+    onOpenPlayer: (id: number, name: string) => void;
 }
 
 export async function loadPlayers(cb: PlayersCallbacks): Promise<void> {
@@ -165,7 +165,7 @@ function renderPlayersTable(
         link.addEventListener('click', (e) => {
             e.preventDefault();
             window.history.pushState({}, '', `/?player=${encodeURIComponent(p.name)}`);
-            cb.onOpenPlayer(p.id);
+            cb.onOpenPlayer(p.id, p.name);
         });
         tdName.appendChild(link);
         tr.appendChild(tdName);
@@ -480,7 +480,7 @@ function buildTile(player: PlayerWithStats): HTMLAnchorElement {
 
     const tile = document.createElement('a');
     tile.className = 'player-tile';
-    tile.href = `/?player=${player.id}`;
+    tile.href = `/?player=${encodeURIComponent(player.name)}`;
     tile.style.setProperty('--race-color', color);
 
     // Шапка: иконка + ник
@@ -576,9 +576,12 @@ function setView(view: ViewMode): void {
         wallView.classList.add('hidden');
         renderPlayersTable(
             sortPlayers(cachedPlayers, sortKey, sortDirection),
-            { onOpenPlayer: (id) => void openPlayerScreen(id) }
+            { 
+                onOpenPlayer: (id) => void openPlayerScreen(id) 
+            }
         );
-    } else {
+    } 
+    else {
         tableView.classList.add('hidden');
         wallView.classList.remove('hidden');
         renderWall(cachedPlayers);

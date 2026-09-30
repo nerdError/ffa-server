@@ -315,6 +315,128 @@ async function deletePlayer(player: PlayerWithStats): Promise<void> {
   }
 }
 
+interface AdminRating {
+  id: number;
+  user_id: string;
+  email: string;
+  username: string | null;
+  race: string;
+  adaptiveness: number;
+  greed: number;
+  survival: number;
+  turtle: number;
+  aggression: number;
+  variety: number;
+  created_at: string;
+  updated_at: string;
+}
+
+async function loadPlayerRatings(
+  playerId: number,
+  container: HTMLElement
+): Promise<void> {
+  container.innerHTML = '<div class="skeleton skeleton-block" style="height: 80px;"></div>';
+
+  try {
+    const res = await apiRequest<{ ratings: AdminRating[] }>(
+      `/api/admin/players/${playerId}/ratings`,
+      { token: state.token }
+    );
+    renderRatingsInAdmin(res.ratings, container, playerId);   // ← передаём playerId
+  } catch (err) {
+    container.innerHTML = `<p class="error">Ошибка: ${
+      err instanceof Error ? err.message : String(err)
+    }</p>`;
+  }
+}
+
+function renderRatingsInAdmin(
+  ratings: AdminRating[],
+  container: HTMLElement,
+  playerId: number        // ← ДОБАВЛЕНО
+): void {
+  if (ratings.length === 0) {
+    container.innerHTML = '<p class="hint">Нет оценок</p>';
+    return;
+  }
+
+  const table = document.createElement('table');
+  table.className = 'admin-ratings-table';
+
+  const thead = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  for (const label of [
+    'Пользователь', 'Раса', 'Адапт', 'Халява', 'Выжив', 'Череп', 'Агресс', 'Разнообр', ''
+  ]) {
+    const th = document.createElement('th');
+    th.textContent = label;
+    headRow.appendChild(th);
+  }
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  for (const r of ratings) {
+    const tr = document.createElement('tr');
+
+    const tdUser = document.createElement('td');
+    tdUser.textContent = r.username || r.email || r.user_id;
+    tr.appendChild(tdUser);
+
+    const tdRace = document.createElement('td');
+    tdRace.textContent = r.race;
+    tr.appendChild(tdRace);
+
+    for (const key of ['adaptiveness', 'greed', 'survival', 'turtle', 'aggression', 'variety'] as const) {
+      const td = document.createElement('td');
+      td.textContent = String(r[key]);
+      tr.appendChild(td);
+    }
+
+    const tdActions = document.createElement('td');
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'admin-rating-delete-btn';
+    delBtn.textContent = '🗑';
+    delBtn.title = 'Удалить оценку';
+    delBtn.addEventListener('click', () => {
+      void deleteRating(r, container, playerId);   // ← playerId теперь доступен
+    });
+    tdActions.appendChild(delBtn);
+    tr.appendChild(tdActions);
+
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  container.innerHTML = '';
+  container.appendChild(table);
+}
+
+async function deleteRating(
+  rating: AdminRating,
+  container: HTMLElement,
+  playerId: number
+): Promise<void> {
+  const userLabel = rating.username || rating.email || rating.user_id;
+  const confirmed = confirm(
+    `Удалить оценку пользователя "${userLabel}"?\n\nЭто действие нельзя отменить.`
+  );
+  if (!confirmed) return;
+
+  try {
+    await apiRequest(`/api/admin/ratings/${rating.id}`, {
+      method: 'DELETE',
+      token: state.token,
+    });
+    // Перезагружаем список оценок в развёрнутой строке
+    await loadPlayerRatings(playerId, container);
+    // И обновляем таблицу игроков (vote_count мог измениться)
+    await loadPlayers();
+  } catch (err) {
+    alert('Не удалось удалить: ' +
+      (err instanceof Error ? err.message : String(err)));
+  }
+}
 // ============================================================
 // Инициализация
 // ============================================================
