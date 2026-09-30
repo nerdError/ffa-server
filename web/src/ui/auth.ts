@@ -64,7 +64,7 @@ export function bindAuth(cb: AuthCallbacks): void {
                     { 
                         id: me.user.id, 
                         email: me.user.email, 
-                        username: me.user.username 
+                        username: me.user.username,
                     },
                     res.access_token
                 );

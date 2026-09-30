@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin | SC2 FFA League</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Zekton&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/styles/main.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>ADMIN PANEL <span class="subtitle">// SC2 FFA LEAGUE</span></h1>
+    <div class="user-box">
+      <a href="/" class="topbar-link">← На главную</a>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <!-- Секция: пользователи и роли -->
+    <section class="admin-section">
+      <div class="admin-section-header">
+        <h2>Пользователи</h2>
+        <input
+          type="text"
+          id="admin-search"
+          class="admin-search"
+          placeholder="Поиск по email или нику…"
+          autocomplete="off"
+        />
+      </div>
+      <div id="admin-users" class="admin-users">
+        <div class="skeleton skeleton-block"></div>
+      </div>
+    </section>
+
+    <!-- Секция: игроки -->
+    <section class="admin-section">
+      <h2>Игроки</h2>
+      <p class="hint">Удаление игрока каскадно удалит все его оценки.</p>
+      <div id="admin-players" class="admin-players">
+        <div class="skeleton skeleton-block"></div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="/src/admin.ts"></script>
+</body>
+</html>

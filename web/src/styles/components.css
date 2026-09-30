@@ -293,3 +293,18 @@
   background: var(--bg-panel-light);
   color: var(--text-primary);
 }
+
+.hint-link {
+  color: var(--gold);
+  text-decoration: none;
+  font-weight: 700;
+  border-bottom: 1px dotted var(--gold);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.hint-link:hover {
+  color: #fff;
+  border-bottom-color: #fff;
+  text-shadow: 0 0 8px rgba(241, 196, 15, 0.6);
+}

@@ -349,7 +349,23 @@ export async function renderRatingsList(playerId: number): Promise<void> {
             const tr = document.createElement('tr');
 
             const tdUser = document.createElement('td');
-            tdUser.textContent = r.username;
+            const userWrap = document.createElement('span');
+            userWrap.className = 'rating-user-cell';
+            userWrap.textContent = r.username;
+
+            if (r.is_admin) {
+                const badge = document.createElement('span');
+                badge.className = 'role-badge role-badge--admin';
+                badge.textContent = '★ ADMIN';
+                userWrap.appendChild(badge);
+            } else if (r.is_moderator) {
+                const badge = document.createElement('span');
+                badge.className = 'role-badge role-badge--moderator';
+                badge.textContent = '◆ MOD';
+                userWrap.appendChild(badge);
+            }
+
+            tdUser.appendChild(userWrap);
             tr.appendChild(tdUser);
 
             const tdRace = document.createElement('td');

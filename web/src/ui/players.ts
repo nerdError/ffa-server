@@ -81,7 +81,7 @@ export async function loadPlayers(cb: PlayersCallbacks): Promise<void> {
     if (!tbody || !errBox) return;
 
     errBox.classList.add('hidden');
-    tbody.innerHTML = '<tr><td colspan="9">Загрузка…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10">Загрузка…</td></tr>';
 
     try {
         const { players } = await apiRequest<PlayersListResponse>('/api/players');
@@ -109,23 +109,29 @@ export async function loadPlayers(cb: PlayersCallbacks): Promise<void> {
 }
 
 function fmtRaceCells(races: PlayerWithStats['races']): HTMLTableCellElement {
-    const td = document.createElement('td');
-    td.className = 'races-cell';
+  const td = document.createElement('td');
+  td.className = 'races-cell';
 
-    if (races.length === 0) {
-        td.textContent = '—';
-        return td;
-    }
-
-    for (const r of races) {
-        const img = document.createElement('img');
-        img.src = RACE_ICON_URL[r];
-        img.alt = RACE_LABELS[r];
-        img.title = RACE_LABELS[r];
-        img.className = `race-icon race-icon-${r}`;
-        td.appendChild(img);
-    }
+  if (races.length === 0) {
+    td.textContent = '—';
     return td;
+  }
+
+  // Внутренняя обёртка — flex-контейнер, а сам td остаётся table-cell
+  const inner = document.createElement('div');
+  inner.className = 'races-cell-inner';
+
+  for (const r of races) {
+    const img = document.createElement('img');
+    img.src = RACE_ICON_URL[r];
+    img.alt = RACE_LABELS[r];
+    img.title = RACE_LABELS[r];
+    img.className = `race-icon race-icon-${r}`;
+    inner.appendChild(img);
+  }
+
+  td.appendChild(inner);
+  return td;
 }
 
 function renderPlayersTable(
@@ -135,6 +141,8 @@ function renderPlayersTable(
     const tbody = document.getElementById('players-tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
+
+
 
     if (players.length === 0) {
         tbody.innerHTML =
@@ -153,8 +161,10 @@ function renderPlayersTable(
         link.href = '#';
         link.style.color = pickRaceColor(p.races);           // ← цвет расы
         link.style.setProperty('--race-color', pickRaceColor(p.races)); // ← для hover
+        link.href = `/?player=${encodeURIComponent(p.name)}`;
         link.addEventListener('click', (e) => {
             e.preventDefault();
+            window.history.pushState({}, '', `/?player=${encodeURIComponent(p.name)}`);
             cb.onOpenPlayer(p.id);
         });
         tdName.appendChild(link);
@@ -183,6 +193,53 @@ function renderPlayersTable(
 
         tr.appendChild(tdTotal);
 
+        // Проверяем, модератор ли текущий пользователь
+        const canDelete = Boolean(
+            state.user?.is_admin
+        );
+
+        // В row добавляем ячейку с кнопкой
+        const tdActions = document.createElement('td');
+        tdActions.className = 'players-actions-cell';
+
+        if (canDelete) {
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'player-delete-btn';
+            delBtn.title = 'Удалить игрока';
+            delBtn.textContent = '🗑';
+            delBtn.addEventListener('click', (e) => {
+                e.stopPropagation();   // не открывать карточку
+                void (async () => {
+                    const confirmed = confirm(
+                        `Удалить игрока "${p.name}"?\n\n` +
+                        `Все оценки (${p.vote_count}) будут удалены безвозвратно.`
+                    );
+                    if (!confirmed) return;
+
+                    try {
+                        await apiRequest(`/api/players/${p.id}`, {
+                            method: 'DELETE',
+                            token: state.token,
+                        });
+                        // Перезагружаем список
+                        const { players } = await apiRequest<PlayersListResponse>('/api/players');
+                        cachedPlayers = players;
+                        renderPlayersTable(
+                            sortPlayers(cachedPlayers, sortKey, sortDirection),
+                            cb
+                        );
+                    } catch (err) {
+                        alert('Не удалось удалить: ' +
+                            (err instanceof Error ? err.message : String(err)));
+                    }
+                })();
+            });
+            tdActions.appendChild(delBtn);
+        }
+
+        tr.appendChild(tdActions);
+
         tbody.appendChild(tr);
     }
 }
@@ -190,6 +247,12 @@ function renderPlayersTable(
 export function bindCreatePlayer(onCreated: () => void): void {
     const form = document.getElementById('form-create-player') as HTMLFormElement | null;
     if (!form) return;
+
+    // Скрываем форму для не-модераторов
+    if (!state.user?.is_moderator) {
+        form.style.display = 'none';
+        return;
+    }
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -499,33 +562,33 @@ function renderWall(players: PlayerWithStats[]): void {
  * Переключает вид: table ↔ wall.
  */
 function setView(view: ViewMode): void {
-  currentView = view;
+    currentView = view;
 
-  const tableView = document.getElementById('players-table-view');
-  const wallView = document.getElementById('players-wall-view');
+    const tableView = document.getElementById('players-table-view');
+    const wallView = document.getElementById('players-wall-view');
 
-  if (!tableView || !wallView) {
-    return;
-  }
+    if (!tableView || !wallView) {
+        return;
+    }
 
-  if (view === 'table') {
-    tableView.classList.remove('hidden');
-    wallView.classList.add('hidden');
-    renderPlayersTable(
-      sortPlayers(cachedPlayers, sortKey, sortDirection),
-      { onOpenPlayer: (id) => void openPlayerScreen(id) }
-    );
-  } else {
-    tableView.classList.add('hidden');
-    wallView.classList.remove('hidden');
-    renderWall(cachedPlayers);
-  }
+    if (view === 'table') {
+        tableView.classList.remove('hidden');
+        wallView.classList.add('hidden');
+        renderPlayersTable(
+            sortPlayers(cachedPlayers, sortKey, sortDirection),
+            { onOpenPlayer: (id) => void openPlayerScreen(id) }
+        );
+    } else {
+        tableView.classList.add('hidden');
+        wallView.classList.remove('hidden');
+        renderWall(cachedPlayers);
+    }
 
-  document.querySelectorAll<HTMLButtonElement>('.view-toggle-btn').forEach((btn) => {
-    btn.classList.toggle('is-active', btn.dataset.view === view);
-  });
+    document.querySelectorAll<HTMLButtonElement>('.view-toggle-btn').forEach((btn) => {
+        btn.classList.toggle('is-active', btn.dataset.view === view);
+    });
 
-  localStorage.setItem('playersView', view);
+    localStorage.setItem('playersView', view);
 }
 
 /**
@@ -534,23 +597,23 @@ function setView(view: ViewMode): void {
 let viewToggleBound = false;
 
 function bindViewToggle(): void {
-  if (viewToggleBound) return;
+    if (viewToggleBound) return;
 
-  const toggle = document.getElementById('view-toggle');
-  if (!toggle) {
-    console.warn('[players] #view-toggle not found');
-    return;
-  }
-
-  toggle.addEventListener('click', (e) => {
-    const target = (e.target as HTMLElement).closest('.view-toggle-btn') as HTMLElement | null;
-    if (!target) return;
-
-    const view = target.dataset.view as ViewMode | undefined;
-    if (view === 'table' || view === 'wall') {
-      setView(view);
+    const toggle = document.getElementById('view-toggle');
+    if (!toggle) {
+        console.warn('[players] #view-toggle not found');
+        return;
     }
-  });
 
-  viewToggleBound = true;
+    toggle.addEventListener('click', (e) => {
+        const target = (e.target as HTMLElement).closest('.view-toggle-btn') as HTMLElement | null;
+        if (!target) return;
+
+        const view = target.dataset.view as ViewMode | undefined;
+        if (view === 'table' || view === 'wall') {
+            setView(view);
+        }
+    });
+
+    viewToggleBound = true;
 }

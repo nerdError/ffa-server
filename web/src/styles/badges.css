@@ -1,0 +1,35 @@
+/* =========================================
+   Бейджи ролей (модератор / админ)
+   ========================================= */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 1px solid;
+  vertical-align: middle;
+  margin-left: 6px;
+  line-height: 1.4;
+}
+
+/* Модератор — золотой */
+.role-badge.role-badge--moderator {
+  background: rgba(241, 196, 15, 0.12);
+  border-color: rgba(241, 196, 15, 0.6);
+  color: var(--gold);
+  text-shadow: 0 0 6px rgba(241, 196, 15, 0.4);
+}
+
+/* Админ — красный */
+.role-badge.role-badge--admin {
+  background: rgba(231, 76, 60, 0.12);
+  border-color: rgba(231, 76, 60, 0.6);
+  color: #e74c3c;
+  text-shadow: 0 0 6px rgba(231, 76, 60, 0.4);
+}

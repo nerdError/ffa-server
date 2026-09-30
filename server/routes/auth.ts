@@ -138,14 +138,17 @@ authRouter.get('/me', async (req, res) => {
     .eq('user_id', auth.user.id)
     .maybeSingle();
 
-  const { data: modData } = await auth.client.rpc('is_moderator');
+  // Получаем роли
+  const { data: isMod } = await auth.client.rpc('is_moderator');
+  const { data: isAdmin } = await auth.client.rpc('is_admin');
 
   return res.status(200).json({
     user: {
       id: auth.user.id,
       email: auth.user.email,
       username: profile?.username ?? null,
-      is_moderator: Boolean(modData),
+      is_moderator: Boolean(isMod),
+      is_admin: Boolean(isAdmin),
     },
   });
 });

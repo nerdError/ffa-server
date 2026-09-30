@@ -3,29 +3,30 @@ import { state } from '../state';
 import { buildPlayerCardElement } from '../card';
 import type { PlayerResponse, PlayerWithStats, RatingInput } from '../types';
 import {
-  renderRatingEditor,
-  renderRatingsList,
+    renderRatingEditor,
+    renderRatingsList,
 } from './ratings';
+import { renderUserBox } from '../main';
 
 export async function openPlayerScreen(playerId: number): Promise<void> {
-  showScreen('screen-player');
-  await loadPlayerDetail(playerId);
+    navigateTo('screen-player');
+    await loadPlayerDetail(playerId);
 }
 
 function mergePlayerWithDraft(
-  base: PlayerWithStats,
-  draft: RatingInput
+    base: PlayerWithStats,
+    draft: RatingInput
 ): PlayerWithStats {
-  return {
-    ...base,
-    races: [draft.race],
-    adaptiveness: draft.adaptiveness,
-    greed: draft.greed,
-    survival: draft.survival,
-    turtle: draft.turtle,
-    aggression: draft.aggression,
-    variety: draft.variety,
-  };
+    return {
+        ...base,
+        races: [draft.race],
+        adaptiveness: draft.adaptiveness,
+        greed: draft.greed,
+        survival: draft.survival,
+        turtle: draft.turtle,
+        aggression: draft.aggression,
+        variety: draft.variety,
+    };
 }
 
 /**
@@ -34,51 +35,51 @@ function mergePlayerWithDraft(
  * - иначе — дефолт (раса T, все параметры 3).
  */
 async function fetchInitialRating(playerId: number): Promise<RatingInput> {
-  try {
-    const res = await apiRequest<{ rating: any | null }>(
-      `/api/players/${playerId}/my-rating`,
-      { token: state.token }
-    );
-    const mine = res.rating;
-    if (mine) {
-      return {
-        race: mine.race,
-        adaptiveness: mine.adaptiveness,
-        greed: mine.greed,
-        survival: mine.survival,
-        turtle: mine.turtle,
-        aggression: mine.aggression,
-        variety: mine.variety,
-      };
+    try {
+        const res = await apiRequest<{ rating: any | null }>(
+            `/api/players/${playerId}/my-rating`,
+            { token: state.token }
+        );
+        const mine = res.rating;
+        if (mine) {
+            return {
+                race: mine.race,
+                adaptiveness: mine.adaptiveness,
+                greed: mine.greed,
+                survival: mine.survival,
+                turtle: mine.turtle,
+                aggression: mine.aggression,
+                variety: mine.variety,
+            };
+        }
+    } catch {
+        /* 401 или другая ошибка — используем дефолт */
     }
-  } catch {
-    /* 401 или другая ошибка — используем дефолт */
-  }
-  return {
-    race: 'T',
-    adaptiveness: 3,
-    greed: 3,
-    survival: 3,
-    turtle: 3,
-    aggression: 3,
-    variety: 3,
-  };
+    return {
+        race: 'T',
+        adaptiveness: 3,
+        greed: 3,
+        survival: 3,
+        turtle: 3,
+        aggression: 3,
+        variety: 3,
+    };
 }
 
 /**
  * Проверяет, есть ли у пользователя сохранённая оценка.
  */
 async function hasMyRating(playerId: number): Promise<boolean> {
-  if (!state.token) return false;
-  try {
-    const res = await apiRequest<{ rating: any | null }>(
-      `/api/players/${playerId}/my-rating`,
-      { token: state.token }
-    );
-    return Boolean(res.rating);
-  } catch {
-    return false;
-  }
+    if (!state.token) return false;
+    try {
+        const res = await apiRequest<{ rating: any | null }>(
+            `/api/players/${playerId}/my-rating`,
+            { token: state.token }
+        );
+        return Boolean(res.rating);
+    } catch {
+        return false;
+    }
 }
 
 export async function loadPlayerDetail(playerId: number): Promise<void> {
@@ -86,10 +87,11 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
   const editPane = document.getElementById('player-edit-pane');
   const actions = document.getElementById('player-actions');
   const ratingsContainer = document.getElementById('ratings-list-container');
+
   if (!pane || !editPane || !actions || !ratingsContainer) return;
 
   // ============================================================
-  // Сразу показываем скелетоны во всех трёх секциях
+  // Скелетоны — сразу, пока грузим данные
   // ============================================================
   pane.innerHTML = '<div class="skeleton-card"></div>';
   editPane.classList.remove('is-open');
@@ -106,24 +108,40 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
       `/api/players/${playerId}`
     );
 
-    // Карточка — сразу (быстрый fade-in)
+    // Карточка
     renderCard(pane, player);
 
-    if (!state.token) {
+    // Залогинен ли пользователь
+    const isAuthed = Boolean(state.token && state.user);
+    const mine = isAuthed ? await hasMyRating(playerId) : false;
+
+    // ============================================================
+    // Вспомогательные рендеры кнопок
+    // ============================================================
+
+    /** Подсказка «Войдите, чтобы оценивать игроков» */
+    const renderLoginHint = (): void => {
       actions.innerHTML = '';
+
       const hint = document.createElement('p');
       hint.className = 'hint fade-in';
-      hint.textContent = 'Войдите, чтобы оценивать игроков.';
+      hint.innerHTML = 'Войдите, чтобы оценивать игроков. ';
+
+      const loginLink = document.createElement('a');
+      loginLink.href = '#';
+      loginLink.textContent = 'Войти';
+      loginLink.className = 'hint-link';
+      loginLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.querySelectorAll('.screen').forEach((s) => s.classList.add('hidden'));
+        document.getElementById('screen-auth')?.classList.remove('hidden');
+      });
+
+      hint.appendChild(loginLink);
       actions.appendChild(hint);
-      await renderRatingsList(playerId);
-      return;
-    }
+    };
 
-    const mine = await hasMyRating(playerId);
-
-    // ============================================================
-    // Кнопки действий — с fade-in
-    // ============================================================
+    /** Кнопки «Изменить»/«Добавить» + «Удалить» */
     const renderViewActions = (): void => {
       editPane.classList.remove('is-open');
       actions.innerHTML = '';
@@ -132,9 +150,7 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
       editBtn.type = 'button';
       editBtn.className = 'btn-primary fade-in';
       editBtn.textContent = mine ? '✎ Изменить мою оценку' : '+ Добавить оценку';
-      editBtn.addEventListener('click', () => {
-        void enterEditMode();
-      });
+      editBtn.addEventListener('click', () => void enterEditMode());
       actions.appendChild(editBtn);
 
       if (mine) {
@@ -167,63 +183,63 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
       }
     };
 
-    // ============================================================
-    // Вход в режим редактирования — со скелетоном внутри панели
-    // ============================================================
-    const enterEditMode = async (): Promise<void> => {
-      // Скелетон в редакторе, пока грузим свою оценку
-      const formContainer = document.getElementById('rating-form-container');
-      if (formContainer) {
-        formContainer.innerHTML = `
-          <div class="skeleton skeleton-block" style="height: 480px;"></div>
-        `;
-      }
-
-      // Открываем панель сразу — скелетон уже виден
-      editPane.classList.add('is-open');
-
-      const initial = await fetchInitialRating(playerId);
-
-      // Меняем кнопки на «Сохранить»/«Отмена»
+    /** Кнопки «Сохранить»/«Отмена» для режима редактирования */
+    const renderEditActions = (onSave: () => void, onCancel: () => void): void => {
       actions.innerHTML = '';
 
       const saveBtn = document.createElement('button');
       saveBtn.type = 'button';
       saveBtn.className = 'btn-primary fade-in';
       saveBtn.textContent = 'Сохранить';
+      saveBtn.addEventListener('click', onSave);
       actions.appendChild(saveBtn);
 
       const cancelBtn = document.createElement('button');
       cancelBtn.type = 'button';
       cancelBtn.className = 'btn-secondary fade-in';
       cancelBtn.textContent = 'Отмена';
-      cancelBtn.addEventListener('click', () => {
-        renderCard(pane, player);
-        void loadPlayerDetail(playerId);
-      });
+      cancelBtn.addEventListener('click', onCancel);
       actions.appendChild(cancelBtn);
+    };
+
+    /** Верхнеуровневый выбор: показать подсказку или кнопки */
+    const renderActions = (): void => {
+      if (!isAuthed) {
+        renderLoginHint();
+      } else {
+        renderViewActions();
+      }
+    };
+
+    // ============================================================
+    // Вход в режим редактирования
+    // ============================================================
+    const enterEditMode = async (): Promise<void> => {
+      const formContainer = document.getElementById('rating-form-container');
+
+      // Скелетон в редакторе
+      if (formContainer) {
+        formContainer.innerHTML = `
+          <div class="skeleton skeleton-block" style="height: 480px;"></div>
+        `;
+      }
+
+      // Открываем панель сразу
+      editPane.classList.add('is-open');
+
+      // Загружаем начальные данные
+      const initial = await fetchInitialRating(playerId);
 
       let currentDraft: RatingInput = initial;
 
-      const onDraftChange = (draft: RatingInput): void => {
-        currentDraft = draft;
-        const preview = mergePlayerWithDraft(player, draft);
-        renderCard(pane, preview);
-      };
-
-      // Заменяем скелетон реальным редактором
-      renderRatingEditor(initial, onDraftChange);
-
-      // Плавное появление формы
-      if (formContainer) {
-        formContainer.firstElementChild?.classList.add('fade-in');
-      }
-
-      saveBtn.addEventListener('click', () => {
+      const handleSave = (): void => {
         void (async () => {
-          try {
+          const saveBtn = actions.querySelector('.btn-primary') as HTMLButtonElement | null;
+          if (saveBtn) {
             saveBtn.disabled = true;
             saveBtn.textContent = 'Сохранение…';
+          }
+          try {
             await apiRequest(`/api/players/${playerId}/ratings`, {
               method: 'POST',
               token: state.token,
@@ -231,18 +247,43 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
             });
             await loadPlayerDetail(playerId);
           } catch (err) {
-            saveBtn.disabled = false;
-            saveBtn.textContent = 'Сохранить';
+            if (saveBtn) {
+              saveBtn.disabled = false;
+              saveBtn.textContent = 'Сохранить';
+            }
             alert(
               'Не удалось сохранить: ' +
                 (err instanceof Error ? err.message : String(err))
             );
           }
         })();
+      };
+
+      const handleCancel = (): void => {
+        renderCard(pane, player);
+        void loadPlayerDetail(playerId);
+      };
+
+      // Ставим кнопки «Сохранить»/«Отмена»
+      renderEditActions(handleSave, handleCancel);
+
+      // Рендерим сам редактор
+      renderRatingEditor(initial, (draft) => {
+        currentDraft = draft;
+        const preview = mergePlayerWithDraft(player, draft);
+        renderCard(pane, preview);
       });
+
+      // Плавное появление формы
+      if (formContainer) {
+        formContainer.firstElementChild?.classList.add('fade-in');
+      }
     };
 
-    renderViewActions();
+    // ============================================================
+    // Первичный рендер
+    // ============================================================
+    renderActions();
     await renderRatingsList(playerId);
   } catch (err) {
     pane.innerHTML = `<p class="error fade-in">Ошибка: ${
@@ -254,16 +295,21 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
 }
 
 function renderCard(pane: HTMLElement, player: PlayerWithStats): void {
-  const newCard = buildPlayerCardElement(player, { compact: false });
-  const existing = pane.querySelector('.player-card');
-  if (existing) existing.replaceWith(newCard);
-  else {
-    pane.innerHTML = '';
-    pane.appendChild(newCard);
-  }
+    const newCard = buildPlayerCardElement(player, { compact: false });
+    const existing = pane.querySelector('.player-card');
+    if (existing) existing.replaceWith(newCard);
+    else {
+        pane.innerHTML = '';
+        pane.appendChild(newCard);
+    }
 }
 
 export function showScreen(id: string): void {
-  document.querySelectorAll('.screen').forEach((s) => s.classList.add('hidden'));
-  document.getElementById(id)?.classList.remove('hidden');
+    document.querySelectorAll('.screen').forEach((s) => s.classList.add('hidden'));
+    document.getElementById(id)?.classList.remove('hidden');
+}
+
+export function navigateTo(id: string): void {
+    showScreen(id);
+    renderUserBox();
 }

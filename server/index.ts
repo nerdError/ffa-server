@@ -13,6 +13,7 @@ import { controlRouter } from './routes/control.js';
 import { overlayRouter } from './routes/overlay.js';
 import { supabaseAdmin } from '../lib/supabase-admin';
 import { authenticate } from '../lib/auth';
+import { adminRouter } from './routes/admin';
 
 const execFileAsync = promisify(execFile);
 
@@ -105,6 +106,7 @@ app.use('/api/players', playersRouter);
 app.use('/api/players', ratingsRouter); // ratings вложены в players
 app.use('/api/control', controlRouter);
 app.use('/api/overlay', overlayRouter);
+app.use('/api/admin', adminRouter);
 
 // Health-check
 app.get('/api/health', (_req, res) => {
@@ -149,6 +151,10 @@ app.get('/overlay', (_req, res) => {
 
 app.get('/control', (_req, res) => {
   res.sendFile(path.join(distDir, 'control.html'));
+});
+
+app.get('/admin', (_req, res) => {
+  res.sendFile(path.join(distDir, 'admin.html'));
 });
 
 // Общая статика (assets, favicon и т.д.)

@@ -41,7 +41,9 @@ export interface PlayerWithStats {
 export interface Rating {
   id: number;
   user_id: string;
-  username: string; // было email
+  username: string;
+  is_moderator: boolean;
+  is_admin: boolean;
   race: Race;
   adaptiveness: number;
   greed: number;
@@ -82,8 +84,9 @@ export interface RatingInput {
 export interface AuthUser {
   id: string;
   email: string;
-  username?: string| null; // опционально: приходит из signup
-
+  username?: string | null;
+  is_moderator?: boolean;
+  is_admin?: boolean;
 }
 
 export interface LoginResponse {

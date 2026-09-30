@@ -1,0 +1,294 @@
+/* =========================================
+   Админ-панель
+   ========================================= */
+.admin-main {
+  max-width: 1200px;
+  margin: 32px auto;
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.admin-section {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glow);
+  border-radius: 4px;
+  padding: 20px;
+}
+
+.admin-section h2 {
+  margin: 0 0 16px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #fff;
+  padding-left: 12px;
+  border-left: 4px solid var(--gold);
+}
+
+.admin-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-section-header h2 {
+  margin: 0;
+}
+
+.admin-search {
+  flex: 1;
+  min-width: 240px;
+  max-width: 400px;
+  padding: 10px 14px;
+  background: var(--bg-panel-light);
+  border: 1px solid var(--border-glow);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+}
+.admin-search:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 8px rgba(241, 196, 15, 0.3);
+}
+
+/* =========================================
+   Карточки пользователей
+   ========================================= */
+.admin-users {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-user-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  background: #11151c;
+  border: 1px solid var(--border-glow);
+  border-radius: 3px;
+  flex-wrap: wrap;
+}
+
+.admin-user-info {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-user-email {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.admin-user-username {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+}
+
+.admin-user-roles {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.admin-user-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* =========================================
+   Кнопки ролей
+   ========================================= */
+.admin-role-btn {
+  padding: 8px 14px;
+  background: transparent;
+  border: 1.5px solid var(--border-glow);
+  border-radius: 3px;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.admin-role-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.admin-role-btn.is-active {
+  background: rgba(241, 196, 15, 0.12);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.admin-role-btn--admin:hover {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+.admin-role-btn--admin.is-active {
+  background: rgba(231, 76, 60, 0.12);
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+/* =========================================
+   Таблица игроков
+   ========================================= */
+.admin-players-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-players-table th,
+.admin-players-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-glow);
+  font-size: 0.9rem;
+}
+
+.admin-players-table th {
+  background: #151b24;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.admin-players-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-players-table tr:hover td {
+  background: rgba(52, 152, 219, 0.05);
+}
+
+.admin-player-actions {
+  text-align: right;
+  width: 120px;
+}
+
+.admin-players-table .btn-danger {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+}
+
+/* =========================================
+   Раскрывающиеся строки оценок
+   ========================================= */
+.admin-expand-cell {
+  width: 32px;
+  text-align: center;
+}
+
+.admin-expand-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border-glow);
+  border-radius: 3px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.admin-expand-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(241, 196, 15, 0.1);
+}
+
+.admin-ratings-row.hidden {
+  display: none;
+}
+
+.admin-ratings-cell {
+  padding: 0 !important;
+  background: #0d1117;
+  border-bottom: 1px solid var(--border-glow);
+}
+
+.admin-ratings-cell > div,
+.admin-ratings-cell > table {
+  padding: 12px 20px;
+}
+
+/* =========================================
+   Таблица оценок внутри админки
+   ========================================= */
+.admin-ratings-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #0a0c10;
+}
+
+.admin-ratings-table th,
+.admin-ratings-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-glow);
+  font-size: 0.8rem;
+}
+
+.admin-ratings-table th {
+  background: #151b24;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.admin-ratings-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-ratings-table td:first-child {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.admin-rating-delete-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid rgba(231, 76, 60, 0.4);
+  border-radius: 3px;
+  color: rgba(231, 76, 60, 0.7);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.admin-rating-delete-btn:hover {
+  background: rgba(231, 76, 60, 0.15);
+  border-color: #e74c3c;
+  color: #e74c3c;
+}

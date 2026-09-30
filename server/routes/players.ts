@@ -16,6 +16,12 @@ playersRouter.post('/', async (req, res) => {
   const auth = await authenticate(req);
   if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
 
+  // Проверяем, что пользователь — модератор
+  const { data: isMod } = await auth.client.rpc('is_moderator');
+  if (!isMod) {
+    return res.status(403).json({ error: 'Only moderators can add players' });
+  }
+
   const name = req.body?.name;
   if (typeof name !== 'string' || name.trim().length === 0) {
     return res.status(400).json({ error: 'name is required' });
@@ -37,7 +43,6 @@ playersRouter.post('/', async (req, res) => {
 
   return res.status(201).json({ player: data });
 });
-
 // GET /api/players/:id — один игрок со средними (публичный)
 playersRouter.get('/:id', async (req, res) => {
   const id = Number(req.params.id);
