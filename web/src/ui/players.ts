@@ -42,7 +42,7 @@ let cachedPlayers: PlayerWithStats[] = [];
  * Одна ячейка таблицы: полоска заполнения + буква рейтинга.
  * Если значение null — пустая полоска и «—».
  */
-function statBarCell(value: number | null, color: string): HTMLTableCellElement {
+export function statBarCell(value: number | null, color: string): HTMLTableCellElement {
     const td = document.createElement('td');
     td.className = 'stat-cell';
 
@@ -240,9 +240,9 @@ function renderPlayersTable(
         tr.appendChild(tdTotal);
 
         // Проверяем, модератор ли текущий пользователь
-        const canDelete = Boolean(
-            state.user?.is_admin
-        );
+        // const canDelete = Boolean(
+        //     state.user?.is_admin
+        // );
 
         // В row добавляем ячейку с кнопкой
         // const tdActions = document.createElement('td');

@@ -9,11 +9,11 @@ import {
 import { renderUserBox } from '../main';
 
 // Обёртка: открывает карточку и меняет URL на имя игрока
-async function openPlayerByName(player: { id: number; name: string }): Promise<void> {
-    // Обновляем URL (без перезагрузки страницы)
-    window.history.pushState({}, '', `/?player=${encodeURIComponent(player.name)}`);
-    await openPlayerScreen(player.id);
-}
+// async function openPlayerByName(player: { id: number; name: string }): Promise<void> {
+//     // Обновляем URL (без перезагрузки страницы)
+//     window.history.pushState({}, '', `/?player=${encodeURIComponent(player.name)}`);
+//     await openPlayerScreen(player.id);
+// }
 
 export async function openPlayerScreen(playerId: number): Promise<void> {
     navigateTo('screen-player');
@@ -81,8 +81,8 @@ async function hasMyRating(playerId: number): Promise<boolean> {
     try {
         const res = await apiRequest<{ rating: any | null }>(
             `/api/players/${playerId}/my-rating`,
-            { 
-                token: state.token, 
+            {
+                token: state.token,
             }
         );
         return Boolean(res.rating);
@@ -191,7 +191,7 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
                 actions.appendChild(delBtn);
             }
 
-                        // Кнопка переименования — только для модераторов/админов
+            // Кнопка переименования — только для модераторов/админов
             const canRename = Boolean(state.user?.is_moderator || state.user?.is_admin);
             if (canRename) {
                 const renameBtn = document.createElement('button');
@@ -264,6 +264,35 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
                     })();
                 });
                 actions.appendChild(akaBtn);
+            }
+
+            // Кнопка «Следующий» — только в режиме прохода
+            if (state.reviewMode?.active) {
+                const nextBtn = document.createElement('button');
+                nextBtn.type = 'button';
+                nextBtn.className = 'btn-primary fade-in';
+                nextBtn.textContent = 'Следующий →';
+
+                const { queue, index } = state.reviewMode;
+                const isLast = index >= queue.length - 1;
+
+                if (isLast) {
+                    // На последнем игроке — кнопка «Завершить»
+                    nextBtn.textContent = '✓ Завершить';
+                    nextBtn.addEventListener('click', () => {
+                        state.reviewMode = null;
+                        window.history.pushState({}, '', '/');
+                        if (state.onBackToList) {
+                            state.onBackToList();
+                        }
+                    });
+                } else {
+                    nextBtn.addEventListener('click', () => {
+                        void goToNextPlayer();
+                    });
+                }
+
+                actions.appendChild(nextBtn);
             }
         };
 
@@ -396,4 +425,29 @@ export function showScreen(id: string): void {
 export function navigateTo(id: string): void {
     showScreen(id);
     renderUserBox();
+}
+
+async function goToNextPlayer(): Promise<void> {
+  if (!state.reviewMode?.active) return;
+
+  const { queue, index } = state.reviewMode;
+  const nextIndex = index + 1;
+
+  if (nextIndex >= queue.length) {
+    state.reviewMode = null;
+    if (state.onBackToList) state.onBackToList();
+    return;
+  }
+
+  const next = queue[nextIndex];
+  if (!next) return;   // на всякий случай
+
+  state.reviewMode.index = nextIndex;
+
+  window.history.pushState(
+    {},
+    '',
+    `/?player=${encodeURIComponent(next.name)}`
+  );
+  await openPlayerScreen(next.id);
 }

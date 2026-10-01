@@ -3,7 +3,6 @@ import { STAT_ORDER } from '../radar';
 import { state } from '../state';
 import {
     RACES,
-    STAT_KEYS,
     type MyRating,
     type MyRatingResponse,
     type Race,
@@ -34,18 +33,18 @@ const LEVEL_LETTERS: Record<number, string> = {
     1: 'E', 2: 'D', 3: 'C', 4: 'B', 5: 'A',
 };
 
-function statPill(value: number | null): HTMLSpanElement {
-    const span = document.createElement('span');
-    if (value === null || value === undefined) {
-        span.className = 'stat-pill stat-empty';
-        span.textContent = '—';
-        return span;
-    }
-    const rounded = Math.round(Number(value));
-    span.className = `stat-pill stat-${Math.min(5, Math.max(1, rounded))}`;
-    span.textContent = Number(value).toFixed(2);
-    return span;
-}
+// function statPill(value: number | null): HTMLSpanElement {
+//     const span = document.createElement('span');
+//     if (value === null || value === undefined) {
+//         span.className = 'stat-pill stat-empty';
+//         span.textContent = '—';
+//         return span;
+//     }
+//     const rounded = Math.round(Number(value));
+//     span.className = `stat-pill stat-${Math.min(5, Math.max(1, rounded))}`;
+//     span.textContent = Number(value).toFixed(2);
+//     return span;
+// }
 
 // --- API-запрос своей оценки ---
 async function fetchMyRating(playerId: number): Promise<MyRating | null> {
@@ -386,6 +385,16 @@ export async function renderRatingsList(playerId: number): Promise<void> {
                 td.appendChild(span);
                 tr.appendChild(td);
             }
+
+            // for (const axis of STAT_ORDER) {
+            //     const value = r[axis.key];
+
+            //     const td = document.createElement('td');
+            //     td.className = 'col-desktop';
+            //     td.appendChild(statBarCell(value, axis.color));
+            //     tr.appendChild(td);
+            // }
+
 
             tbody.appendChild(tr);
         }

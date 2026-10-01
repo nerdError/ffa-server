@@ -149,7 +149,20 @@
   background: rgba(52, 152, 219, 0.05);
 }
 
+/* .ratings-lis .stat-cell {
+  padding: 6px 14px;
+  min-width: 110px;
+  vertical-align: middle;
+}
 
+.players-table td.stat-cell {
+  border-bottom: none;
+  padding: 0px 0px;
+}
+
+.stat-cell {
+    padding: 0px 0px;
+} */
 
 /* =========================================
    Экран игрока: базовый layout (просмотр)

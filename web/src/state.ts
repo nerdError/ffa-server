@@ -9,6 +9,14 @@ interface AppState {
     refreshToken: string | null;
     user: AuthUser | null;
     currentPlayerId: number | null;
+
+    reviewMode: {
+        active: boolean;
+        queue: { id: number; name: string }[];   // очередь игроков для оценки
+        index: number;                            // текущий индекс
+    } | null;
+
+    onBackToList: (() => void) | null;
 }
 
 export const state: AppState = {
@@ -16,6 +24,9 @@ export const state: AppState = {
     refreshToken: localStorage.getItem(STORAGE_REFRESH),
     user: readUser(),
     currentPlayerId: null,
+    reviewMode: null,
+    
+    onBackToList: null,
 };
 
 function readUser(): AuthUser | null {

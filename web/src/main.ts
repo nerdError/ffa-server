@@ -17,6 +17,14 @@ export function renderUserBox(): void {
 
     // Залогинен
     if (state.user) {
+        const reviewBtn = document.createElement('button');
+        reviewBtn.type = 'button';
+        reviewBtn.className = 'topbar-link topbar-link--review';
+        reviewBtn.innerHTML = '✓ <span class="btn-label">Оценить всех</span>';
+        reviewBtn.addEventListener('click', () => {
+            void startReviewMode();
+        });
+
         const controlLink = document.createElement('a');
         controlLink.href = '/control';
         controlLink.className = 'topbar-link';
@@ -62,6 +70,7 @@ export function renderUserBox(): void {
             })();
         });
 
+        box.append(reviewBtn);
         box.append(controlLink);
         if (adminBtn) box.append(adminBtn);
         box.append(nameWrap, btn);
@@ -99,6 +108,7 @@ async function openPlayersScreen(): Promise<void> {
     await loadPlayers({
         onOpenPlayer: (id, name) => {
             // Меняем URL на имя и открываем карточку
+            state.reviewMode = null;   // ← сброс режима
             window.history.pushState({}, '', `/?player=${encodeURIComponent(name)}`);
             void openPlayerScreen(id);
         },
@@ -139,6 +149,12 @@ async function init(): Promise<void> {
     const urlParams = new URLSearchParams(window.location.search);
     const rawPlayerParam = urlParams.get('player');
 
+    state.onBackToList = () => {
+        state.reviewMode = null;
+        window.history.pushState({}, '', '/');
+        void openPlayersScreen();
+    };
+
     bindAuth({
         renderUserBox,
         onLoginSuccess: () => {
@@ -152,6 +168,7 @@ async function init(): Promise<void> {
 
     const backBtn = document.getElementById('btn-back');
     backBtn?.addEventListener('click', () => {
+        state.reviewMode = null;
         // Сбрасываем query-параметр player, оставляя только путь
         window.history.pushState({}, '', '/');
         void openPlayersScreen();
@@ -284,3 +301,36 @@ window.addEventListener('popstate', () => {
 window.addEventListener('session:changed', () => {
     renderUserBox();
 });
+
+async function startReviewMode(): Promise<void> {
+    try {
+        const res = await apiRequest<PlayersListResponse>('/api/players');
+        const sorted = [...res.players].sort((a, b) =>
+            a.name.localeCompare(b.name, 'ru')
+        );
+
+        if (sorted.length === 0) {
+            alert('Пока нет игроков для оценки');
+            return;
+        }
+
+        const first = sorted[0];
+        if (!first) return;
+
+        state.reviewMode = {
+            active: true,
+            queue: sorted.map((p) => ({ id: p.id, name: p.name })),
+            index: 0,
+        };
+
+        window.history.pushState(
+            {},
+            '',
+            `/?player=${encodeURIComponent(first.name)}`
+        );
+        await openPlayerScreen(first.id);
+    } catch (err) {
+        alert('Не удалось начать проход: ' +
+            (err instanceof Error ? err.message : String(err)));
+    }
+}
