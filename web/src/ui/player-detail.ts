@@ -1,7 +1,7 @@
 import { apiRequest } from '../api';
 import { state } from '../state';
 import { buildPlayerCardElement } from '../card';
-import type { PlayerResponse, PlayerWithStats, RatingInput } from '../types';
+import type { PlayerResponse, PlayerWithStats, Race, RatingInput } from '../types';
 import {
     renderRatingEditor,
     renderRatingsList,
@@ -41,36 +41,41 @@ function mergePlayerWithDraft(
  * - если у пользователя есть своя оценка — берём её,
  * - иначе — дефолт (раса T, все параметры 3).
  */
-async function fetchInitialRating(playerId: number): Promise<RatingInput> {
-    try {
-        const res = await apiRequest<{ rating: any | null }>(
-            `/api/players/${playerId}/my-rating`,
-            { token: state.token }
-        );
-        const mine = res.rating;
-        if (mine) {
-            return {
-                race: mine.race,
-                adaptiveness: mine.adaptiveness,
-                greed: mine.greed,
-                survival: mine.survival,
-                turtle: mine.turtle,
-                aggression: mine.aggression,
-                variety: mine.variety,
-            };
-        }
-    } catch {
-        /* 401 или другая ошибка — используем дефолт */
+async function fetchInitialRating(
+  playerId: number,
+  dominantRace: Race | null
+): Promise<RatingInput> {
+  try {
+    const res = await apiRequest<{ rating: any | null }>(
+      `/api/players/${playerId}/my-rating`,
+      { token: state.token }
+    );
+    const mine = res.rating;
+    if (mine) {
+      return {
+        race: mine.race,
+        adaptiveness: mine.adaptiveness,
+        greed: mine.greed,
+        survival: mine.survival,
+        turtle: mine.turtle,
+        aggression: mine.aggression,
+        variety: mine.variety,
+      };
     }
-    return {
-        race: 'T',
-        adaptiveness: 1,
-        greed: 1,
-        survival: 1,
-        turtle: 1,
-        aggression: 1,
-        variety: 1,
-    };
+  } catch {
+    /* 401 — используем дефолт */
+  }
+
+  // Нет своей оценки — выбираем доминирующую расу игрока
+  return {
+    race: dominantRace ?? 'T',
+    adaptiveness: 3,
+    greed: 3,
+    survival: 3,
+    turtle: 3,
+    aggression: 3,
+    variety: 3,
+  };
 }
 
 /**
@@ -341,7 +346,7 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
             editPane.classList.add('is-open');
 
             // Загружаем начальные данные
-            const initial = await fetchInitialRating(playerId);
+            const initial = await fetchInitialRating(playerId, player.dominant_race ?? null);
 
             let currentDraft: RatingInput = initial;
 

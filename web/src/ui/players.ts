@@ -29,8 +29,8 @@ const RACE_LABELS: Record<Race, string> = {
 type SortDirection = 'asc' | 'desc';
 type SortKey = 'name' | 'total' | 'races' | StatKey;
 
-let sortKey: SortKey = 'total';
-let sortDirection: SortDirection = 'desc';
+let sortKey: SortKey = 'name';
+let sortDirection: SortDirection = 'asc';
 
 /**
  * Хранилище последнего загруженного списка — чтобы пересортировывать
@@ -225,8 +225,8 @@ function renderPlayersTable(
         }
 
         // Итого — сумма всех средних
-        const tdTotal = document.createElement('td');
-        tdTotal.className = 'total-cell col-mobile-hide';
+        // const tdTotal = document.createElement('td');
+        // tdTotal.className = 'total-cell col-mobile-hide';
 
         const total = STAT_ORDER.reduce((sum, axis) => {
             const v = p[axis.key];
@@ -234,10 +234,10 @@ function renderPlayersTable(
         }, 0);
 
         // Если у игрока вообще нет оценок — показываем «—»
-        const hasAny = STAT_ORDER.some((axis) => typeof p[axis.key] === 'number');
-        tdTotal.textContent = hasAny ? total.toFixed(2) : '—';
+        // const hasAny = STAT_ORDER.some((axis) => typeof p[axis.key] === 'number');
+        // tdTotal.textContent = hasAny ? total.toFixed(2) : '—';
 
-        tr.appendChild(tdTotal);
+        // tr.appendChild(tdTotal);
 
         // Проверяем, модератор ли текущий пользователь
         // const canDelete = Boolean(
@@ -604,11 +604,12 @@ function renderWall(_players: PlayerWithStats[]): void {
         return;
     }
     // Сортируем по «Итого» по убыванию
-    const sorted = [...filtered].sort((a, b) => {
-        const at = calcTotal(a) ?? -1;
-        const bt = calcTotal(b) ?? -1;
-        return bt - at;
-    });
+    // const sorted = [...filtered].sort((a, b) => {
+    //     const at = calcTotal(a) ?? -1;
+    //     const bt = calcTotal(b) ?? -1;
+    //     return bt - at;
+    // });
+    const sorted = sortPlayers(filtered, "name", "asc")
 
     for (const p of sorted) {
         wall.appendChild(buildTile(p));

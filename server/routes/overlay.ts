@@ -77,3 +77,119 @@ overlayRouter.get('/stream', async (req, res) => {
 overlayRouter.get('/debug', (_req, res) => {
   res.json(debugStats());
 });
+
+// ============================================================
+// GET /api/overlay/player/:id?token=...
+// Возвращает игрока в зависимости от viewMode:
+//  - average: средние (то же, что /api/players/:id)
+//  - personal: оценки владельца токена
+// ============================================================
+overlayRouter.get('/player/:id', async (req, res) => {
+  const token = String(req.query.token ?? '');
+  if (!token) return res.status(401).json({ error: 'Missing token' });
+
+  const userId = await resolveUserId(token);
+  if (!userId) return res.status(401).json({ error: 'Invalid token' });
+
+  const playerId = Number(req.params.id);
+  if (!Number.isInteger(playerId) || playerId <= 0) {
+    return res.status(400).json({ error: 'Invalid player id' });
+  }
+
+  // Получаем настройки пользователя, чтобы знать viewMode
+  const state = getState(userId);
+  const viewMode = state.settings.viewMode ?? 'average';
+
+  // Загружаем базовые данные игрока (имя, aka)
+  const { data: player, error: playerErr } = await supabaseAdmin
+    .from('players')
+    .select('id, name, aka')
+    .eq('id', playerId)
+    .maybeSingle();
+
+  if (playerErr) {
+    console.error('[overlay/player] player error:', playerErr);
+    return res.status(500).json({ error: 'DB error' });
+  }
+  if (!player) return res.status(404).json({ error: 'Player not found' });
+
+  // Получаем расы и средние для игрока
+  const { data: stats, error: statsErr } = await supabaseAdmin.rpc(
+    'get_player_with_stats',
+    { p_id: playerId }
+  );
+
+  if (statsErr) {
+    console.error('[overlay/player] stats error:', statsErr);
+    return res.status(500).json({ error: 'DB error' });
+  }
+
+  const avg = stats?.[0] ?? null;
+
+  // Если режим average — отдаём как есть
+  if (viewMode === 'average') {
+    return res.json({
+      player: {
+        id: player.id,
+        name: player.name,
+        aka: player.aka,
+        races: avg?.races ?? [],
+        vote_count: avg?.vote_count ?? 0,
+        adaptiveness: avg?.adaptiveness ?? null,
+        greed: avg?.greed ?? null,
+        survival: avg?.survival ?? null,
+        turtle: avg?.turtle ?? null,
+        aggression: avg?.aggression ?? null,
+        variety: avg?.variety ?? null,
+      },
+    });
+  }
+
+  // Режим personal — берём оценку владельца токена
+  const { data: myRating, error: myErr } = await supabaseAdmin
+    .from('ratings')
+    .select('race, adaptiveness, greed, survival, turtle, aggression, variety')
+    .eq('player_id', playerId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (myErr) {
+    console.error('[overlay/player] rating error:', myErr);
+    return res.status(500).json({ error: 'DB error' });
+  }
+
+  if (!myRating) {
+    // Стример не оценивал этого игрока — отдаём null-значения
+    return res.json({
+      player: {
+        id: player.id,
+        name: player.name,
+        aka: player.aka,
+        races: [],
+        vote_count: 0,
+        adaptiveness: null,
+        greed: null,
+        survival: null,
+        turtle: null,
+        aggression: null,
+        variety: null,
+      },
+    });
+  }
+
+  return res.json({
+    player: {
+      id: player.id,
+      name: player.name,
+      aka: player.aka,
+      races: [myRating.race],
+      vote_count: 1,
+      adaptiveness: myRating.adaptiveness,
+      greed: myRating.greed,
+      survival: myRating.survival,
+      turtle: myRating.turtle,
+      aggression: myRating.aggression,
+      variety: myRating.variety,
+    },
+  });
+});

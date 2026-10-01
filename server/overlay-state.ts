@@ -8,10 +8,13 @@ export type AnimationType =
     | 'slide-down'
     | 'none';
 
+export type ViewMode = 'average' | 'personal';
+
 export interface OverlaySettings {
     animation: AnimationType;
     autoHide: boolean;
     autoHideDelay: number; // секунды
+    viewMode: ViewMode;
 }
 
 export interface OverlayState {
@@ -28,8 +31,9 @@ interface UserSlot {
 
 const DEFAULT_SETTINGS: OverlaySettings = {
     animation: 'fade',
-    autoHide: false,
-    autoHideDelay: 10,
+    autoHide: true,
+    autoHideDelay: 7,
+    viewMode: 'average'
 };
 
 /**

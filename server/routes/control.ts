@@ -79,7 +79,7 @@ controlRouter.post('/settings', (req, res) => {
   const userId = requireUserId(req, res);
   if (!userId) return;
 
-  const { animation, autoHide, autoHideDelay } = req.body ?? {};
+  const { animation, autoHide, autoHideDelay, viewMode } = req.body ?? {};
   const patch: Record<string, unknown> = {};
 
   if (animation !== undefined) {
@@ -100,6 +100,13 @@ controlRouter.post('/settings', (req, res) => {
       return res.status(400).json({ error: 'autoHideDelay must be 1-600' });
     }
     patch.autoHideDelay = d;
+  }
+  // ← НОВОЕ
+  if (viewMode !== undefined) {
+    if (viewMode !== 'average' && viewMode !== 'personal') {
+      return res.status(400).json({ error: 'viewMode must be "average" or "personal"' });
+    }
+    patch.viewMode = viewMode;
   }
 
   updateSettings(userId, patch);

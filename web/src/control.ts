@@ -7,12 +7,20 @@ import { state } from './state';
 
 console.log('[control] token:', state.token);   // временно
 
+const viewModeSelect = document.getElementById('setting-view-mode') as HTMLSelectElement | null;
 const openBtn = document.getElementById('btn-open-overlay') as HTMLAnchorElement | null;
+
+viewModeSelect?.addEventListener('change', () => {
+  void updateSettings({
+    viewMode: viewModeSelect.value as 'average' | 'personal',
+  });
+});
 
 interface OverlaySettings {
     animation: 'fade' | 'slide-left' | 'slide-right' | 'slide-up' | 'slide-down' | 'none';
     autoHide: boolean;
     autoHideDelay: number;
+    viewMode: 'average' | 'personal';
 }
 
 interface OverlayState {
@@ -93,6 +101,7 @@ function renderState(state: OverlayState): void {
     if (animationSelect) animationSelect.value = state.settings.animation;
     if (autoHideCheckbox) autoHideCheckbox.checked = state.settings.autoHide;
     if (delayInput) delayInput.value = String(state.settings.autoHideDelay);
+    if (viewModeSelect) viewModeSelect.value = state.settings.viewMode ?? 'average';
 
     // Перерисовать список (для подсветки)
     renderPlayers(searchInput?.value ?? '');
@@ -181,6 +190,26 @@ delayInput?.addEventListener('change', () => {
 
 // --- Первичная загрузка ---
 async function init(): Promise<void> {
+
+  if (!state.token || !state.user) {
+    sessionStorage.setItem('redirectAfterLogin', '/control');
+    window.location.href = '/';
+    return;
+  }
+
+  // 2. Проверка, что токен ещё валиден (и заодно обновление ролей)
+  try {
+    await apiRequest<{ user: any }>('/api/auth/me', {
+      token: state.token,
+    });
+  } catch (err) {
+    // Токен протух или невалиден — на главную
+    console.warn('[control] auth check failed:', err);
+    sessionStorage.setItem('redirectAfterLogin', '/control');
+    window.location.href = '/';
+    return;
+  }
+
     setupOverlayPanel();   // ← НОВОЕ
 
     try {

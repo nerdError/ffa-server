@@ -158,6 +158,14 @@ async function init(): Promise<void> {
     bindAuth({
         renderUserBox,
         onLoginSuccess: () => {
+            // В onLoginSuccess или после успешного логина:
+            const redirect = sessionStorage.getItem('redirectAfterLogin');
+            if (redirect) {
+                sessionStorage.removeItem('redirectAfterLogin');
+                window.location.href = redirect;
+                return;
+            }
+
             void openPlayersScreen();
         },
     });

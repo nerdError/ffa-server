@@ -21,80 +21,62 @@
         <div class="control-status" id="control-status">—</div>
     </header>
 
-<main class="control-main">
-  <!-- Панель оверлея: ссылка для OBS -->
-  <section class="control-section control-overlay-panel">
-    <h2>OBS Browser Source</h2>
-    <p class="control-overlay-hint">
-      Скопируйте ссылку ниже и вставьте её в OBS как <strong>Browser Source</strong>.
-      Оставьте источник включённым — карточки будут появляться автоматически.
-    </p>
+    <main class="control-main">
+        <!-- Панель оверлея: ссылка для OBS -->
+        <section class="control-section control-overlay-panel">
+            <h2>OBS Browser Source</h2>
+            <p class="control-overlay-hint">
+                Скопируйте ссылку ниже и вставьте её в OBS как <strong>Browser Source</strong>.
+                Оставьте источник включённым — карточки будут появляться автоматически.
+            </p>
 
-    <div class="control-overlay-url">
-  <input
-    type="text"
-    id="overlay-url"
-    class="control-input control-overlay-input"
-    readonly
-    value=""
-  />
-  <button
-    type="button"
-    id="btn-copy-url"
-    class="control-copy-btn"
-    title="Скопировать ссылку"
-  >
-    <span class="control-copy-icon">⧉</span>
-    <span class="control-copy-label">Копировать</span>
-  </button>
-<a
-  id="btn-open-overlay"
-  href="/overlay"
-  target="_blank"
-  rel="noopener noreferrer"
-  class="control-open-btn"
-  title="Открыть оверлей в новой вкладке"
->
-  <span class="control-open-icon">↗</span>
-  <span class="control-open-label">Открыть</span>
-</a>
-  <button
-    type="button"
-    id="btn-regenerate-token"
-    class="control-regen-btn"
-    title="Перевыпустить токен (старая ссылка перестанет работать)"
-  >
-    <span class="control-regen-icon">↻</span>
-    <span class="control-regen-label">Перевыпустить</span>
-  </button>
-</div>
-  </section>
+            <div class="control-overlay-url">
+                <input type="text" id="overlay-url" class="control-input control-overlay-input" readonly value="" />
+                <button type="button" id="btn-copy-url" class="control-copy-btn" title="Скопировать ссылку">
+                    <span class="control-copy-icon">⧉</span>
+                    <span class="control-copy-label">Копировать</span>
+                </button>
+                <a id="btn-open-overlay" href="/overlay" target="_blank" rel="noopener noreferrer"
+                    class="control-open-btn" title="Открыть оверлей в новой вкладке">
+                    <span class="control-open-icon">↗</span>
+                    <span class="control-open-label">Открыть</span>
+                </a>
+                <button type="button" id="btn-regenerate-token" class="control-regen-btn"
+                    title="Перевыпустить токен (старая ссылка перестанет работать)">
+                    <span class="control-regen-icon">↻</span>
+                    <span class="control-regen-label">Перевыпустить</span>
+                </button>
+            </div>
+        </section>
 
-  <!-- Секция: игроки -->
-  <section class="control-section">
-    <h2>Игроки</h2>
-    <input
-      type="text"
-      id="control-search"
-      class="control-search"
-      placeholder="Поиск игрока…"
-      autocomplete="off"
-    />
-    <div id="control-players" class="control-players"></div>
-  </section>
+        <!-- Секция: игроки -->
+        <section class="control-section">
+            <h2>Игроки</h2>
+            <input type="text" id="control-search" class="control-search" placeholder="Поиск игрока…"
+                autocomplete="off" />
+            <div id="control-players" class="control-players"></div>
+        </section>
 
-  <!-- Секция: управление показом -->
-  <section class="control-section">
-    <h2>Показ</h2>
-    <div class="control-actions">
-      <button type="button" id="btn-hide" class="btn-danger">✕ Скрыть карточку</button>
-    </div>
-    <div class="control-current" id="control-current">Ничего не показывается</div>
-  </section>
+        <!-- Секция: управление показом -->
+        <section class="control-section">
+            <h2>Показ</h2>
+            <div class="control-actions">
+                <button type="button" id="btn-hide" class="btn-danger">✕ Скрыть карточку</button>
+            </div>
+            <div class="control-current" id="control-current">Ничего не показывается</div>
+        </section>
 
         <!-- Секция: настройки -->
         <section class="control-section">
             <h2>Настройки</h2>
+
+            <label class="control-label">
+                Режим показа
+                <select id="setting-view-mode" class="control-select">
+                    <option value="average">Средние оценки</option>
+                    <option value="personal">Мои оценки</option>
+                </select>
+            </label>
 
             <label class="control-label">
                 Анимация появления
@@ -118,7 +100,7 @@
                 <input type="number" id="setting-delay" class="control-input" min="1" max="600" value="10" />
             </label>
         </section>
-</main>
+    </main>
 
     <script type="module" src="/src/control.ts"></script>
 </body>
