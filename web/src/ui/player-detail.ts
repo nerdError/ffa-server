@@ -81,7 +81,9 @@ async function hasMyRating(playerId: number): Promise<boolean> {
     try {
         const res = await apiRequest<{ rating: any | null }>(
             `/api/players/${playerId}/my-rating`,
-            { token: state.token }
+            { 
+                token: state.token, 
+            }
         );
         return Boolean(res.rating);
     } catch {

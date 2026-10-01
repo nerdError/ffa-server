@@ -97,19 +97,26 @@ ratingsRouter.post('/:id/ratings', async (req, res) => {
 
 // GET /api/players/:id/my-rating
 ratingsRouter.get('/:id/my-rating', async (req, res) => {
-  const playerId = parseId(req.params.id);
-  if (playerId === null) return res.status(400).json({ error: 'Invalid player id' });
+    try {
+        const playerId = parseId(req.params.id);
+        if (playerId === null) return res.status(400).json({ error: 'Invalid player id' });
 
-  const auth = await authenticate(req);
-  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+        const auth = await authenticate(req);
+        if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
 
-  const { data, error } = await auth.client.rpc('get_my_rating', {
-    p_id: playerId,
-  });
-  if (error) return res.status(500).json({ error: error.message });
+        const { data, error } = await auth.client.rpc('get_my_rating', {
+            p_id: playerId,
+        });
+        
+        if (error) return res.status(500).json({ error: error.message });
 
-  const rating = data && data.length > 0 ? data[0] : null;
-  return res.status(200).json({ rating });
+        const rating = data && data.length > 0 ? data[0] : null;
+        return res.status(200).json({ rating });
+    }
+    catch (e) {
+        console.error(e);
+        return res.status(404).json({ rating: null });
+    }
 });
 
 // DELETE /api/players/:id/my-rating

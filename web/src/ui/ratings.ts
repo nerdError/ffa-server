@@ -380,7 +380,8 @@ export async function renderRatingsList(playerId: number): Promise<void> {
                 const value = r[axis.key];
                 const span = document.createElement('span');
                 span.className = 'stat-value';
-                span.textContent = Number(value).toFixed(2);
+                //Number(value) + " "
+                span.textContent = ""+ LEVEL_LETTERS[value]; // + "" + Number(value) + ""; //.toFixed(2);
                 span.style.color = axis.color;
                 td.appendChild(span);
                 tr.appendChild(td);
