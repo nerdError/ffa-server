@@ -3,6 +3,8 @@
    ========================================= */
 .players-table {
   width: 100%;
+  /* max-width: 1200px; */
+  margin: 0 auto;
   background: var(--bg-panel);
   border-collapse: collapse;
   border: 1px solid var(--border-glow);
@@ -26,6 +28,11 @@
   text-transform: uppercase;
   letter-spacing: 1px;
   white-space: nowrap;
+  text-align: center;
+}
+
+.players-table th[id=col-players] {
+    text-align: left;
 }
 
 .players-table tr:last-child td {
@@ -42,10 +49,15 @@
 .players-table .stat-cell,
 .players-table td.col-desktop {
   /* padding по вертикали = 8px, чтобы полоска не сливалась с border-bottom ячейки */
-  padding: 8px 14px;
-  min-width: 130px;
+  padding: 6px 14px;
+  min-width: 110px;
   vertical-align: middle;
 }
+
+.players-table .stat-cell {
+    /* min-width: 150px; */
+}
+
 
 /* =========================================
    Имя игрока
@@ -247,7 +259,7 @@
    Стена игроков
    ========================================= */
 .players-wall-main {
-  max-width: 1600px;
+  /* max-width: 1200px; */
   margin: 32px auto;
   padding: 0 32px;
   flex: 1;
@@ -281,13 +293,13 @@
   width: 100%;
 }
 
-@media (max-width: 1200px) {
+/* @media (max-width: 1200px) {
   .players-wall { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
+} */
 
-@media (max-width: 720px) {
+/* @media (max-width: 720px) {
   .players-wall { grid-template-columns: 1fr; }
-}
+} */
 
 .player-tile {
   position: relative;
@@ -602,6 +614,7 @@
 
 .players-table td.stat-cell {
   border-bottom: none;
+  padding: 0px 0px;
 }
 
 @media (max-width: 700px) {
@@ -616,9 +629,14 @@
 
 .players-table-wrap {
   width: 100%;
-  max-width: 100%;
+  /* max-width: 1200px; */
+  margin: 0 auto;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   /* Тонкая рамка как визуальный намёк, что можно скроллить */
   padding-bottom: 4px;
+}
+
+.stat-cell {
+    padding: 0px 0px;
 }

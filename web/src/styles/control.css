@@ -593,11 +593,10 @@
   .control-regen-btn { padding: 14px 16px; }
 }
 
-.players-table-wrap {
+/* .players-table-wrap {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  /* Небольшая тень справа — намёк на скролл */
   background:
     linear-gradient(to right, transparent 0, transparent calc(100% - 20px), rgba(0,0,0,0.4) 100%);
   background-attachment: local, scroll;
-}
+} */

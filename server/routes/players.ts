@@ -131,3 +131,55 @@ playersRouter.patch('/:id/aka', async (req, res) => {
 
   res.json({ ok: true, player: data });
 });
+
+// ============================================================
+// PATCH /api/players/:id/name
+// Переименовать игрока (только модератор/админ)
+// ============================================================
+playersRouter.patch('/:id/name', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid player id' });
+  }
+
+  const auth = await authenticate(req);
+  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+
+  const { data: isMod } = await auth.client.rpc('is_moderator');
+  if (!isMod) {
+    return res.status(403).json({ error: 'Moderator access required' });
+  }
+
+  const name = req.body?.name;
+  if (typeof name !== 'string') {
+    return res.status(400).json({ error: 'name is required' });
+  }
+
+  const trimmed = name.trim();
+  if (trimmed.length === 0) {
+    return res.status(400).json({ error: 'name cannot be empty' });
+  }
+  if (trimmed.length > 100) {
+    return res.status(400).json({ error: 'name is too long (max 100)' });
+  }
+
+  const { data, error } = await auth.client
+    .from('players')
+    .update({ name: trimmed })
+    .eq('id', id)
+    .select()
+    .maybeSingle();
+
+  if (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Player with this name already exists' });
+    }
+    console.error('[players/name] error:', error);
+    return res.status(500).json({ error: 'DB error' });
+  }
+  if (!data) {
+    return res.status(404).json({ error: 'Player not found' });
+  }
+
+  res.json({ ok: true, player: data });
+});

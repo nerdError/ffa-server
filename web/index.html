@@ -74,8 +74,8 @@
                     <table class="players-table">
                         <thead>
                             <tr>
-                                <th data-sort-key="name" data-label="Игрок">Игрок</th>
-                                <th class="col-mobile-hide">Расы</th>
+                                <th data-sort-key="name" data-label="Игрок" id="col-players">Игрок</th>
+                                <th class="col-mobile-hide" data-sort-key="races" data-label="Расы">Расы</th>
 
                                 <!-- Десктопные колонки статов -->
                                 <th class="col-desktop" data-sort-key="adaptiveness" data-label="Адаптивность">Адаптивность
@@ -90,7 +90,7 @@
                                 <th class="col-mobile">Статы</th>
 
                                 <th data-sort-key="total" data-label="Итого" class="total-col col-mobile-hide">Итого</th>
-                                <th class="players-actions-header"></th>
+                                <!-- <th class="players-actions-header"></th> -->
                             </tr>
                         </thead>
                         <tbody id="players-tbody"></tbody>

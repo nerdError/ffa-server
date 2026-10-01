@@ -160,6 +160,74 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
             editBtn.addEventListener('click', () => void enterEditMode());
             actions.appendChild(editBtn);
 
+            if (mine) {
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'btn-danger fade-in';
+                delBtn.textContent = '🗑 Удалить мою оценку';
+                delBtn.addEventListener('click', () => {
+                    void (async () => {
+                        if (!confirm('Удалить вашу оценку?')) return;
+                        try {
+                            delBtn.disabled = true;
+                            delBtn.textContent = 'Удаление…';
+                            await apiRequest(`/api/players/${playerId}/my-rating`, {
+                                method: 'DELETE',
+                                token: state.token,
+                            });
+                            await loadPlayerDetail(playerId);
+                        } catch (err) {
+                            delBtn.disabled = false;
+                            delBtn.textContent = '🗑 Удалить мою оценку';
+                            alert(
+                                'Не удалось удалить: ' +
+                                (err instanceof Error ? err.message : String(err))
+                            );
+                        }
+                    })();
+                });
+                actions.appendChild(delBtn);
+            }
+
+                        // Кнопка переименования — только для модераторов/админов
+            const canRename = Boolean(state.user?.is_moderator || state.user?.is_admin);
+            if (canRename) {
+                const renameBtn = document.createElement('button');
+                renameBtn.type = 'button';
+                renameBtn.className = 'btn-secondary fade-in';
+                renameBtn.textContent = '✎ Имя';
+                renameBtn.title = 'Переименовать игрока';
+                renameBtn.addEventListener('click', () => {
+                    void (async () => {
+                        const next = prompt(
+                            `Новое имя для "${player.name}":`,
+                            player.name
+                        );
+                        if (next === null) return;
+
+                        const trimmed = next.trim();
+                        if (!trimmed) {
+                            alert('Имя не может быть пустым');
+                            return;
+                        }
+                        if (trimmed === player.name) return;
+
+                        try {
+                            await apiRequest(`/api/players/${player.id}/name`, {
+                                method: 'PATCH',
+                                token: state.token,
+                                body: { name: trimmed },
+                            });
+                            await loadPlayerDetail(playerId);
+                        } catch (err) {
+                            alert('Не удалось переименовать: ' +
+                                (err instanceof Error ? err.message : String(err)));
+                        }
+                    })();
+                });
+                actions.appendChild(renameBtn);
+            }
+
             // Кнопка редактирования aka — только для модераторов/админов
             const canEditAka = Boolean(state.user?.is_moderator || state.user?.is_admin);
             if (canEditAka) {
@@ -194,35 +262,6 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
                     })();
                 });
                 actions.appendChild(akaBtn);
-            }
-
-            if (mine) {
-                const delBtn = document.createElement('button');
-                delBtn.type = 'button';
-                delBtn.className = 'btn-danger fade-in';
-                delBtn.textContent = '🗑 Удалить мою оценку';
-                delBtn.addEventListener('click', () => {
-                    void (async () => {
-                        if (!confirm('Удалить вашу оценку?')) return;
-                        try {
-                            delBtn.disabled = true;
-                            delBtn.textContent = 'Удаление…';
-                            await apiRequest(`/api/players/${playerId}/my-rating`, {
-                                method: 'DELETE',
-                                token: state.token,
-                            });
-                            await loadPlayerDetail(playerId);
-                        } catch (err) {
-                            delBtn.disabled = false;
-                            delBtn.textContent = '🗑 Удалить мою оценку';
-                            alert(
-                                'Не удалось удалить: ' +
-                                (err instanceof Error ? err.message : String(err))
-                            );
-                        }
-                    })();
-                });
-                actions.appendChild(delBtn);
             }
         };
 

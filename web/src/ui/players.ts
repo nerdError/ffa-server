@@ -96,6 +96,7 @@ export async function loadPlayers(cb: PlayersCallbacks): Promise<void> {
 
         // 1. Навешиваем обработчики ОДИН РАЗ
         bindViewToggle(cb);
+        bindSorting(cb);
 
         // 2. Определяем сохранённый вид (если ещё не задан)
         if (!viewInitialized) {
@@ -244,46 +245,46 @@ function renderPlayersTable(
         );
 
         // В row добавляем ячейку с кнопкой
-        const tdActions = document.createElement('td');
-        tdActions.className = 'players-actions-cell';
+        // const tdActions = document.createElement('td');
+        // tdActions.className = 'players-actions-cell';
 
-        if (canDelete) {
-            const delBtn = document.createElement('button');
-            delBtn.type = 'button';
-            delBtn.className = 'player-delete-btn';
-            delBtn.title = 'Удалить игрока';
-            delBtn.textContent = '🗑';
-            delBtn.addEventListener('click', (e) => {
-                e.stopPropagation();   // не открывать карточку
-                void (async () => {
-                    const confirmed = confirm(
-                        `Удалить игрока "${p.name}"?\n\n` +
-                        `Все оценки (${p.vote_count}) будут удалены безвозвратно.`
-                    );
-                    if (!confirmed) return;
+        // if (canDelete) {
+        //     const delBtn = document.createElement('button');
+        //     delBtn.type = 'button';
+        //     delBtn.className = 'player-delete-btn';
+        //     delBtn.title = 'Удалить игрока';
+        //     delBtn.textContent = '🗑';
+        //     delBtn.addEventListener('click', (e) => {
+        //         e.stopPropagation();   // не открывать карточку
+        //         void (async () => {
+        //             const confirmed = confirm(
+        //                 `Удалить игрока "${p.name}"?\n\n` +
+        //                 `Все оценки (${p.vote_count}) будут удалены безвозвратно.`
+        //             );
+        //             if (!confirmed) return;
 
-                    try {
-                        await apiRequest(`/api/players/${p.id}`, {
-                            method: 'DELETE',
-                            token: state.token,
-                        });
-                        // Перезагружаем список
-                        const { players } = await apiRequest<PlayersListResponse>('/api/players');
-                        cachedPlayers = players;
-                        renderPlayersTable(
-                            sortPlayers(cachedPlayers, sortKey, sortDirection),
-                            cb
-                        );
-                    } catch (err) {
-                        alert('Не удалось удалить: ' +
-                            (err instanceof Error ? err.message : String(err)));
-                    }
-                })();
-            });
-            tdActions.appendChild(delBtn);
-        }
+        //             try {
+        //                 await apiRequest(`/api/players/${p.id}`, {
+        //                     method: 'DELETE',
+        //                     token: state.token,
+        //                 });
+        //                 // Перезагружаем список
+        //                 const { players } = await apiRequest<PlayersListResponse>('/api/players');
+        //                 cachedPlayers = players;
+        //                 renderPlayersTable(
+        //                     sortPlayers(cachedPlayers, sortKey, sortDirection),
+        //                     cb
+        //                 );
+        //             } catch (err) {
+        //                 alert('Не удалось удалить: ' +
+        //                     (err instanceof Error ? err.message : String(err)));
+        //             }
+        //         })();
+        //     });
+        //     tdActions.appendChild(delBtn);
+        // }
 
-        tr.appendChild(tdActions);
+        // tr.appendChild(tdActions);
 
         tbody.appendChild(tr);
     }
