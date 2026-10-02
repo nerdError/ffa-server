@@ -16,7 +16,9 @@ applyTranslations();
 
 onLocaleChange((locale) => {
     applyTranslations();
-    if (lastPlayers && lastCb) renderPlayersTable(lastPlayers, lastCb);
+    // if (lastPlayers && lastCb) renderPlayersTable(lastPlayers, lastCb);
+
+    if (lastView && lastViewCb) setView(lastView, lastViewCb);
 });
 
 let viewInitialized = false;
@@ -608,10 +610,14 @@ function buildTile(player: PlayerWithStats): HTMLAnchorElement {
     return tile;
 }
 
+let lastPlayersRender: PlayerWithStats[] | null = null;
+
 /**
  * Рендерит стену из массива игроков.
  */
 function renderWall(_players: PlayerWithStats[]): void {
+    lastPlayersRender = _players;
+
     const wall = document.getElementById('players-wall');
     if (!wall) return;
 
@@ -644,11 +650,17 @@ function renderWall(_players: PlayerWithStats[]): void {
     }
 }
 
+let lastView: ViewMode | null = null;
+let lastViewCb: PlayersCallbacks | null = null;
+
 /**
  * Переключает вид: table ↔ wall.
  */
 function setView(view: ViewMode, cb: PlayersCallbacks): void {
     currentView = view;
+
+    lastView = view;
+    lastViewCb = cb;
 
     const tableView = document.getElementById('players-table-view');
     const wallView = document.getElementById('players-wall-view');
