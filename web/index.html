@@ -18,8 +18,8 @@
 
 <body>
     <header class="topbar">
-        <!-- data-i18n="topbar.database" data-i18n="topbar.league" --> 
-        <h1>SC2 FFA LEAGUE <span class="subtitle" data-i18n="topbar.database" >// PLAYER DATABASE</span></h1>
+        <!-- data-i18n="topbar.database" data-i18n="topbar.league" -->
+        <h1>SC2 FFA LEAGUE <span class="subtitle" data-i18n="topbar.database">// PLAYER DATABASE</span></h1>
         <div class="topbar-right">
             <div class="lang-switch" id="lang-switch">
                 <button type="button" class="lang-btn" data-lang="ru">RU</button>
@@ -34,25 +34,30 @@
             <div class="card">
                 <h2 data-i18n="auth.login_title">Вход</h2>
                 <form id="form-login" class="form">
-                    <input type="text" name="identifier" data-i18n-placeholder="auth.identifier_placeholder" placeholder="Email или никнейм" required
-                        autocomplete="username" />
-                    <input type="password" name="password" data-i18n-placeholder="auth.password_placeholder" placeholder="Пароль" required minlength="6"
-                        autocomplete="current-password" />
+                    <input type="text" name="identifier" data-i18n-placeholder="auth.identifier_placeholder"
+                        placeholder="Email или никнейм" required autocomplete="username" />
+                    <input type="password" name="password" data-i18n-placeholder="auth.password_placeholder"
+                        placeholder="Пароль" required minlength="6" autocomplete="current-password" />
                     <button type="submit" data-i18n="common.login">Войти</button>
                 </form>
-                <p class="hint"><span data-i18n="auth.no_account">Нет аккаунта?</span> <a href="#" id="link-to-signup" data-i18n="auth.signup_link">Зарегистрироваться</a></p>
+                <p class="hint"><span data-i18n="auth.no_account">Нет аккаунта?</span> <a href="#" id="link-to-signup"
+                        data-i18n="auth.signup_link">Зарегистрироваться</a></p>
             </div>
 
             <div class="card hidden" id="card-signup">
                 <h2 data-i18n="auth.signup_title">Регистрация</h2>
                 <form id="form-signup" class="form">
-                    <input type="text" name="username" data-i18n-placeholder="auth.username_placeholder" placeholder="Никнейм (3-32 символа)" required minlength="3"
-                        maxlength="32" pattern="[a-zA-Z0-9_.\-]+" title="Латинские буквы, цифры, _, ., -" />
-                    <input type="email" name="email" data-i18n-placeholder="auth.email_placeholder" placeholder="Email" required />
-                    <input type="password" name="password" data-i18n-placeholder="auth.password_placeholder_signup" placeholder="Пароль (мин. 6)" required minlength="6" />
+                    <input type="text" name="username" data-i18n-placeholder="auth.username_placeholder"
+                        placeholder="Никнейм (3-32 символа)" required minlength="3" maxlength="32"
+                        pattern="[a-zA-Z0-9_.\-]+" title="Латинские буквы, цифры, _, ., -" />
+                    <input type="email" name="email" data-i18n-placeholder="auth.email_placeholder" placeholder="Email"
+                        required />
+                    <input type="password" name="password" data-i18n-placeholder="auth.password_placeholder_signup"
+                        placeholder="Пароль (мин. 6)" required minlength="6" />
                     <button type="submit" data-i18n="auth.signup_title">Создать аккаунт</button>
                 </form>
-                <p class="hint"><span data-i18n="auth.have_account">Уже есть аккаунт?</span> <a href="#" id="link-to-login" data-i18n="auth.login_link">Войти</a></p>
+                <p class="hint"><span data-i18n="auth.have_account">Уже есть аккаунт?</span> <a href="#"
+                        id="link-to-login" data-i18n="auth.login_link">Войти</a></p>
             </div>
         </section>
 
@@ -60,11 +65,13 @@
             <div class="toolbar">
                 <h2 data-i18n="players.title">Игроки</h2>
                 <div class="toolbar-actions">
-                    <input type="text" id="players-search" class="players-search"
-                        placeholder="Поиск по имени или aka…" data-i18n-placeholder="admin.players_search"/>
+                    <input type="text" id="players-search" class="players-search" placeholder="Поиск по имени или aka…"
+                        data-i18n-placeholder="admin.players_search" />
                     <div class="view-toggle" id="view-toggle">
-                        <button type="button" class="view-toggle-btn is-active" data-view="table" data-i18n="players.view_table">☰ Таблица</button>
-                        <button type="button" class="view-toggle-btn" data-view="wall" data-i18n="players.view_cards">◈ Карточки</button>
+                        <button type="button" class="view-toggle-btn is-active" data-view="table"
+                            data-i18n="players.view_table">☰ Таблица</button>
+                        <button type="button" class="view-toggle-btn" data-view="wall" data-i18n="players.view_cards">◈
+                            Карточки</button>
                     </div>
                     <form id="form-create-player" class="inline-form">
                         <input type="text" name="name" placeholder="Имя нового игрока" required maxlength="100" />
@@ -81,20 +88,28 @@
                     <table class="players-table">
                         <thead>
                             <tr>
-                                <th data-sort-key="name" data-label="Игрок" id="col-players" data-i18n="players.col.name"></th>
-                                <th class="col-mobile-hide" data-sort-key="races" data-label="Расы" data-i18n="players.col.races">Расы</th>
+                                <th data-sort-key="name" data-label="Игрок" id="col-players"
+                                    data-i18n="players.col.name"></th>
+                                <th class="col-mobile-hide" data-sort-key="races" data-label="Расы"
+                                    data-i18n="players.col.races">Расы</th>
 
                                 <!-- Десктопные колонки статов -->
-                                <th class="col-desktop" data-sort-key="adaptiveness" data-label="Адаптивность" data-i18n="stat.adaptiveness">
+                                <th class="col-desktop" data-sort-key="adaptiveness" data-label="Адаптивность"
+                                    data-i18n="stat.adaptiveness">
                                     Адаптивность
                                 </th>
-                                <th class="col-desktop" data-sort-key="aggression" data-label="Агрессия" data-i18n="stat.aggression">Агрессия</th>
-                                <th class="col-desktop" data-sort-key="turtle" data-label="Черепашность" data-i18n="stat.turtle">Черепашность
+                                <th class="col-desktop" data-sort-key="aggression" data-label="Агрессия"
+                                    data-i18n="stat.aggression">Агрессия</th>
+                                <th class="col-desktop" data-sort-key="turtle" data-label="Черепашность"
+                                    data-i18n="stat.turtle">Черепашность
                                 </th>
-                                <th class="col-desktop" data-sort-key="variety" data-label="Разнообразие" data-i18n="stat.variety">Разнообразие
+                                <th class="col-desktop" data-sort-key="variety" data-label="Разнообразие"
+                                    data-i18n="stat.variety">Разнообразие
                                 </th>
-                                <th class="col-desktop" data-sort-key="survival" data-label="Выживание" data-i18n="stat.survival">Выживание</th>
-                                <th class="col-desktop" data-sort-key="greed" data-label="Халява" data-i18n="stat.greed">Халява</th>
+                                <th class="col-desktop" data-sort-key="survival" data-label="Выживание"
+                                    data-i18n="stat.survival">Выживание</th>
+                                <th class="col-desktop" data-sort-key="greed" data-label="Халява"
+                                    data-i18n="stat.greed">Халява</th>
 
                                 <!-- Мобильная колонка со статами (по умолчанию скрыта) -->
                                 <th class="col-mobile" data-i18n='players.col.stats'>Статы</th>
@@ -149,14 +164,21 @@
             Inspired by <span class="footer-author2">Asfarion</span>
         </div>
         <div class="footer-contacts">
-            <button type="button" class="footer-link footer-link--email" id="copy-email" data-i18n-title="footer.discord_copy" title="Скопировать Email">
+
+            <!-- <span class="footer-sep">·</span> -->
+
+        </div>
+
+        <button type="button" class="footer-link footer-link--discord" id="copy-discord"
+            data-i18n-title="footer.discord_copy" title="Скопировать тег">
+            Discord: nerderror
+
+            <button type="button" class="footer-link footer-link--email" id="copy-email"
+                data-i18n-title="footer.discord_copy" title="Скопировать Email">
                 admin@sc2-ffa-league.ru
             </button>
-            <span class="footer-sep">·</span>
-            <button type="button" class="footer-link footer-link--discord" id="copy-discord" data-i18n-title="footer.discord_copy" title="Скопировать тег">
-                Discord: nerderror
-            </button>
-        </div>
+
+        </button>
     </footer>
 
     <script type="module" src="/src/main.ts"></script>
