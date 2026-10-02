@@ -15,7 +15,11 @@ import zergIcon from '../../assets/race/zerg.svg';
 import protossIcon from '../../assets/race/protoss.svg';
 
 import randomIcon from '../../assets/race/random.svg';
-import { t } from '../i18n';
+import { applyTranslations, onLocaleChange, t } from '../i18n';
+
+onLocaleChange((locale) => {
+    applyTranslations();
+});
 
 const RACE_ICONS: Record<Race, string> = {
     T: terranIcon,
@@ -98,8 +102,9 @@ export async function renderRatingButton(
     const editBtn = document.createElement('button');
     editBtn.type = 'button';
     editBtn.className = 'btn-primary rating-start-btn';
-    editBtn.dataset.i18n = mine ? t("player.rating_edit") : t("player.rating_edit");
-    editBtn.textContent = mine ? `✎ ${t("player.rating_edit")}` : `+ ${t("player.rating_edit")}`;
+
+    editBtn.dataset.i18n = mine ? "player.rating_edit" : "player.rating_add";
+    editBtn.textContent = mine ? `✎ ${t("player.rating_edit")}` : `+ ${t("player.rating_add")}`;
 
     editBtn.addEventListener('click', () => {
         const initial: RatingInput = mine
@@ -131,7 +136,8 @@ export async function renderRatingButton(
         const delBtn = document.createElement('button');
         delBtn.type = 'button';
         delBtn.className = 'btn-danger rating-delete-btn';
-        editBtn.dataset.i18n = "player.rating_delete";
+        
+        delBtn.dataset.i18n = "player.rating_delete";
         delBtn.textContent = `🗑 ${t("player.rating_delete")}`;
 
         delBtn.addEventListener('click', () => {
@@ -141,6 +147,8 @@ export async function renderRatingButton(
                 }
                 try {
                     delBtn.disabled = true;
+
+                    delBtn.dataset.i18n = "common.deleting"
                     delBtn.textContent = `${t("common.deleting")}`;
 
                     await apiRequest(`/api/players/${playerId}/my-rating`, {
@@ -151,7 +159,10 @@ export async function renderRatingButton(
                     onDeleted();
                 } catch (err) {
                     delBtn.disabled = false;
+
+                    delBtn.dataset.i18n = "player.rating_delete"
                     delBtn.textContent = `🗑 ${t("player.rating_delete")}`;
+                    
                     alert(
                         'Не удалось удалить: ' +
                         (err instanceof Error ? err.message : String(err))

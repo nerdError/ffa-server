@@ -97,6 +97,7 @@ async function hasMyRating(playerId: number): Promise<boolean> {
 }
 
 export async function loadPlayerDetail(playerId: number): Promise<void> {
+
     const pane = document.getElementById('player-card-pane');
     const editPane = document.getElementById('player-edit-pane');
     const actions = document.getElementById('player-actions');
@@ -165,8 +166,10 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
             const editBtn = document.createElement('button');
             editBtn.type = 'button';
             editBtn.className = 'btn-primary fade-in';
+            
             editBtn.dataset.i18n = mine ? 'player.rating_edit' : 'player.rating_add';
-            editBtn.textContent = mine ? `✎ ${t('player.rating_edit')}` : `+ ${t('player.rating_add')}`;
+            editBtn.textContent = mine ? `${t('player.rating_edit')}` : `${t('player.rating_add')}`;
+            
             editBtn.addEventListener('click', () => void enterEditMode());
             actions.appendChild(editBtn);
 
@@ -174,14 +177,19 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
                 const delBtn = document.createElement('button');
                 delBtn.type = 'button';
                 delBtn.className = 'btn-danger fade-in';
-                editBtn.dataset.i18n = "player.rating_delete"
-                delBtn.textContent = `🗑 ${t("player.rating_delete")}`;
+                
+                delBtn.dataset.i18n = "player.rating_delete"
+                delBtn.textContent = `${t("player.rating_delete")}`;
+
                 delBtn.addEventListener('click', () => {
                     void (async () => {
                         if (!confirm(t('player.rating_delete_confirm'))) return;
                         try {
                             delBtn.disabled = true;
+
+                            delBtn.dataset.i18n = "common.deleting";
                             delBtn.textContent = t("common.deleting");
+
                             await apiRequest(`/api/players/${playerId}/my-rating`, {
                                 method: 'DELETE',
                                 token: state.token,
@@ -189,7 +197,10 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
                             await loadPlayerDetail(playerId);
                         } catch (err) {
                             delBtn.disabled = false;
+
+                            delBtn.dataset.i18n = "player.rating_delete";
                             delBtn.textContent = `🗑 ${t("player.rating_delete")}`;
+                            
                             alert(
                                 `${t("player.rating_delete_error")}: ` +
                                 (err instanceof Error ? err.message : String(err))
@@ -207,7 +218,7 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
                 renameBtn.type = 'button';
                 renameBtn.className = 'btn-secondary fade-in';
                 renameBtn.dataset.i18n = "player.name_edit";
-                renameBtn.textContent = `✎ ${t('player.name_edit')}`;
+                renameBtn.textContent = `${t('player.name_edit')}`;
                 renameBtn.title = 'Переименовать игрока';
                 renameBtn.addEventListener('click', () => {
                     void (async () => {
@@ -291,6 +302,7 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
                     // На последнем игроке — кнопка «Завершить»
                     nextBtn.dataset.i18n = "common.finish";
                     nextBtn.textContent = `✓ ${t('common.finish')}`;
+                    
                     nextBtn.addEventListener('click', () => {
                         state.reviewMode = null;
                         window.history.pushState({}, '', '/');
@@ -315,8 +327,10 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
             const saveBtn = document.createElement('button');
             saveBtn.type = 'button';
             saveBtn.className = 'btn-primary fade-in';
+            
             saveBtn.dataset.i18n = "player.edit_save";
             saveBtn.textContent = t('player.edit_save');
+            
             saveBtn.addEventListener('click', onSave);
             actions.appendChild(saveBtn);
 
@@ -364,6 +378,8 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
                     const saveBtn = actions.querySelector('.btn-primary') as HTMLButtonElement | null;
                     if (saveBtn) {
                         saveBtn.disabled = true;
+
+                        saveBtn.dataset.i18n = "player.rating_saving";
                         saveBtn.textContent = t('player.rating_saving');
                     }
                     try {
@@ -376,6 +392,7 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
                     } catch (err) {
                         if (saveBtn) {
                             saveBtn.disabled = false;
+
                             saveBtn.dataset.i18n = "player.edit_save";
                             saveBtn.textContent = t('player.edit_save');
                         }
