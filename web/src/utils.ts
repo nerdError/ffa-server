@@ -55,9 +55,17 @@ export function transliterateNickname(input: string): string {
   return transliterated.replace(/[^a-zA-Z0-9_-]/g, "");
 }
 
-export function getLocalePlayerName(name: string): string {
+export function getLocalePlayerName(name: string, addAltName = false): string {
+    let firstCode = name[0]!.toLowerCase().charCodeAt(0);
+    const isRu = addAltName && (firstCode >= 1040 && firstCode <= 1103);
+
     if (getLocale() == 'en') {
-        name = transliterate(name);
+        if (isRu) {
+            name = name + " (" +  transliterate(name) + ")" //+ (isRu ? " (" + name + ")" : "");
+        }
+        else {
+            name = transliterate(name);
+        }
     }
 
     return name;

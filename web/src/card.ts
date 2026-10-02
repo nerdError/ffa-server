@@ -86,7 +86,7 @@ export function buildPlayerCardElement(
     titleBlock.className = 'pc-title-block';
     const nameEl = document.createElement('div');
     nameEl.className = 'pc-name';
-    nameEl.textContent = getLocalePlayerName(player.name);
+    nameEl.textContent = getLocalePlayerName(player.name, true);
 
     // aka — если есть
     if (player.aka) {
