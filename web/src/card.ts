@@ -7,6 +7,12 @@ import terranIconUrl from '../assets/race/terran.svg';
 import zergIconUrl from '../assets/race/zerg.svg';
 import protossIconUrl from '../assets/race/protoss.svg';
 import randomIconUrl from '../assets/race/random.svg';
+import { applyTranslations, onLocaleChange, t } from './i18n';
+import { getLocalePlayerName } from './utils';
+
+onLocaleChange((locale) => {
+    applyTranslations();
+});
 
 const RACE_ICON_URL: Record<Race, string> = {
     T: terranIconUrl,
@@ -33,6 +39,9 @@ export function dominantRace(races: Race[]): Race | 'MIXED' {
     return 'MIXED';
 }
 
+let lastPlayer: PlayerWithStats | null = null;
+let lastPlayerOpts: { compact?: boolean } | null = null;
+
 /**
  * Создаёт DOM-элемент карточки игрока.
  * Работает быстро: SVG радара — строка, иконки — обычные <img>.
@@ -45,6 +54,9 @@ export function buildPlayerCardElement(
     opts: { compact?: boolean } = {}
 ): HTMLElement {
     const { compact = false } = opts;
+
+    lastPlayer = player;
+    lastPlayerOpts = opts;
 
     const race = dominantRace(player.races);
     const color = pickRaceColor(player.races);
@@ -74,7 +86,7 @@ export function buildPlayerCardElement(
     titleBlock.className = 'pc-title-block';
     const nameEl = document.createElement('div');
     nameEl.className = 'pc-name';
-    nameEl.textContent = player.name;
+    nameEl.textContent = getLocalePlayerName(player.name);
 
     // aka — если есть
     if (player.aka) {
@@ -95,7 +107,8 @@ export function buildPlayerCardElement(
     votesBlock.className = 'pc-votes';
     const votesLabel = document.createElement('div');
     votesLabel.className = 'pc-votes-label';
-    votesLabel.textContent = 'ГОЛОСОВ';
+    votesLabel.dataset.i18n = 'player.votes'
+    votesLabel.textContent = t('player.votes');
     const votesCount = document.createElement('div');
     votesCount.className = 'pc-votes-count';
     votesCount.textContent = String(player.vote_count);
@@ -138,7 +151,8 @@ export function buildPlayerCardElement(
         // Название
         const nameEl = document.createElement('div');
         nameEl.className = 'pc-legend-name';
-        nameEl.textContent = axis.ru;
+        nameEl.dataset.i18n = axis.langKey;
+        nameEl.textContent = axis.getStr();
 
         // Полоска заполнения (как у слайдера)
         const barWrap = document.createElement('div');

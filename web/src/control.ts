@@ -5,7 +5,17 @@ import type { PlayerWithStats, PlayersListResponse } from './types';
 import { pickRaceColor } from './radar';
 import { state } from './state';
 
-console.log('[control] token:', state.token);   // временно
+import { applyTranslations, onLocaleChange, t } from './i18n';
+
+// При старте
+applyTranslations();
+
+// При смене языка
+onLocaleChange(() => {
+  applyTranslations();
+
+  // и перерисовать всё, что генерится динамически
+});
 
 const viewModeSelect = document.getElementById('setting-view-mode') as HTMLSelectElement | null;
 const openBtn = document.getElementById('btn-open-overlay') as HTMLAnchorElement | null;
@@ -83,12 +93,12 @@ function renderState(state: OverlayState): void {
     // Текущий игрок
     if (currentBox) {
         if (state.currentPlayerId === null) {
-            currentBox.textContent = 'Ничего не показывается';
+            currentBox.textContent = t('control.current_nothing');
             currentBox.classList.remove('is-active');
         } else {
             const player = cachedPlayers.find((p) => p.id === state.currentPlayerId);
             if (player) {
-                currentBox.textContent = `Сейчас: ${player.name}`;
+                currentBox.textContent = `${t('control.current_prefix')} ${player.name}`;
                 currentBox.classList.add('is-active');
             } else {
                 currentBox.textContent = 'Сейчас показывается игрок, которого нет в списке';
@@ -115,13 +125,13 @@ async function fetchState(): Promise<void> {
 
         renderState(stateRes);
         if (statusBox) {
-            statusBox.textContent = '● Подключено';
+            statusBox.textContent = `● ${t('control.connected')}`;
             statusBox.classList.remove('is-error');
             statusBox.classList.add('is-ok');
         }
     } catch (err) {
         if (statusBox) {
-            statusBox.textContent = '● Нет связи';
+            statusBox.textContent = `● ${t('control.disconnected')}`;
             statusBox.classList.add('is-error');
             statusBox.classList.remove('is-ok');
         }
@@ -263,7 +273,7 @@ async function setupOverlayPanel(): Promise<void> {
             token: state.token,
         });
 
-        console.log('[control] token:', state.token);   // временно
+        // console.log('[control] token:', state.token);   // временно
 
         currentToken = res.token;
         updateUrl(res.token);

@@ -5,6 +5,17 @@ import { apiRequest } from './api';
 import { buildPlayerCardElement } from './card';
 import type { PlayerWithStats, PlayerResponse } from './types';
 
+import { applyTranslations, onLocaleChange } from './i18n';
+
+// При старте
+applyTranslations();
+
+// При смене языка
+onLocaleChange(() => {
+  applyTranslations();
+  // и перерисовать всё, что генерится динамически
+});
+
 type AnimationType = 'fade' | 'slide-left' | 'slide-right' | 'slide-up' | 'slide-down' | 'none';
 
 interface OverlaySettings {

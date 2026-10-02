@@ -36,19 +36,70 @@
     margin-left: 12px;
 }
 
-.user-box {
+/* =========================================
+   Правая часть шапки: переключатель языка + user-box
+   ========================================= */
+.topbar-right {
+    display: flex;
     align-items: center;
+    gap: 12px;
+    justify-content: flex-end;
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* Сегментный переключатель языка */
+.lang-switch {
+    display: inline-flex;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-glow);
+    border-radius: 3px;
+    padding: 2px;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.lang-btn {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 6px 10px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    min-width: 32px;
+    text-align: center;
+}
+
+.lang-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.lang-btn.is-active {
+    color: var(--gold);
+    background: rgba(241, 196, 15, 0.1);
+    text-shadow: 0 0 6px rgba(241, 196, 15, 0.4);
+}
+
+.user-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     font-size: 0.95rem;
     color: var(--text-secondary);
+    justify-content: flex-end;
+    flex-wrap: nowrap;
     min-width: 0;
-
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    width: 100%;
-    max-width: 100%;
-    justify-content: stretch;
 }
+
 
 /* Ссылки в шапке */
 .topbar-link {
@@ -274,13 +325,24 @@ main {
         overflow: visible;
     }
 
-    /* Кнопки в 2 колонки одинаковой ширины */
-    .user-box {
+    .topbar-right {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 6px;
+        grid-template-columns: auto 1fr;
+        gap: 8px;
         width: 100%;
-        max-width: 100%;
+        align-items: center;
+    }
+
+    .lang-switch {
+        flex-shrink: 0;
+    }
+
+    .user-box {
+        /* user-box внутри grid-ячейки, снова flex для кнопок */
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-width: 0;
     }
 
     .user-box>* {
@@ -314,13 +376,13 @@ main {
 }
 
 .topbar-link--review {
-  background: rgba(46, 204, 113, 0.1);
-  border-color: rgba(46, 204, 113, 0.5);
-  color: #2ecc71;
+    background: rgba(46, 204, 113, 0.1);
+    border-color: rgba(46, 204, 113, 0.5);
+    color: #2ecc71;
 }
 
 .topbar-link--review:hover {
-  background: rgba(46, 204, 113, 0.2);
-  border-color: #2ecc71;
-  box-shadow: 0 0 12px rgba(46, 204, 113, 0.4);
+    background: rgba(46, 204, 113, 0.2);
+    border-color: #2ecc71;
+    box-shadow: 0 0 12px rgba(46, 204, 113, 0.4);
 }

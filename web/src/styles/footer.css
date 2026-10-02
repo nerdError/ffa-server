@@ -119,6 +119,62 @@
   box-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
 }
 
+/* =========================================
+   Кнопка Email (с копированием)
+   ========================================= */
+.footer-link--email {
+  /* Сброс браузерных стилей кнопки */
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 4px 10px;
+  border-radius: 3px;
+
+  /* Шрифт как у остальных ссылок в футере */
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+
+  /* Цвета email */
+  color: #2ecc71;
+  cursor: pointer;
+  user-select: none;
+
+  transition:
+    color 0.2s,
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.footer-link--email:hover {
+  color: #71e09f;
+  background: rgba(89, 182, 106, 0.1);
+  border-color: rgba(89, 182, 91, 0.5);
+  box-shadow: 0 0 10px rgba(89, 182, 101, 0.3);
+}
+
+.footer-link--email:active {
+  background: rgba(89, 182, 103, 0.2);
+  transform: scale(0.98);
+}
+
+.footer-link--email:focus-visible {
+  outline: none;
+  border-color: #59b65e;
+  box-shadow: 0 0 0 2px rgba(89, 182, 94, 0.3);
+}
+
+/* Состояние «скопировано» — зелёный акцент */
+.footer-link--email.is-copied {
+  color: #2ecc71;
+  background: rgba(46, 204, 113, 0.1);
+  border-color: rgba(46, 204, 113, 0.5);
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+}
+
 .footer-author2 {
   color: var(--text-muted);
   font-weight: 700;

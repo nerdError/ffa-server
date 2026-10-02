@@ -1,19 +1,26 @@
+import { applyTranslations, onLocaleChange, t } from './i18n';
 import type { PlayerWithStats, Race, StatKey } from './types';
+
+applyTranslations();
+
+onLocaleChange((locale) => {
+    applyTranslations();
+});
 
 export interface StatAxis {
     key: StatKey;
-    ru: string;
-    short: string;
+    langKey: string;
+    getStr: () => string;
     color: string;
 }
 
 export const STAT_ORDER: readonly StatAxis[] = [
-    { key: 'adaptiveness', ru: 'Адаптивность', short: 'Адапт.', color: '#e67e22' },
-    { key: 'aggression', ru: 'Агрессия', short: 'Агресс.', color: '#e74c3c' },
-    { key: 'turtle', ru: 'Черепашность', short: 'Черепаха', color: '#2ecc71' },
-    { key: 'variety', ru: 'Разнообразие', short: 'Разнообр.', color: '#9b59b6' },
-    { key: 'survival', ru: 'Выживание', short: 'Выжив.', color: '#3498db' },
-    { key: 'greed', ru: 'Халява', short: 'Халява', color: '#f1c40f' },
+    { key: 'adaptiveness', getStr: () => t('stat.adaptiveness'), langKey: 'stat.adaptiveness', color: '#e67e22' },
+    { key: 'aggression', getStr: () => t('stat.aggression'), langKey: 'stat.aggression', color: '#e74c3c' },
+    { key: 'turtle', getStr: () => t('stat.turtle'), langKey: 'stat.turtle', color: '#2ecc71' },
+    { key: 'variety', getStr: () => t('stat.variety'), langKey: 'stat.variety', color: '#9b59b6' },
+    { key: 'survival', getStr: () => t('stat.survival'), langKey: 'stat.survival', color: '#3498db' },
+    { key: 'greed', getStr: () => t('stat.greed'), langKey: 'stat.greed', color: '#f1c40f' },
 ] as const;
 
 const RACE_COLORS: Record<Race | 'MIXED', string> = {
@@ -41,9 +48,12 @@ interface RadarOptions {
     showVertices?: boolean;
 }
 
+export let lastRadarOptions: RadarOptions | null = null;
+
 export function buildRadarSVG(opts: RadarOptions): string {
     const { stats, color, size = 480, maxLevel = 5, uniqueId, showVertices } = opts;
-
+    lastRadarOptions = opts;
+    
     // Уникальный суффикс для id внутри этого SVG
     const uid = uniqueId ?? `r${Math.random().toString(36).slice(2, 9)}`;
     const glowId = `glow-${uid}`;
@@ -117,7 +127,7 @@ export function buildRadarSVG(opts: RadarOptions): string {
 
         const angle = startAngle + i * angleStep;
 
-        const text = axis.ru.toUpperCase();
+        const text = axis.getStr().toUpperCase();
         const fontSize = text.length >= 13 ? 10 : text.length >= 10 ? 11 : 12;
 
         // Отступ от кольца: половина длины текста + запас,

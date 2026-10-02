@@ -15,7 +15,7 @@
     <header class="control-header">
         <a href="/" class="control-back" title="Вернуться на главную">
             <span class="control-back-arrow">←</span>
-            <span class="control-back-label">На главную</span>
+            <span data-i18n="control.back_to_main" class="control-back-label">На главную</span>
         </a>
         <h1>OVERLAY CONTROL</h1>
         <div class="control-status" id="control-status">—</div>
@@ -25,7 +25,7 @@
         <!-- Панель оверлея: ссылка для OBS -->
         <section class="control-section control-overlay-panel">
             <h2>OBS Browser Source</h2>
-            <p class="control-overlay-hint">
+            <p data-i18n="control.obs_hint" class="control-overlay-hint">
                 Скопируйте ссылку ниже и вставьте её в OBS как <strong>Browser Source</strong>.
                 Оставьте источник включённым — карточки будут появляться автоматически.
             </p>
@@ -34,69 +34,70 @@
                 <input type="text" id="overlay-url" class="control-input control-overlay-input" readonly value="" />
                 <button type="button" id="btn-copy-url" class="control-copy-btn" title="Скопировать ссылку">
                     <span class="control-copy-icon">⧉</span>
-                    <span class="control-copy-label">Копировать</span>
+                    <span data-i18n="control.copy_url" class="control-copy-label">Копировать</span>
                 </button>
                 <a id="btn-open-overlay" href="/overlay" target="_blank" rel="noopener noreferrer"
                     class="control-open-btn" title="Открыть оверлей в новой вкладке">
                     <span class="control-open-icon">↗</span>
-                    <span class="control-open-label">Открыть</span>
+                    <span data-i18n="control.open_overlay"  class="control-open-label">Открыть</span>
                 </a>
-                <button type="button" id="btn-regenerate-token" class="control-regen-btn"
+                <button type="button" id="btn-regenerate-token"  class="control-regen-btn"
                     title="Перевыпустить токен (старая ссылка перестанет работать)">
                     <span class="control-regen-icon">↻</span>
-                    <span class="control-regen-label">Перевыпустить</span>
+                    <span data-i18n="control.regenerate_token" class="control-regen-label">Перевыпустить</span>
                 </button>
             </div>
         </section>
 
         <!-- Секция: игроки -->
         <section class="control-section">
-            <h2>Игроки</h2>
-            <input type="text" id="control-search" class="control-search" placeholder="Поиск игрока…"
+            <h2 data-i18n="control.players_title">Игроки</h2>
+            <input data-i18n-placeholder="control.players_search" type="text" id="control-search" class="control-search" placeholder="Поиск игрока…"
                 autocomplete="off" />
             <div id="control-players" class="control-players"></div>
         </section>
 
         <!-- Секция: управление показом -->
         <section class="control-section">
-            <h2>Показ</h2>
-            <div class="control-actions">
-                <button type="button" id="btn-hide" class="btn-danger">✕ Скрыть карточку</button>
+            <h2 data-i18n="control.show_title">Показ</h2>
+            <div  class="control-actions">
+                <button type="button" id="btn-hide" class="btn-danger" data-i18n="control.hide_button">✕ Скрыть карточку</button>
             </div>
-            <div class="control-current" id="control-current">Ничего не показывается</div>
+            <span data-i18n="control.current_nothing" class="control-current" id="control-current">Ничего не показывается</span>
         </section>
 
         <!-- Секция: настройки -->
         <section class="control-section">
-            <h2>Настройки</h2>
+            <h2 data-i18n="control.settings_title">Настройки</h2>
 
+            <label class="control-label" data-i18n="control.view_mode_label">Режим показа</label>
             <label class="control-label">
-                Режим показа
                 <select id="setting-view-mode" class="control-select">
-                    <option value="average">Средние оценки</option>
-                    <option value="personal">Мои оценки</option>
+                    <option value="average" data-i18n="control.view_mode_average">Средние оценки</option>
+                    <option value="personal" data-i18n="control.view_mode_personal">Мои оценки</option>
                 </select>
             </label>
 
+            <label class="control-label" data-i18n="control.animation_label">Анимация появления</label>
             <label class="control-label">
-                Анимация появления
                 <select id="setting-animation" class="control-select">
                     <option value="fade">Fade</option>
-                    <option value="slide-left">Вылет слева</option>
-                    <option value="slide-right">Вылет справа</option>
-                    <option value="slide-up">Вылет снизу</option>
-                    <option value="slide-down">Вылет сверху</option>
-                    <option value="none">Без анимации</option>
+                    <option data-i18n="control.animation_slide_left" value="slide-left">Вылет слева</option>
+                    <option data-i18n="control.animation_slide_right" value="slide-right">Вылет справа</option>
+                    <option data-i18n="control.animation_slide_up" value="slide-up">Вылет снизу</option>
+                    <option data-i18n="control.animation_slide_down" value="slide-down">Вылет сверху</option>
+                    <option data-i18n="control.animation_none" value="none">Без анимации</option>
                 </select>
             </label>
 
+            <!-- <label class="control-label" data-i18n="control.autohide_label">Автоматически скрывать</label> -->
             <label class="control-label control-label--inline">
                 <input type="checkbox" id="setting-autohide" />
-                Автоматически скрывать
+                <label class="control-label" data-i18n="control.autohide_label">Автоматически скрывать карточку через время</label>
             </label>
 
+            <label class="control-label" data-i18n="control.autohide_delay_label">Скрывать через (секунд)</label>
             <label class="control-label">
-                Скрывать через (секунд)
                 <input type="number" id="setting-delay" class="control-input" min="1" max="600" value="10" />
             </label>
         </section>

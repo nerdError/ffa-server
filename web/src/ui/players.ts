@@ -9,6 +9,15 @@ import type { Race, StatKey } from '../types';
 import { buildRadarSVG, pickRaceColor, STAT_ORDER } from '../radar';
 import randomIcon from '../../assets/race/random.svg';
 import { dominantRace } from '../card';
+import { applyTranslations, getLocale, onLocaleChange, t } from '../i18n';
+import { getLocalePlayerName, transliterate, transliterateNickname } from '../utils';
+
+applyTranslations();
+
+onLocaleChange((locale) => {
+    applyTranslations();
+    if (lastPlayers && lastCb) renderPlayersTable(lastPlayers, lastCb);
+});
 
 let viewInitialized = false;
 
@@ -80,7 +89,7 @@ export async function loadPlayers(cb: PlayersCallbacks): Promise<void> {
     if (!tbody || !errBox) return;
 
     errBox.classList.add('hidden');
-    tbody.innerHTML = '<tr><td colspan="10">Загрузка…</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="10">${t("common.loading")}</td></tr>`;
 
     const searchInput = document.getElementById('players-search') as HTMLInputElement | null;
 
@@ -142,6 +151,9 @@ function fmtRaceCells(races: PlayerWithStats['races']): HTMLTableCellElement {
     return td;
 }
 
+let lastPlayers: PlayerWithStats[] | null = null;
+let lastCb: PlayersCallbacks | null = null;
+
 function renderPlayersTable(
     _players: PlayerWithStats[],
     cb: PlayersCallbacks
@@ -149,6 +161,17 @@ function renderPlayersTable(
     const tbody = document.getElementById('players-tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
+
+    lastPlayers = _players;
+    lastCb = cb;
+
+    document.querySelector("#players-table-view > div > table > thead > tr > th.col-mobile-hide")!.textContent = t("players.col.races");
+    document.querySelector("#players-table-view > div > table > thead > tr > th:nth-child(3)")!.textContent = t("stat.adaptiveness");
+    document.querySelector("#players-table-view > div > table > thead > tr > th:nth-child(4)")!.textContent = t("stat.aggression");
+    document.querySelector("#players-table-view > div > table > thead > tr > th:nth-child(5)")!.textContent = t("stat.turtle");
+    document.querySelector("#players-table-view > div > table > thead > tr > th:nth-child(6)")!.textContent = t("stat.variety");
+    document.querySelector("#players-table-view > div > table > thead > tr > th:nth-child(7)")!.textContent = t("stat.survival");
+    document.querySelector("#players-table-view > div > table > thead > tr > th:nth-child(8)")!.textContent = t("stat.greed");
 
     const filtered = searchQuery
         ? _players.filter((p) =>
@@ -159,7 +182,7 @@ function renderPlayersTable(
 
     if (filtered.length === 0) {
         tbody.innerHTML =
-            '<tr><td colspan="9" class="hint">Пока нет игроков.</td></tr>';
+            `<tr><td colspan="9" class="hint">${t("players.no_players")}.</td></tr>`;
         return;
     }
 
@@ -170,7 +193,9 @@ function renderPlayersTable(
         const tdName = document.createElement('td');
         const link = document.createElement('a');
         link.className = 'player-name-link';
-        link.textContent = p.name;
+
+        link.textContent = getLocalePlayerName(p.name);
+        
         link.href = '#';
         link.style.color = pickRaceColor(p.races);           // ← цвет расы
         link.style.setProperty('--race-color', pickRaceColor(p.races)); // ← для hover
@@ -208,7 +233,8 @@ function renderPlayersTable(
             const span = document.createElement('span');
             span.className = 'stat-letter';
             span.style.color = axis.color;
-            span.title = `${axis.ru}: ${val.toFixed(2)} (${letters[Math.round(val)] ?? '?'})`;
+            span.dataset.i18n = axis.langKey;
+            span.title = `${axis.getStr()}: ${val.toFixed(2)} (${letters[Math.round(val)] ?? '?'})`;
             span.textContent = letters[Math.round(val)] ?? '?';
             lettersWrap.appendChild(span);
         }
@@ -228,10 +254,10 @@ function renderPlayersTable(
         // const tdTotal = document.createElement('td');
         // tdTotal.className = 'total-cell col-mobile-hide';
 
-        const total = STAT_ORDER.reduce((sum, axis) => {
-            const v = p[axis.key];
-            return sum + (typeof v === 'number' ? v : 0);
-        }, 0);
+        // const total = STAT_ORDER.reduce((sum, axis) => {
+        //     const v = p[axis.key];
+        //     return sum + (typeof v === 'number' ? v : 0);
+        // }, 0);
 
         // Если у игрока вообще нет оценок — показываем «—»
         // const hasAny = STAT_ORDER.some((axis) => typeof p[axis.key] === 'number');
@@ -545,7 +571,7 @@ function buildTile(player: PlayerWithStats): HTMLAnchorElement {
 
     const name = document.createElement('span');
     name.className = 'player-tile-name';
-    name.textContent = player.name;
+    name.textContent = getLocalePlayerName(player.name);
     header.appendChild(name);
 
     tile.appendChild(header);
@@ -569,10 +595,12 @@ function buildTile(player: PlayerWithStats): HTMLAnchorElement {
     const total = calcTotal(player);
 
     const votes = document.createElement('span');
-    votes.innerHTML = `Голосов: <strong>${player.vote_count}</strong>`;
+    // votes.dataset.i18n = "player.votes";
+    votes.innerHTML = `${t('player.votes')}: <strong>${player.vote_count}</strong>`;
 
     const totalEl = document.createElement('span');
-    totalEl.innerHTML = `Итого: <strong>${total !== null ? total.toFixed(2) : '—'}</strong>`;
+    // totalEl.dataset.i18n = "player.total";
+    totalEl.innerHTML = `${t('player.total')}: <strong>${total !== null ? total.toFixed(2) : '—'}</strong>`;
 
     footer.append(votes, totalEl);
     tile.appendChild(footer);
@@ -599,8 +627,8 @@ function renderWall(_players: PlayerWithStats[]): void {
 
     if (filtered.length === 0) {
         wall.innerHTML = searchQuery
-            ? '<p class="hint">Ничего не найдено</p>'
-            : '<p class="hint">Пока нет игроков</p>';
+            ? `<p class="hint">${t('players.nothing_found')}</p>`
+            : `<p class="hint">${t('players.no_players')}</p>`;
         return;
     }
     // Сортируем по «Итого» по убыванию

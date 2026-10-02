@@ -8,6 +8,68 @@ import { bindAuth } from './ui/auth';
 import { bindCreatePlayer, loadPlayers } from './ui/players';
 import { showScreen, openPlayerScreen, navigateTo } from './ui/player-detail';
 import { PlayersListResponse } from './types';
+import { Locale, onLocaleChange, t } from './i18n';
+
+import { applyTranslations } from './i18n';
+
+import { getLocale, setLocale } from './i18n';
+
+document.querySelectorAll<HTMLButtonElement>('.lang-btn').forEach((btn) => {
+    btn.classList.toggle('is-active', btn.dataset.lang === getLocale());
+    btn.addEventListener('click', () => {
+        const lang = btn.dataset.lang as 'ru' | 'en';
+        setLocale(lang);
+    });
+});
+
+// При старте
+applyTranslations();
+
+onLocaleChange((locale) => {
+    // 1. Применяем переводы к статичному HTML
+    applyTranslations();
+
+    // 2. Перерисовываем шапку (там динамические кнопки)
+    renderUserBox();
+
+    // 3. Перерисовываем текущий экран — но аккуратно, чтобы не потерять состояние
+    // Например, если открыт список игроков — перерисуем таблицу
+    // Пока можем просто перерисовать, если экран активен
+    const activeScreen = document.querySelector('.screen:not(.hidden)');
+    if (activeScreen?.id === 'screen-players') {
+        // Здесь можно вызвать перерисовку списка — но это уже следующий этап.
+        // Пока оставим как есть: локализация списка будет добавляться отдельно.
+    }
+
+    document.querySelectorAll<HTMLButtonElement>('.lang-btn').forEach((btn) => {
+        btn.classList.toggle('is-active', btn.dataset.lang === locale);
+    });
+});
+
+function setupLangSwitch(): void {
+    const buttons = document.querySelectorAll<HTMLButtonElement>('.lang-btn');
+
+    const updateActive = (locale: Locale): void => {
+        buttons.forEach((btn) => {
+            btn.classList.toggle('is-active', btn.dataset.lang === locale);
+        });
+    };
+
+    buttons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const lang = btn.dataset.lang as Locale | undefined;
+            if (lang === 'ru' || lang === 'en') {
+                setLocale(lang);
+            }
+        });
+    });
+
+    // Устанавливаем активную при старте
+    updateActive(getLocale());
+
+    // Подписываемся на изменение языка из других мест (например, если кто-то вызовет setLocale программно)
+    onLocaleChange(updateActive);
+}
 
 // --- User box в шапке ---
 export function renderUserBox(): void {
@@ -20,7 +82,7 @@ export function renderUserBox(): void {
         const reviewBtn = document.createElement('button');
         reviewBtn.type = 'button';
         reviewBtn.className = 'topbar-link topbar-link--review';
-        reviewBtn.innerHTML = '✓ <span class="btn-label">Оценить всех</span>';
+        reviewBtn.innerHTML = `✓ <span class="btn-label">${t('players.review_all')}</span>`;
         reviewBtn.addEventListener('click', () => {
             void startReviewMode();
         });
@@ -28,7 +90,7 @@ export function renderUserBox(): void {
         const controlLink = document.createElement('a');
         controlLink.href = '/control';
         controlLink.className = 'topbar-link';
-        controlLink.innerHTML = '🎬 <span class="btn-label">Режим стримера</span>';
+        controlLink.innerHTML = `🎬 <span class="btn-label">${t('topbar.streamer_mode')}</span>`;
 
         // Ник с бейджем роли
         const nameWrap = document.createElement('span');
@@ -53,11 +115,11 @@ export function renderUserBox(): void {
             adminBtn = document.createElement('a');
             adminBtn.href = '/admin';
             adminBtn.className = 'topbar-link topbar-link--admin';
-            adminBtn.innerHTML = '⚙ <span class="btn-label">Админ</span>';
+            adminBtn.innerHTML = `⚙ <span class="btn-label">${t("topbar.admin")}</span>`;
         }
 
         const btn = document.createElement('button');
-        btn.textContent = 'Выйти';
+        btn.textContent = t("common.logout");
         btn.className = 'btn-secondary';
         btn.addEventListener('click', () => {
             void (async () => {
@@ -86,20 +148,24 @@ export function renderUserBox(): void {
         // На экране логина — просто текст
         const span = document.createElement('span');
         span.className = 'topbar-guest';
-        span.textContent = 'Вы не авторизованы';
+        span.setAttribute("data-i18n", 'topbar.guest');
+        span.textContent = t("topbar.guest");
+        applyTranslations();
         box.appendChild(span);
     } else {
         // На других экранах — кнопка «Войти»
         const loginBtn = document.createElement('button');
         loginBtn.type = 'button';
         loginBtn.className = 'topbar-login-btn';
-        loginBtn.textContent = 'Войти';
+        loginBtn.textContent = t("common.login");
         loginBtn.addEventListener('click', () => {
             navigateTo('screen-auth');
             renderUserBox();  // перерисовываем шапку под новый экран
         });
         box.appendChild(loginBtn);
     }
+
+    applyTranslations();
 }
 
 // --- Навигация ---
@@ -182,8 +248,10 @@ async function init(): Promise<void> {
         void openPlayersScreen();
     });
 
+    setupLangSwitch();
+    applyTranslations();   // применить переводы ко всем data-i18n в HTML
     renderUserBox();
-    navigateTo('screen-loading');
+    showScreen('screen-loading');
 
     const minLoaderMs = 300;
     const loaderStart = performance.now();
@@ -205,8 +273,8 @@ async function init(): Promise<void> {
         if (playerIdFromUrl !== null) {
             void openPlayerScreen(playerIdFromUrl);
         } else {
-            navigateTo('screen-auth');
-            // void openPlayersScreen();
+            // navigateTo('screen-auth');
+            void openPlayersScreen();
         }
         return;
     }
@@ -250,8 +318,8 @@ async function init(): Promise<void> {
         if (playerIdFromUrl !== null) {
             void openPlayerScreen(playerIdFromUrl);
         } else {
-            navigateTo('screen-auth');
-            // void openPlayersScreen();
+            // navigateTo('screen-auth');
+            void openPlayersScreen();
         }
     }
 
@@ -270,7 +338,7 @@ copyDiscord?.addEventListener('click', async () => {
 
     try {
         await navigator.clipboard.writeText('nerderror');
-        copyDiscord.textContent = '✓ Скопировано';
+        copyDiscord.textContent = '✓ ' + t('common.copied');
         copyDiscord.classList.add('is-copied');
 
         setTimeout(() => {
@@ -281,6 +349,34 @@ copyDiscord?.addEventListener('click', async () => {
         // Fallback — если clipboard API недоступен
         const range = document.createRange();
         range.selectNodeContents(copyDiscord);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+    }
+});
+
+const copyEmail = document.getElementById('copy-email') as HTMLButtonElement | null;
+
+copyEmail?.addEventListener('click', async () => {
+    const originalText = copyEmail.dataset.originalText ?? copyEmail.textContent ?? '';
+    // Сохраняем оригинальный текст один раз
+    if (!copyEmail.dataset.originalText) {
+        copyEmail.dataset.originalText = originalText;
+    }
+
+    try {
+        await navigator.clipboard.writeText('admin@sc2-ffa-league.ru');
+        copyEmail.textContent = '✓ ' + t('common.copied');
+        copyEmail.classList.add('is-copied');
+
+        setTimeout(() => {
+            copyEmail.textContent = copyEmail.dataset.originalText ?? originalText;
+            copyEmail.classList.remove('is-copied');
+        }, 1500);
+    } catch {
+        // Fallback — если clipboard API недоступен
+        const range = document.createRange();
+        range.selectNodeContents(copyEmail);
         const selection = window.getSelection();
         selection?.removeAllRanges();
         selection?.addRange(range);
@@ -318,7 +414,7 @@ async function startReviewMode(): Promise<void> {
         );
 
         if (sorted.length === 0) {
-            alert('Пока нет игроков для оценки');
+            alert(t('control.no_players'));
             return;
         }
 

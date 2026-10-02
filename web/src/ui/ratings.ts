@@ -15,6 +15,7 @@ import zergIcon from '../../assets/race/zerg.svg';
 import protossIcon from '../../assets/race/protoss.svg';
 
 import randomIcon from '../../assets/race/random.svg';
+import { t } from '../i18n';
 
 const RACE_ICONS: Record<Race, string> = {
     T: terranIcon,
@@ -97,7 +98,8 @@ export async function renderRatingButton(
     const editBtn = document.createElement('button');
     editBtn.type = 'button';
     editBtn.className = 'btn-primary rating-start-btn';
-    editBtn.textContent = mine ? '✎ Изменить мою оценку' : '+ Добавить оценку';
+    editBtn.dataset.i18n = mine ? t("player.rating_edit") : t("player.rating_edit");
+    editBtn.textContent = mine ? `✎ ${t("player.rating_edit")}` : `+ ${t("player.rating_edit")}`;
 
     editBtn.addEventListener('click', () => {
         const initial: RatingInput = mine
@@ -129,16 +131,17 @@ export async function renderRatingButton(
         const delBtn = document.createElement('button');
         delBtn.type = 'button';
         delBtn.className = 'btn-danger rating-delete-btn';
-        delBtn.textContent = '🗑 Удалить мою оценку';
+        editBtn.dataset.i18n = "player.rating_delete";
+        delBtn.textContent = `🗑 ${t("player.rating_delete")}`;
 
         delBtn.addEventListener('click', () => {
             void (async () => {
-                if (!confirm('Удалить вашу оценку? Это действие нельзя отменить.')) {
+                if (!confirm(t("player.rating_delete_confirm"))) {
                     return;
                 }
                 try {
                     delBtn.disabled = true;
-                    delBtn.textContent = 'Удаление…';
+                    delBtn.textContent = `${t("common.deleting")}`;
 
                     await apiRequest(`/api/players/${playerId}/my-rating`, {
                         method: 'DELETE',
@@ -148,7 +151,7 @@ export async function renderRatingButton(
                     onDeleted();
                 } catch (err) {
                     delBtn.disabled = false;
-                    delBtn.textContent = '🗑 Удалить мою оценку';
+                    delBtn.textContent = `🗑 ${t("player.rating_delete")}`;
                     alert(
                         'Не удалось удалить: ' +
                         (err instanceof Error ? err.message : String(err))
@@ -233,7 +236,8 @@ export function renderRatingEditor(
 
         const label = document.createElement('label');
         label.className = 'slider-label';
-        label.textContent = axis.ru;
+        label.dataset.i18n = axis.langKey;
+        label.textContent = axis.getStr();
         label.htmlFor = `slider-${axis.key}`;
 
         const value = document.createElement('output');
@@ -315,29 +319,40 @@ export async function renderRatingsList(playerId: number): Promise<void> {
     card.className = 'card ratings-list fade-in';
 
     const h3 = document.createElement('h3');
-    h3.textContent = 'Оценки пользователей';
+
+    h3.dataset.i18n = "ratings.title";
+    h3.textContent = t("ratings.title");
     card.appendChild(h3);
 
     if (ratings.length === 0) {
         const p = document.createElement('p');
         p.className = 'hint';
+        p.dataset.i18n = state.token ? "ratings.empty" : "ratings.empty_anonymous";
         p.textContent = state.token
-            ? 'Пока никто не оценил этого игрока.'
-            : 'Войдите, чтобы увидеть, кто и как оценил игрока.';
+            ? t("ratings.empty")
+            : t("ratings.empty_anonymous");
+
         card.appendChild(p);
     } else {
         const table = document.createElement('table');
         const thead = document.createElement('thead');
         const headRow = document.createElement('tr');
         const thUser = document.createElement('th');
-        thUser.textContent = 'Пользователь';
+
+        thUser.dataset.i18n = "ratings.col.user";
+        thUser.textContent = t("ratings.col.user");
+        
         headRow.appendChild(thUser);
         const thRace = document.createElement('th');
-        thRace.textContent = 'Раса';
+        
+        thRace.dataset.i18n = "ratings.col.race"
+        thRace.textContent = t("ratings.col.race");
+
         headRow.appendChild(thRace);
         for (const axis of STAT_ORDER) {
             const th = document.createElement('th');
-            th.textContent = axis.ru;
+            th.dataset.i18n = axis.langKey;
+            th.textContent = axis.getStr();
             headRow.appendChild(th);
         }
         thead.appendChild(headRow);
@@ -379,7 +394,6 @@ export async function renderRatingsList(playerId: number): Promise<void> {
                 const value = r[axis.key];
                 const span = document.createElement('span');
                 span.className = 'stat-value';
-                //Number(value) + " "
                 span.textContent = ""+Number(value); //LEVEL_LETTERS[value]; // + "" + Number(value) + ""; //.toFixed(2);
                 span.style.color = axis.color;
                 td.appendChild(span);

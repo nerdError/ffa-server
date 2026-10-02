@@ -7,13 +7,13 @@ import {
     renderRatingsList,
 } from './ratings';
 import { renderUserBox } from '../main';
+import { applyTranslations, onLocaleChange, t } from '../i18n';
 
-// Обёртка: открывает карточку и меняет URL на имя игрока
-// async function openPlayerByName(player: { id: number; name: string }): Promise<void> {
-//     // Обновляем URL (без перезагрузки страницы)
-//     window.history.pushState({}, '', `/?player=${encodeURIComponent(player.name)}`);
-//     await openPlayerScreen(player.id);
-// }
+onLocaleChange((locale) => {
+    applyTranslations();
+    // if (lastPlayerId) loadPlayerDetail(lastPlayerId);
+    if (lastPane && lastPlayer) renderCard(lastPane, lastPlayer)
+});
 
 export async function openPlayerScreen(playerId: number): Promise<void> {
     navigateTo('screen-player');
@@ -139,11 +139,13 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
 
             const hint = document.createElement('p');
             hint.className = 'hint fade-in';
-            hint.innerHTML = 'Войдите, чтобы оценивать игроков. ';
+            hint.dataset.i18n = "player.login_to_rate";
+            hint.innerHTML = `${t('player.login_to_rate')} `;
 
             const loginLink = document.createElement('a');
             loginLink.href = '#';
-            loginLink.textContent = 'Войти';
+            loginLink.dataset.i18n = "auth.login_link";
+            loginLink.textContent = t("auth.login_link")
             loginLink.className = 'hint-link';
             loginLink.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -163,7 +165,8 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
             const editBtn = document.createElement('button');
             editBtn.type = 'button';
             editBtn.className = 'btn-primary fade-in';
-            editBtn.textContent = mine ? '✎ Изменить мою оценку' : '+ Добавить оценку';
+            editBtn.dataset.i18n = mine ? 'player.rating_edit' : 'player.rating_add';
+            editBtn.textContent = mine ? `✎ ${t('player.rating_edit')}` : `+ ${t('player.rating_add')}`;
             editBtn.addEventListener('click', () => void enterEditMode());
             actions.appendChild(editBtn);
 
@@ -171,13 +174,14 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
                 const delBtn = document.createElement('button');
                 delBtn.type = 'button';
                 delBtn.className = 'btn-danger fade-in';
-                delBtn.textContent = '🗑 Удалить мою оценку';
+                editBtn.dataset.i18n = "player.rating_delete"
+                delBtn.textContent = `🗑 ${t("player.rating_delete")}`;
                 delBtn.addEventListener('click', () => {
                     void (async () => {
-                        if (!confirm('Удалить вашу оценку?')) return;
+                        if (!confirm(t('player.rating_delete_confirm'))) return;
                         try {
                             delBtn.disabled = true;
-                            delBtn.textContent = 'Удаление…';
+                            delBtn.textContent = t("common.deleting");
                             await apiRequest(`/api/players/${playerId}/my-rating`, {
                                 method: 'DELETE',
                                 token: state.token,
@@ -185,9 +189,9 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
                             await loadPlayerDetail(playerId);
                         } catch (err) {
                             delBtn.disabled = false;
-                            delBtn.textContent = '🗑 Удалить мою оценку';
+                            delBtn.textContent = `🗑 ${t("player.rating_delete")}`;
                             alert(
-                                'Не удалось удалить: ' +
+                                `${t("player.rating_delete_error")}: ` +
                                 (err instanceof Error ? err.message : String(err))
                             );
                         }
@@ -202,7 +206,8 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
                 const renameBtn = document.createElement('button');
                 renameBtn.type = 'button';
                 renameBtn.className = 'btn-secondary fade-in';
-                renameBtn.textContent = '✎ Имя';
+                renameBtn.dataset.i18n = "player.name_edit";
+                renameBtn.textContent = `✎ ${t('player.name_edit')}`;
                 renameBtn.title = 'Переименовать игрока';
                 renameBtn.addEventListener('click', () => {
                     void (async () => {
@@ -276,14 +281,16 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
                 const nextBtn = document.createElement('button');
                 nextBtn.type = 'button';
                 nextBtn.className = 'btn-primary fade-in';
-                nextBtn.textContent = 'Следующий →';
+                nextBtn.dataset.i18n = "player.next_player";
+                nextBtn.textContent = `${t('player.next_player')} →`;
 
                 const { queue, index } = state.reviewMode;
                 const isLast = index >= queue.length - 1;
 
                 if (isLast) {
                     // На последнем игроке — кнопка «Завершить»
-                    nextBtn.textContent = '✓ Завершить';
+                    nextBtn.dataset.i18n = "common.finish";
+                    nextBtn.textContent = `✓ ${t('common.finish')}`;
                     nextBtn.addEventListener('click', () => {
                         state.reviewMode = null;
                         window.history.pushState({}, '', '/');
@@ -308,14 +315,16 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
             const saveBtn = document.createElement('button');
             saveBtn.type = 'button';
             saveBtn.className = 'btn-primary fade-in';
-            saveBtn.textContent = 'Сохранить';
+            saveBtn.dataset.i18n = "player.edit_save";
+            saveBtn.textContent = t('player.edit_save');
             saveBtn.addEventListener('click', onSave);
             actions.appendChild(saveBtn);
 
             const cancelBtn = document.createElement('button');
             cancelBtn.type = 'button';
+            cancelBtn.dataset.i18n = "player.edit_cancel";
             cancelBtn.className = 'btn-secondary fade-in';
-            cancelBtn.textContent = 'Отмена';
+            cancelBtn.textContent = t('player.edit_cancel');
             cancelBtn.addEventListener('click', onCancel);
             actions.appendChild(cancelBtn);
         };
@@ -355,7 +364,7 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
                     const saveBtn = actions.querySelector('.btn-primary') as HTMLButtonElement | null;
                     if (saveBtn) {
                         saveBtn.disabled = true;
-                        saveBtn.textContent = 'Сохранение…';
+                        saveBtn.textContent = t('player.rating_saving');
                     }
                     try {
                         await apiRequest(`/api/players/${playerId}/ratings`, {
@@ -367,7 +376,8 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
                     } catch (err) {
                         if (saveBtn) {
                             saveBtn.disabled = false;
-                            saveBtn.textContent = 'Сохранить';
+                            saveBtn.dataset.i18n = "player.edit_save";
+                            saveBtn.textContent = t('player.edit_save');
                         }
                         alert(
                             'Не удалось сохранить: ' +
@@ -404,14 +414,20 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
         renderActions();
         await renderRatingsList(playerId);
     } catch (err) {
-        pane.innerHTML = `<p class="error fade-in">Ошибка: ${err instanceof Error ? err.message : String(err)
+        pane.innerHTML = `<p class="error fade-in">${t('common.error')}: ${err instanceof Error ? err.message : String(err)
             }</p>`;
         actions.innerHTML = '';
         ratingsContainer.innerHTML = '';
     }
 }
 
+let lastPane: HTMLElement | null = null;
+let lastPlayer: PlayerWithStats | null = null;
+
 function renderCard(pane: HTMLElement, player: PlayerWithStats): void {
+    lastPane = pane;
+    lastPlayer = player;
+
     const newCard = buildPlayerCardElement(player, { compact: false });
     const existing = pane.querySelector('.player-card');
     if (existing) existing.replaceWith(newCard);

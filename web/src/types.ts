@@ -2,6 +2,8 @@
 // Типы данных, соответствующие ответам API
 // ============================================================
 
+import { TranslationKey } from "./i18n/types";
+
 export type Race = 'T' | 'Z' | 'P' | 'R';
 
 export const RACES: readonly Race[] = ['T', 'Z', 'P', 'R'] as const;
@@ -21,6 +23,22 @@ export const STAT_KEYS: readonly StatKey[] = [
   'turtle',
   'aggression',
   'variety',
+] as const;
+
+//   'stat.adaptiveness': 'Адаптивность',
+//   'stat.aggression': 'Агрессия',
+//   'stat.turtle': 'Черепашность',
+//   'stat.variety': 'Разнообразие',
+//   'stat.survival': 'Выживание',
+//   'stat.greed': 'Халява',
+
+export const STAT_LANG_KEYS: readonly TranslationKey[] = [
+  'stat.adaptiveness',
+  'stat.greed',
+  'stat.survival',
+  'stat.turtle',
+  'stat.aggression',
+  'stat.variety',
 ] as const;
 
 /** Игрок со средними значениями (ответ GET /api/players и /api/players/:id) */
