@@ -3,7 +3,7 @@ import type { PlayerWithStats, Race, StatKey } from './types';
 
 applyTranslations();
 
-onLocaleChange((locale) => {
+onLocaleChange(() => {
     applyTranslations();
 });
 

@@ -1,0 +1,237 @@
+import { Router } from 'express';
+import { authenticate } from '../../lib/auth.js';
+
+export const gameRefsRouter = Router();
+
+// ============================================================
+// Конфигурация справочников
+// ============================================================
+type RefType = 'formats' | 'hosts' | 'maps' | 'mods';
+
+interface RefConfig {
+  table: string;
+  minRole: 'moderator' | 'admin';
+  /** Поля, которые можно задавать при создании/обновлении */
+  fields: string[];
+  /** Поле для сортировки в списке */
+  orderBy: string;
+}
+
+const REFS: Record<RefType, RefConfig> = {
+  formats: {
+    table: 'game_formats',
+    minRole: 'admin',
+    fields: ['name', 'slug', 'sort_order'],
+    orderBy: 'sort_order',
+  },
+  hosts: {
+    table: 'game_hosts',
+    minRole: 'admin',
+    fields: ['name', 'aka', 'player_id'],
+    orderBy: 'name',
+  },
+  maps: {
+    table: 'game_maps',
+    minRole: 'moderator',
+    fields: ['name'],
+    orderBy: 'name',
+  },
+  mods: {
+    table: 'game_mods',
+    minRole: 'moderator',
+    fields: ['name'],
+    orderBy: 'name',
+  },
+};
+
+function isRefType(value: string): value is RefType {
+  return value === 'formats' || value === 'hosts' || value === 'maps' || value === 'mods';
+}
+
+/**
+ * Middleware: проверяет, что refType валиден и кладёт конфиг в req.
+ */
+gameRefsRouter.use('/:refType', (req, res, next) => {
+  const { refType } = req.params;
+  if (!isRefType(refType)) {
+    return res.status(404).json({ error: 'Unknown ref type' });
+  }
+  (req as any).refConfig = REFS[refType];
+  (req as any).refType = refType;
+  next();
+});
+
+/**
+ * Проверка прав: модератор или админ.
+ */
+async function checkRole(
+  req: any,
+  res: any,
+  minRole: 'moderator' | 'admin'
+): Promise<{ ok: true; client: any; userId: string } | { ok: false }> {
+  const auth = await authenticate(req);
+  if (!auth.ok) {
+    res.status(auth.status).json({ error: auth.error });
+    return { ok: false };
+  }
+
+  if (minRole === 'admin') {
+    const { data: isAdmin } = await auth.client.rpc('is_admin');
+    if (!isAdmin) {
+      res.status(403).json({ error: 'Admin access required' });
+      return { ok: false };
+    }
+  } else {
+    const { data: isMod } = await auth.client.rpc('is_moderator');
+    if (!isMod) {
+      res.status(403).json({ error: 'Moderator access required' });
+      return { ok: false };
+    }
+  }
+
+  return { ok: true, client: auth.client, userId: auth.user.id };
+}
+
+/**
+ * Фильтрует body, оставляя только разрешённые поля.
+ */
+function pickFields(body: any, allowed: string[]): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (body[key] !== undefined) {
+      out[key] = body[key];
+    }
+  }
+  return out;
+}
+
+// ============================================================
+// GET /api/game-refs/:refType — список (публичный)
+// ============================================================
+gameRefsRouter.get('/:refType', async (req, res) => {
+  const config: RefConfig = (req as any).refConfig;
+
+  const { data, error } = await (await import('../../lib/supabase-admin.js')).supabaseAdmin
+    .from(config.table)
+    .select('*')
+    .order(config.orderBy, { ascending: true });
+
+  if (error) {
+    console.error(`[game-refs] ${config.table} list error:`, error);
+    return res.status(500).json({ error: 'DB error' });
+  }
+
+  res.json({ items: data ?? [] });
+});
+
+// ============================================================
+// POST /api/game-refs/:refType — создать
+// ============================================================
+gameRefsRouter.post('/:refType', async (req, res) => {
+  const config: RefConfig = (req as any).refConfig;
+  const check = await checkRole(req, res, config.minRole);
+  if (!check.ok) return;
+
+  const payload = pickFields(req.body ?? {}, config.fields);
+
+  if (Object.keys(payload).length === 0) {
+    return res.status(400).json({ error: 'No valid fields provided' });
+  }
+  if (typeof payload.name !== 'string' || !payload.name.trim()) {
+    return res.status(400).json({ error: 'name is required' });
+  }
+  payload.name = String(payload.name).trim();
+
+  const { data, error } = await check.client
+    .from(config.table)
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Item with this name already exists' });
+    }
+    console.error(`[game-refs] ${config.table} insert error:`, error);
+    return res.status(500).json({ error: 'DB error' });
+  }
+
+  res.status(201).json({ item: data });
+});
+
+// ============================================================
+// PATCH /api/game-refs/:refType/:id — обновить
+// ============================================================
+gameRefsRouter.patch('/:refType/:id', async (req, res) => {
+  const config: RefConfig = (req as any).refConfig;
+  const check = await checkRole(req, res, config.minRole);
+  if (!check.ok) return;
+
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid id' });
+  }
+
+  const payload = pickFields(req.body ?? {}, config.fields);
+
+  if (Object.keys(payload).length === 0) {
+    return res.status(400).json({ error: 'No valid fields provided' });
+  }
+  if (payload.name !== undefined) {
+    if (typeof payload.name !== 'string' || !payload.name.trim()) {
+      return res.status(400).json({ error: 'name cannot be empty' });
+    }
+    payload.name = String(payload.name).trim();
+  }
+
+  const { data, error } = await check.client
+    .from(config.table)
+    .update(payload)
+    .eq('id', id)
+    .select()
+    .maybeSingle();
+
+  if (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Item with this name already exists' });
+    }
+    console.error(`[game-refs] ${config.table} update error:`, error);
+    return res.status(500).json({ error: 'DB error' });
+  }
+  if (!data) {
+    return res.status(404).json({ error: 'Item not found' });
+  }
+
+  res.json({ item: data });
+});
+
+// ============================================================
+// DELETE /api/game-refs/:refType/:id — удалить
+// ============================================================
+gameRefsRouter.delete('/:refType/:id', async (req, res) => {
+  const config: RefConfig = (req as any).refConfig;
+  const check = await checkRole(req, res, config.minRole);
+  if (!check.ok) return;
+
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid id' });
+  }
+
+  const { data, error } = await check.client
+    .from(config.table)
+    .delete()
+    .eq('id', id)
+    .select()
+    .maybeSingle();
+
+  if (error) {
+    console.error(`[game-refs] ${config.table} delete error:`, error);
+    return res.status(500).json({ error: 'DB error' });
+  }
+  if (!data) {
+    return res.status(404).json({ error: 'Item not found' });
+  }
+
+  res.json({ deleted: data });
+});

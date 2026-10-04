@@ -17,7 +17,7 @@ import protossIcon from '../../assets/race/protoss.svg';
 import randomIcon from '../../assets/race/random.svg';
 import { applyTranslations, onLocaleChange, t } from '../i18n';
 
-onLocaleChange((locale) => {
+onLocaleChange(() => {
     applyTranslations();
 });
 

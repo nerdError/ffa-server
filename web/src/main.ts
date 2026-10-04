@@ -383,6 +383,34 @@ copyEmail?.addEventListener('click', async () => {
     }
 });
 
+const copyCard = document.getElementById('copy-card') as HTMLButtonElement | null;
+
+copyCard?.addEventListener('click', async () => {
+    const originalText = copyCard.dataset.originalText ?? copyCard.textContent ?? '';
+    // Сохраняем оригинальный текст один раз
+    if (!copyCard.dataset.originalText) {
+        copyCard.dataset.originalText = originalText;
+    }
+
+    try {
+        await navigator.clipboard.writeText('2202208167331108');
+        copyCard.textContent = '✓ ' + t('common.copied');
+        copyCard.classList.add('is-copied');
+
+        setTimeout(() => {
+            copyCard.textContent = copyCard.dataset.originalText ?? originalText;
+            copyCard.classList.remove('is-copied');
+        }, 1500);
+    } catch {
+        // Fallback — если clipboard API недоступен
+        const range = document.createRange();
+        range.selectNodeContents(copyCard);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+    }
+});
+
 window.addEventListener('popstate', () => {
     const params = new URLSearchParams(window.location.search);
     const playerParam = params.get('player');

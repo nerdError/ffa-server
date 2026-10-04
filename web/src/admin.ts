@@ -1,6 +1,6 @@
 import './styles/main.css';
 import './styles/admin.css';
-import { apiRequest, ApiRequestError } from './api';
+import { apiRequest } from './api';
 import { state } from './state';
 import type { PlayerWithStats, PlayersListResponse } from './types';
 

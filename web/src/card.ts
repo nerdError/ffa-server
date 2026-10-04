@@ -10,7 +10,7 @@ import randomIconUrl from '../assets/race/random.svg';
 import { applyTranslations, onLocaleChange, t } from './i18n';
 import { getLocalePlayerName } from './utils';
 
-onLocaleChange((locale) => {
+onLocaleChange(() => {
     applyTranslations();
 });
 
@@ -39,9 +39,6 @@ export function dominantRace(races: Race[]): Race | 'MIXED' {
     return 'MIXED';
 }
 
-let lastPlayer: PlayerWithStats | null = null;
-let lastPlayerOpts: { compact?: boolean } | null = null;
-
 /**
  * Создаёт DOM-элемент карточки игрока.
  * Работает быстро: SVG радара — строка, иконки — обычные <img>.
@@ -54,10 +51,7 @@ export function buildPlayerCardElement(
     opts: { compact?: boolean } = {}
 ): HTMLElement {
     const { compact = false } = opts;
-
-    lastPlayer = player;
-    lastPlayerOpts = opts;
-
+    
     const race = dominantRace(player.races);
     const color = pickRaceColor(player.races);
 

@@ -1,7 +1,6 @@
 import { ru } from './ru';
 import { en } from './en';
 import type { TranslationKey } from './types';
-import { FunctionRegion } from '@supabase/supabase-js';
 
 export type Locale = 'ru' | 'en';
 

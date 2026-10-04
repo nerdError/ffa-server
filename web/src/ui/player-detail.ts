@@ -9,7 +9,7 @@ import {
 import { renderUserBox } from '../main';
 import { applyTranslations, onLocaleChange, t } from '../i18n';
 
-onLocaleChange((locale) => {
+onLocaleChange(() => {
     applyTranslations();
     // if (lastPlayerId) loadPlayerDetail(lastPlayerId);
     if (lastPane && lastPlayer) renderCard(lastPane, lastPlayer)

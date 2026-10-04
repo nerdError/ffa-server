@@ -9,12 +9,12 @@ import type { Race, StatKey } from '../types';
 import { buildRadarSVG, pickRaceColor, STAT_ORDER } from '../radar';
 import randomIcon from '../../assets/race/random.svg';
 import { dominantRace } from '../card';
-import { applyTranslations, getLocale, onLocaleChange, t } from '../i18n';
-import { getLocalePlayerName, transliterate, transliterateNickname } from '../utils';
+import { applyTranslations, onLocaleChange, t } from '../i18n';
+import { getLocalePlayerName } from '../utils';
 
 applyTranslations();
 
-onLocaleChange((locale) => {
+onLocaleChange(() => {
     applyTranslations();
     // if (lastPlayers && lastCb) renderPlayersTable(lastPlayers, lastCb);
 
@@ -153,9 +153,6 @@ function fmtRaceCells(races: PlayerWithStats['races']): HTMLTableCellElement {
     return td;
 }
 
-let lastPlayers: PlayerWithStats[] | null = null;
-let lastCb: PlayersCallbacks | null = null;
-
 function renderPlayersTable(
     _players: PlayerWithStats[],
     cb: PlayersCallbacks
@@ -164,8 +161,6 @@ function renderPlayersTable(
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    lastPlayers = _players;
-    lastCb = cb;
 
     document.querySelector("#players-table-view > div > table > thead > tr > th.col-mobile-hide")!.textContent = t("players.col.races");
     document.querySelector("#players-table-view > div > table > thead > tr > th:nth-child(3)")!.textContent = t("stat.adaptiveness");
@@ -610,14 +605,10 @@ function buildTile(player: PlayerWithStats): HTMLAnchorElement {
     return tile;
 }
 
-let lastPlayersRender: PlayerWithStats[] | null = null;
-
 /**
  * Рендерит стену из массива игроков.
  */
 function renderWall(_players: PlayerWithStats[]): void {
-    lastPlayersRender = _players;
-
     const wall = document.getElementById('players-wall');
     if (!wall) return;
 

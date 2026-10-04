@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Games | SC2 FFA League</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zekton:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <header class="topbar">
+        <h1>SC2 FFA LEAGUE</h1>
+        <div class="topbar-right">
+            <div class="lang-switch" id="lang-switch">
+                <button type="button" class="lang-btn" data-lang="ru">RU</button>
+                <button type="button" class="lang-btn" data-lang="en">EN</button>
+            </div>
+            <div id="user-box" class="user-box"></div>
+        </div>
+    </header>
+
+    <nav class="site-nav" id="site-nav">
+        <a href="/" class="site-nav-link" data-nav="players">
+            <span class="site-nav-icon">👥</span>
+            <span data-i18n="nav.players">Игроки</span>
+        </a>
+        <a href="/games" class="site-nav-link is-active" data-nav="games">
+            <span class="site-nav-icon">⚔️</span>
+            <span data-i18n="nav.games">Игры</span>
+        </a>
+    </nav>
+
+    <main id="app">
+        <section id="screen-games" class="screen">
+            <div class="toolbar">
+                <h2 data-i18n="games.title">Игры</h2>
+                <div class="toolbar-actions">
+                    <input type="text" id="games-search" class="players-search"
+                        data-i18n-placeholder="games.search_placeholder" placeholder="Поиск по игроку…" />
+                    <button type="button" id="btn-create-game" class="btn-primary" data-i18n="games.add_button" hidden>
+                        + Добавить игру
+                    </button>
+                </div>
+            </div>
+
+            <div id="games-error" class="error hidden"></div>
+
+            <div id="games-list-container">
+                <div class="skeleton skeleton-block"></div>
+            </div>
+        </section>
+
+        <!-- Модальное окно создания/редактирования игры -->
+        <div id="game-modal" class="modal-overlay hidden">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 id="game-modal-title">Новая игра</h3>
+                    <button type="button" class="modal-close" id="game-modal-close" aria-label="Close">✕</button>
+                </div>
+
+                <form id="game-form" class="game-form">
+                    <!-- Дата и время -->
+                    <label class="form-field">
+                        <span data-i18n="games.field_date">Дата и время</span>
+                        <input type="datetime-local" name="played_at" id="field-played-at" required />
+                    </label>
+
+                    <div class="form-row">
+                        <!-- Формат -->
+                        <label class="form-field">
+                            <span data-i18n="games.field_format">Формат</span>
+                            <select name="format_id" id="field-format" required></select>
+                        </label>
+
+                        <!-- Хост -->
+                        <label class="form-field">
+                            <span data-i18n="games.field_host">Проводящий</span>
+                            <select name="host_id" id="field-host" required></select>
+                        </label>
+                    </div>
+
+                    <div class="form-row">
+                        <!-- Карта -->
+                        <label class="form-field">
+                            <span data-i18n="games.field_map">Карта</span>
+                            <select name="map_id" id="field-map" required></select>
+                        </label>
+
+                        <!-- Мод -->
+                        <label class="form-field">
+                            <span data-i18n="games.field_mod">Мод</span>
+                            <select name="mod_id" id="field-mod" required></select>
+                        </label>
+                    </div>
+
+                    <div class="form-row">
+                        <!-- Длительность -->
+                        <label class="form-field">
+                            <span data-i18n="games.field_duration">Длительность (мин, опционально)</span>
+                            <input type="number" name="duration_min" id="field-duration" min="1" max="999" />
+                        </label>
+                    </div>
+
+                    <!-- Участники -->
+                    <div class="form-section">
+                        <div class="form-section-header">
+                            <span data-i18n="games.field_players">Участники</span>
+                            <button type="button" id="btn-add-player" class="btn-secondary"
+                                data-i18n="games.add_player">
+                                + Добавить игрока
+                            </button>
+                        </div>
+                        <div id="players-list" class="players-list"></div>
+                    </div>
+
+                    <!-- Заметки -->
+                    <label class="form-field">
+                        <span data-i18n="games.field_notes">Заметки (опционально)</span>
+                        <textarea name="notes" id="field-notes" rows="3"></textarea>
+                    </label>
+
+                    <!-- Действия -->
+                    <div class="form-actions">
+                        <button type="button" id="btn-cancel-game" class="btn-secondary" data-i18n="common.cancel">
+                            Отмена
+                        </button>
+                        <button type="submit" id="btn-save-game" class="btn-primary" data-i18n="common.save">
+                            Сохранить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-line">
+            <span data-i18n="footer.made_by">Made by</span> <span class="footer-author">nerdError</span>
+            <span class="footer-year">2026</span>
+        </div>
+        <div class="footer-line">
+            <span data-i18n="footer.inspired_by">Inspired by</span> <span class="footer-author2">Asfarion</span>
+        </div>
+        <div class="footer-contacts">
+            <a class="footer-link footer-link--telegram" href="https://t.me/nerderror404" target="_blank"
+                rel="noopener noreferrer">
+                Telegram: @nerderror404
+            </a>
+            <span class="footer-sep">·</span>
+            <button type="button" class="footer-link footer-link--discord" id="copy-discord"
+                data-i18n-title="footer.discord_copy" title="Скопировать тег">
+                Discord: nerderror
+            </button>
+        </div>
+    </footer>
+
+    <script type="module" src="/src/games.ts"></script>
+</body>
+
+</html>

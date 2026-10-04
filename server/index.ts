@@ -14,6 +14,8 @@ import { overlayRouter } from './routes/overlay.js';
 import { supabaseAdmin } from '../lib/supabase-admin';
 import { authenticate } from '../lib/auth';
 import { adminRouter } from './routes/admin';
+import { gameRefsRouter } from './routes/game-refs';
+import { gamesRouter } from './routes/games';
 
 const execFileAsync = promisify(execFile);
 
@@ -108,6 +110,15 @@ app.use('/api/control', controlRouter);
 app.use('/api/overlay', overlayRouter);
 app.use('/api/admin', adminRouter);
 
+app.use('/api/auth', authRouter);
+app.use('/api/players', playersRouter);
+app.use('/api/players', ratingsRouter);
+app.use('/api/overlay', overlayRouter);
+app.use('/api/control', controlRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/game-refs', gameRefsRouter);   // ← НОВОЕ
+app.use('/api/games', gamesRouter);   // ← НОВОЕ
+
 // Health-check
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, ts: Date.now() });
@@ -155,6 +166,10 @@ app.get('/control', (_req, res) => {
 
 app.get('/admin', (_req, res) => {
   res.sendFile(path.join(distDir, 'admin.html'));
+});
+
+app.get('/games', (_req, res) => {
+  res.sendFile(path.join(distDir, 'games.html'));
 });
 
 // Общая статика (assets, favicon и т.д.)

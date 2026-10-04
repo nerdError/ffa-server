@@ -14,6 +14,7 @@ export default defineConfig({
                 overlay: resolve(__dirname, 'web/overlay.html'),
                 control: resolve(__dirname, 'web/control.html'),
                 admin: resolve(__dirname, 'web/admin.html'),
+                games: resolve(__dirname, 'web/games.html'),
             },
         },
     },

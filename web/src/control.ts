@@ -237,18 +237,6 @@ async function init(): Promise<void> {
     await fetchState();
 }
 
-// --- Ссылки на DOM (добавить к существующим) ---
-const overlayUrlInput = document.getElementById('overlay-url') as HTMLInputElement | null;
-const copyUrlBtn = document.getElementById('btn-copy-url') as HTMLButtonElement | null;
-
-/**
- * Собирает URL оверлея на основе текущего origin.
- */
-function buildOverlayUrl(token: string): string {
-    const origin = window.location.origin;
-    return `${origin}/overlay?token=${token}`;
-}
-
 /**
  * Настраивает панель с ссылкой для OBS.
  */

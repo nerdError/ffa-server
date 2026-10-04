@@ -11,7 +11,8 @@
     "build": "vite build",
     "start": "tsx server/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p web/tsconfig.json --noEmit && tsc -p tsconfig.server.json --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "ollama": "ollama serve"
   },
   "keywords": [],
   "author": "",
