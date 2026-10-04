@@ -15,191 +15,250 @@
    Карточка игры — чистый дизайн
    ========================================= */
 .game-card {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-glow);
-  border-radius: 4px;
-  padding: 14px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-glow);
+    border-radius: 4px;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .game-card:hover {
-  border-color: #3a4a5a;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    border-color: #3a4a5a;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 /* --- Шапка: дата, формат, длительность --- */
 .game-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  flex-wrap: wrap;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .game-card-left {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  flex-wrap: wrap;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .game-card-date {
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.5px;
 }
 
 .game-format-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  background: rgba(241, 196, 15, 0.1);
-  border: 1px solid rgba(241, 196, 15, 0.4);
-  border-radius: 2px;
-  color: var(--gold);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(241, 196, 15, 0.1);
+    border: 1px solid rgba(241, 196, 15, 0.4);
+    border-radius: 2px;
+    color: var(--gold);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.15s;
+}
+
+.game-format-badge:hover {
+    filter: brightness(1.3);
+    transform: translateY(-1px);
+}
+
+/* Карточка командной игры */
+.game-card.is-team .game-format-badge.is-team {
+    background: rgba(155, 89, 182, 0.1);
+    border-color: rgba(155, 89, 182, 0.5);
+    color: #bb8fce;
 }
 
 .game-card-duration {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
 }
 
 /* --- Мета: карта, мод, хост --- */
 .game-card-meta {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  letter-spacing: 0.3px;
-  line-height: 1.4;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.3px;
+    line-height: 1.4;
+}
+
+.game-card-meta .game-clickable {
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.15s;
+}
+
+.game-card-meta .game-clickable:hover {
+    filter: brightness(1.3);
+    transform: translateY(-1px);
 }
 
 /* --- Участники --- */
 .game-card-players {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  padding-top: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    padding-top: 4px;
 }
 
 .game-player {
-  --race-color: #8899aa;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
+    --race-color: #8899aa;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
 }
 
 .game-player-medal {
-  font-size: 0.85rem;
-  min-width: 20px;
-  text-align: center;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
+    font-size: 0.85rem;
+    min-width: 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
 }
 
 .game-player.is-winner .game-player-medal {
-  font-size: 1rem;
+    font-size: 1rem;
 }
 
 .game-player-race {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  color: var(--race-color);
-  font-size: 0.75rem;
-  letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--race-color);
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
 }
 
 .game-player-name {
-  color: var(--text-primary);
-  font-weight: 600;
-  letter-spacing: 0.3px;
+    color: var(--text-primary);
+    font-weight: 600;
+    letter-spacing: 0.3px;
 }
 
 .game-player.is-winner .game-player-name {
-  color: var(--gold);
-  text-shadow: 0 0 8px rgba(241, 196, 15, 0.3);
+    color: var(--gold);
+    text-shadow: 0 0 8px rgba(241, 196, 15, 0.3);
 }
 
 .game-player-aka {
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  font-style: italic;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-style: italic;
 }
 
 .game-player-sep {
-  color: var(--text-muted);
-  opacity: 0.5;
-  user-select: none;
+    color: var(--text-muted);
+    opacity: 0.5;
+    user-select: none;
+}
+
+/* Отображение команды в карточке */
+.game-team {
+    --race-color: #8899aa;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 3px;
+    white-space: nowrap;
+}
+
+.game-team.is-winner {
+    background: rgba(241, 196, 15, 0.08);
+}
+
+.game-team-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.game-team.is-winner .game-team-label {
+    color: var(--gold);
+}
+
+.game-team-members {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.9rem;
 }
 
 /* --- Действия --- */
 .game-card-actions {
-  display: flex;
-  gap: 6px;
-  justify-content: flex-end;
-  padding-top: 8px;
-  border-top: 1px solid var(--border-glow);
-  margin-top: 4px;
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-glow);
+    margin-top: 4px;
 }
 
 .game-action-btn {
-  appearance: none;
-  background: transparent;
-  border: 1px solid var(--border-glow);
-  border-radius: 3px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-  transition: all 0.15s;
+    appearance: none;
+    background: transparent;
+    border: 1px solid var(--border-glow);
+    border-radius: 3px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    transition: all 0.15s;
 }
 
 .game-action-btn--edit:hover {
-  background: rgba(52, 152, 219, 0.15);
-  border-color: #3498db;
-  color: #5dade2;
+    background: rgba(52, 152, 219, 0.15);
+    border-color: #3498db;
+    color: #5dade2;
+    box-shadow: 0 0 8px rgba(52, 152, 219, 0.4);
 }
 
 .game-action-btn--delete:hover {
-  background: rgba(231, 76, 60, 0.15);
-  border-color: #e74c3c;
-  color: #e74c3c;
+    background: rgba(231, 76, 60, 0.15);
+    border-color: #e74c3c;
+    color: #e74c3c;
+    box-shadow: 0 0 8px rgba(231, 76, 60, 0.4);
 }
 
-/* Мобильная адаптация */
-@media (max-width: 600px) {
-  .game-card {
-    padding: 12px 14px;
-  }
+/* Подсветка игры после клика по ссылке с ?highlight=X */
+.game-card.is-highlighted {
+    animation: game-highlight 1.2s ease-in-out 2;
+    border-color: var(--gold) !important;
+    box-shadow: 0 0 24px rgba(241, 196, 15, 0.5);
+}
 
-  .game-card-date {
-    font-size: 0.85rem;
-  }
+@keyframes game-highlight {
 
-  .game-card-players {
-    font-size: 0.85rem;
-    gap: 4px;
-  }
+    0%,
+    100% {
+        box-shadow: 0 0 24px rgba(241, 196, 15, 0.3);
+    }
 
-  .game-player-medal {
-    font-size: 0.75rem;
-    min-width: 16px;
-  }
+    50% {
+        box-shadow: 0 0 40px rgba(241, 196, 15, 0.7);
+    }
 }
 
 /* =========================================
@@ -223,22 +282,23 @@
 }
 
 .modal {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-glow);
-  border-radius: 4px;
-  width: 100%;
-  max-width: 960px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
-  display: flex;
-  flex-direction: column;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-glow);
+    border-radius: 4px;
+    width: 100%;
+    max-width: 960px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-header {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     align-items: center;
+    gap: 12px;
     padding: 16px 20px;
     border-bottom: 1px solid var(--border-glow);
     position: sticky;
@@ -254,6 +314,71 @@
     letter-spacing: 1.5px;
     text-transform: uppercase;
     color: var(--gold);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+/* Средняя колонка — чекбокс «Копировать предыдущие настройки» */
+.modal-use-last {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.modal-use-last input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    min-height: 16px;
+    margin: 0;
+    accent-color: var(--gold);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.modal-use-last:hover {
+    color: var(--text-primary);
+}
+
+/* Правая колонка — «Очистить» + «✕» */
+.modal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.modal-clear {
+    appearance: none;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid var(--border-glow);
+    border-radius: 3px;
+    color: var(--text-secondary);
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.modal-clear:hover {
+    border-color: #e74c3c;
+    color: #e74c3c;
+    background: rgba(231, 76, 60, 0.08);
 }
 
 .modal-close {
@@ -264,14 +389,20 @@
     font-size: 1.2rem;
     cursor: pointer;
     padding: 4px 8px;
+    line-height: 1;
     transition: color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .modal-close:hover {
     color: var(--text-primary);
 }
 
-/* Форма */
+/* =========================================
+   Форма
+   ========================================= */
 .game-form {
     padding: 20px;
     display: flex;
@@ -326,12 +457,6 @@
     gap: 12px;
 }
 
-@media (max-width: 600px) {
-    .form-row {
-        grid-template-columns: 1fr;
-    }
-}
-
 .form-section {
     display: flex;
     flex-direction: column;
@@ -355,126 +480,12 @@
     color: var(--text-secondary);
 }
 
-/* Список участников */
-.players-list {
+.form-section-actions {
     display: flex;
-    flex-direction: column;
     gap: 8px;
-    margin-top: 4px;
+    align-items: center;
+    flex-wrap: wrap;
 }
-
-.player-entry {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 56px minmax(0, 120px) minmax(0, 160px) 36px;
-  gap: 8px;
-  align-items: center;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-glow);
-  border-radius: 3px;
-}
-
-.player-entry input,
-.player-entry select {
-  padding: 8px 10px;
-  background: var(--bg-panel-light);
-  border: 1px solid var(--border-glow);
-  border-radius: 3px;
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  width: 100%;
-  box-sizing: border-box;
-  min-width: 0;
-}
-
-.player-entry input:focus,
-.player-entry select:focus {
-  outline: none;
-  border-color: var(--gold);
-}
-
-.player-entry .race-select {
-  text-align: center;
-  font-weight: 700;
-}
-
-.player-entry .winner-checkbox {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  cursor: pointer;
-  user-select: none;
-  white-space: nowrap;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.player-entry .winner-checkbox input {
-  width: 16px;
-  height: 16px;
-  min-width: 16px;
-  min-height: 16px;
-  margin: 0;
-  accent-color: var(--gold);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.player-entry .winner-checkbox span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.player-entry .remove-player {
-  appearance: none;
-  background: transparent;
-  border: 1px solid rgba(231, 76, 60, 0.4);
-  border-radius: 3px;
-  color: rgba(231, 76, 60, 0.7);
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-  transition: all 0.15s;
-  flex-shrink: 0;
-}
-
-.player-entry .remove-player:hover {
-  background: rgba(231, 76, 60, 0.15);
-  border-color: #e74c3c;
-  color: #e74c3c;
-  box-shadow: 0 0 8px rgba(231, 76, 60, 0.4);
-}
-
-@media (max-width: 700px) {
-  .player-entry {
-    grid-template-columns: minmax(0, 1fr) 50px 60px 36px;
-    grid-template-areas:
-      "name   race   place  remove"
-      "winner winner winner winner";
-    gap: 6px;
-    padding: 8px 6px;
-  }
-  .player-entry .player-autocomplete { grid-area: name; }
-  .player-entry .race-select { grid-area: race; }
-  .player-entry .place-select { grid-area: place; }
-  .player-entry .winner-checkbox {
-    grid-area: winner;
-    justify-content: flex-start;
-    padding: 4px 2px;
-    font-size: 0.8rem;
-  }
-  .player-entry .remove-player { grid-area: remove; }
-}
-
 
 .form-actions {
     display: flex;
@@ -484,502 +495,695 @@
     border-top: 1px solid var(--border-glow);
 }
 
+/* Подсказка над списком участников */
+.form-hint {
+    margin: 4px 0 8px;
+    padding: 8px 12px;
+    background: rgba(52, 152, 219, 0.08);
+    border-left: 3px solid #3498db;
+    border-radius: 2px;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}
+
+/* Поле с кнопкой «+» */
+.form-field-with-button {
+    display: flex;
+    gap: 6px;
+    align-items: stretch;
+}
+
+.form-field-with-button select {
+    flex: 1;
+    min-width: 0;
+}
+
+.form-add-btn {
+    appearance: none;
+    flex-shrink: 0;
+    width: 38px;
+    background: rgba(241, 196, 15, 0.1);
+    border: 1px solid rgba(241, 196, 15, 0.4);
+    border-radius: 3px;
+    color: var(--gold);
+    font-family: var(--font-ui);
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.form-add-btn:hover {
+    background: rgba(241, 196, 15, 0.2);
+    border-color: var(--gold);
+    box-shadow: 0 0 8px rgba(241, 196, 15, 0.4);
+}
+
+.form-add-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Переключатель командного режима */
+.team-mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: rgba(155, 89, 182, 0.08);
+    border: 1px solid rgba(155, 89, 182, 0.4);
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    user-select: none;
+    width: fit-content;
+    transition: all 0.15s;
+}
+
+.team-mode-toggle:hover {
+    background: rgba(155, 89, 182, 0.15);
+    color: var(--text-primary);
+}
+
+.team-mode-toggle input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    min-height: 16px;
+    margin: 0;
+    accent-color: #9b59b6;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.team-mode-toggle:has(input:checked) {
+    background: rgba(155, 89, 182, 0.2);
+    border-color: #9b59b6;
+    color: #bb8fce;
+    box-shadow: 0 0 8px rgba(155, 89, 182, 0.3);
+}
+
+.team-mode-options {
+    margin-top: 8px;
+}
+
+.team-mode-options[hidden] {
+    display: none;
+}
+
 /* =========================================
-   Автокомплит игроков
+   Список участников
    ========================================= */
-.player-autocomplete {
-  position: relative;
-  width: 100%;
-  min-width: 0;
+.players-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 4px;
 }
 
-.player-autocomplete input {
-  width: 100%;
-  padding: 8px 10px;
-  background: var(--bg-panel-light);
-  border: 1px solid var(--border-glow);
-  border-radius: 3px;
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  box-sizing: border-box;
+/* Группа команды (в командном режиме) */
+.team-group {
+    --team-color: #8899aa;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 12px;
+    background: color-mix(in srgb, var(--team-color) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--team-color) 30%, var(--border-glow));
+    border-left: 4px solid var(--team-color);
+    border-radius: 4px;
 }
 
-.player-autocomplete input:focus {
-  outline: none;
-  border-color: var(--gold);
-  box-shadow: 0 0 6px rgba(241, 196, 15, 0.25);
+.team-group-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--team-color);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--team-color) 50%, transparent);
 }
 
-.player-autocomplete-dropdown {
-  position: absolute;
-  top: calc(100% + 2px);
-  left: 0;
-  right: 0;
-  background: #151b24;
-  border: 1px solid var(--border-glow);
-  border-radius: 3px;
-  max-height: 240px;
-  overflow-y: auto;
-  z-index: 100;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
-  scrollbar-width: thin;
-  scrollbar-color: #2a3a4a #11151c;
+
+.team-group-header .team-group-winner {
+    color: var(--gold);
+    font-size: 0.85rem;
 }
 
-.player-autocomplete-dropdown.hidden {
-  display: none;
+.player-entry {
+    display: grid;
+    grid-template-columns: minmax(140px, 1.2fr) 60px minmax(90px, 0.8fr) 120px 36px;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 4px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 3px;
 }
 
-.player-autocomplete-item {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  transition: background 0.1s;
+.player-entry.is-team-mode {
+    background: transparent;
+    padding: 4px 0;
+    grid-template-columns: minmax(140px, 1fr) 60px minmax(130px, 0.9fr) 140px 36px;
 }
 
-.player-autocomplete-item:hover,
-.player-autocomplete-item.is-highlighted {
-  background: rgba(241, 196, 15, 0.1);
-  color: var(--gold);
+.player-entry input,
+.player-entry select {
+    padding: 8px 10px;
+    background: var(--bg-panel-light);
+    border: 1px solid var(--border-glow);
+    border-radius: 3px;
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
 }
 
-.player-autocomplete-name {
-  font-weight: 600;
+.player-entry input:focus,
+.player-entry select:focus {
+    outline: none;
+    border-color: var(--gold);
 }
 
-.player-autocomplete-aka {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  font-style: italic;
+.player-entry .race-select {
+    text-align: center;
+    font-weight: 700;
 }
 
-.player-autocomplete-empty {
-  padding: 10px 12px;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  text-align: center;
+.player-entry .team-select {
+    text-align: center;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    padding: 8px 6px;
+    color: var(--text-primary);
 }
 
-/* Кнопки действий на карточке игры */
-.game-card-actions {
-  display: flex;
-  gap: 6px;
-  justify-content: flex-end;
-  padding-top: 8px;
-  border-top: 1px solid var(--border-glow);
-  margin-top: 4px;
+.player-entry .winner-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    min-width: 0;
 }
 
-.game-action-btn {
-  appearance: none;
-  background: transparent;
-  border: 1px solid var(--border-glow);
-  border-radius: 3px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.95rem;
-  transition: all 0.15s;
+.player-entry .winner-checkbox input {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    min-height: 16px;
+    margin: 0;
+    accent-color: var(--gold);
+    cursor: pointer;
+    flex-shrink: 0;
 }
 
-.game-action-btn--edit:hover {
-  background: rgba(52, 152, 219, 0.15);
-  border-color: #3498db;
-  color: #5dade2;
-  box-shadow: 0 0 8px rgba(52, 152, 219, 0.4);
-}
-
-.game-action-btn--delete:hover {
-  background: rgba(231, 76, 60, 0.15);
-  border-color: #e74c3c;
-  color: #e74c3c;
-  box-shadow: 0 0 8px rgba(231, 76, 60, 0.4);
+.player-entry .winner-checkbox span {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .player-entry .place-select {
-  text-align: center;
-  font-weight: 700;
-  font-family: var(--font-mono);
-  color: var(--gold);
+    text-align: center;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--gold);
+    padding: 8px 6px;
 }
 
 .player-entry .place-select:disabled {
-  opacity: 0.3;
+    opacity: 0.3;
 }
 
-/* Подсказка над списком участников */
-.form-hint {
-  margin: 4px 0 8px;
-  padding: 8px 12px;
-  background: rgba(52, 152, 219, 0.08);
-  border-left: 3px solid #3498db;
-  border-radius: 2px;
-  font-size: 0.8rem;
-  line-height: 1.4;
-  color: var(--text-secondary);
+.player-entry .remove-player {
+    appearance: none;
+    background: transparent;
+    border: 1px solid rgba(231, 76, 60, 0.4);
+    border-radius: 3px;
+    color: rgba(231, 76, 60, 0.7);
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    transition: all 0.15s;
+    flex-shrink: 0;
+}
+
+.player-entry .remove-player:hover {
+    background: rgba(231, 76, 60, 0.15);
+    border-color: #e74c3c;
+    color: #e74c3c;
+    box-shadow: 0 0 8px rgba(231, 76, 60, 0.4);
 }
 
 /* Подсветка строки победителя */
 .player-entry.is-winner {
-  background: rgba(241, 196, 15, 0.08);
-  border-color: rgba(241, 196, 15, 0.4);
+    background: rgba(241, 196, 15, 0.08);
+    border-color: rgba(241, 196, 15, 0.4);
 }
 
-/* Селект места */
-.player-entry .place-select {
-  text-align: left;
-  font-weight: 600;
-  font-size: 0.85rem;
-  color: var(--text-primary);
-  padding: 8px 6px;
+/* =========================================
+   Автокомплит игроков
+   ========================================= */
+.player-autocomplete {
+    position: relative;
+    width: 100%;
+    min-width: 0;
 }
 
-/* Подсветка игры после клика по ссылке с ?highlight=X */
-.game-card.is-highlighted {
-  animation: game-highlight 1.2s ease-in-out 2;
-  border-color: var(--gold) !important;
-  box-shadow: 0 0 24px rgba(241, 196, 15, 0.5);
+.player-autocomplete input {
+    width: 100%;
+    padding: 8px 10px;
+    background: var(--bg-panel-light);
+    border: 1px solid var(--border-glow);
+    border-radius: 3px;
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    box-sizing: border-box;
 }
 
-@keyframes game-highlight {
-  0%, 100% {
-    box-shadow: 0 0 24px rgba(241, 196, 15, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 40px rgba(241, 196, 15, 0.7);
-  }
+.player-autocomplete input:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 6px rgba(241, 196, 15, 0.25);
+}
+
+.player-autocomplete-dropdown {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    right: 0;
+    background: #151b24;
+    border: 1px solid var(--border-glow);
+    border-radius: 3px;
+    max-height: 240px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    scrollbar-width: thin;
+    scrollbar-color: #2a3a4a #11151c;
+}
+
+.player-autocomplete-dropdown.hidden {
+    display: none;
+}
+
+.player-autocomplete-item {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    transition: background 0.1s;
+}
+
+.player-autocomplete-item:hover,
+.player-autocomplete-item.is-highlighted {
+    background: rgba(241, 196, 15, 0.1);
+    color: var(--gold);
+}
+
+.player-autocomplete-name {
+    font-weight: 600;
+}
+
+.player-autocomplete-aka {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.player-autocomplete-empty {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-align: center;
 }
 
 /* =========================================
    Панель фильтров
    ========================================= */
 .games-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: flex-end;
-  padding: 12px 16px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-glow);
-  border-radius: 4px;
-  margin-bottom: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+    padding: 12px 16px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-glow);
+    border-radius: 4px;
+    margin-bottom: 12px;
 }
 
 .games-filter {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 160px;
-  flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 160px;
+    flex: 1;
 }
 
 .games-filter-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
 }
 
 .games-filter-select {
-  padding: 8px 10px;
-  background: var(--bg-panel-light);
-  border: 1px solid var(--border-glow);
-  border-radius: 3px;
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  cursor: pointer;
-  box-sizing: border-box;
+    padding: 8px 10px;
+    background: var(--bg-panel-light);
+    border: 1px solid var(--border-glow);
+    border-radius: 3px;
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    box-sizing: border-box;
 }
 
 .games-filter-select:focus {
-  outline: none;
-  border-color: var(--gold);
+    outline: none;
+    border-color: var(--gold);
 }
 
 .games-filter-select:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 .games-filter-reset-wrap {
-  display: flex;
-  align-items: flex-end;
+    display: flex;
+    align-items: flex-end;
 }
 
 .games-filter-reset-wrap .btn-secondary {
-  padding: 9px 16px;
-  font-size: 0.8rem;
+    padding: 9px 16px;
+    font-size: 0.8rem;
 }
 
 /* =========================================
    Активные фильтры (чипы)
    ========================================= */
 .games-active-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
 }
 
 .games-active-filters:empty {
-  display: none;
+    display: none;
 }
 
 .filter-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background: rgba(241, 196, 15, 0.1);
-  border: 1px solid rgba(241, 196, 15, 0.4);
-  border-radius: 20px;
-  font-size: 0.8rem;
-  color: var(--text-primary);
-  transition: background 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(241, 196, 15, 0.1);
+    border: 1px solid rgba(241, 196, 15, 0.4);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    transition: background 0.15s;
 }
 
 .filter-chip:hover {
-  background: rgba(241, 196, 15, 0.15);
+    background: rgba(241, 196, 15, 0.15);
 }
 
 .filter-chip-label {
-  color: var(--gold);
-  font-weight: 700;
-  font-size: 0.7rem;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 700;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 .filter-chip-value {
-  font-weight: 600;
+    font-weight: 600;
 }
 
 .filter-chip-remove {
-  appearance: none;
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 0 0 0 4px;
-  font-size: 0.9rem;
-  line-height: 1;
-  transition: color 0.15s;
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0 0 0 4px;
+    font-size: 0.9rem;
+    line-height: 1;
+    transition: color 0.15s;
 }
 
 .filter-chip-remove:hover {
-  color: #e74c3c;
+    color: #e74c3c;
 }
 
-/* Кликабельные элементы карточки */
-.game-format-badge,
-.game-card-meta .game-clickable {
-  cursor: pointer;
-  transition: filter 0.15s, transform 0.15s;
+/* =========================================
+   Мобильная адаптация
+   ========================================= */
+@media (max-width: 700px) {
+
+    /* Карточка игры */
+    .game-card {
+        padding: 12px 14px;
+    }
+
+    .game-card-date {
+        font-size: 0.85rem;
+    }
+
+    .game-card-players {
+        font-size: 0.85rem;
+        gap: 4px;
+    }
+
+    .game-player-medal {
+        font-size: 0.75rem;
+        min-width: 16px;
+    }
+
+    /* Форма */
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .form-section-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    /* Участники */
+    .player-entry {
+        grid-template-columns: minmax(0, 1fr) 60px 36px;
+        grid-template-areas:
+            "name   race   remove"
+            "winner winner winner"
+            "place  place  place";
+        gap: 6px;
+        padding: 8px 6px;
+    }
+
+    .player-entry .player-autocomplete {
+        grid-area: name;
+    }
+
+    .player-entry .race-select {
+        grid-area: race;
+    }
+
+    .player-entry .remove-player {
+        grid-area: remove;
+    }
+
+    .player-entry .winner-checkbox {
+        grid-area: winner;
+        justify-content: flex-start;
+    }
+
+    .player-entry .place-select {
+        grid-area: place;
+    }
+
+    .player-entry.is-team-mode {
+        grid-template-columns: minmax(0, 1fr) 50px 70px 36px;
+        grid-template-areas:
+            "name   race   team   remove"
+            "winner winner winner winner";
+    }
+
+    .player-entry.is-team-mode .player-autocomplete {
+        grid-area: name;
+    }
+
+    .player-entry.is-team-mode .race-select {
+        grid-area: race;
+    }
+
+    .player-entry.is-team-mode .team-select {
+        grid-area: team;
+    }
+
+    .player-entry.is-team-mode .winner-checkbox {
+        grid-area: winner;
+    }
+
+    .player-entry.is-team-mode .remove-player {
+        grid-area: remove;
+    }
+
+    /* Фильтры */
+    .games-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .games-filter {
+        min-width: 0;
+    }
+
+    .games-filter-reset-wrap {
+        align-self: flex-start;
+    }
 }
 
-.game-format-badge:hover,
-.game-card-meta .game-clickable:hover {
-  filter: brightness(1.3);
-  transform: translateY(-1px);
+.team-group-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--team-color);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--team-color) 50%, transparent);
+}
+
+.team-group-label {
+    flex-shrink: 0;
+}
+
+.team-group-winner {
+    color: var(--gold);
+    font-size: 0.9rem;
+}
+
+.team-group-warning {
+    color: #e74c3c;
+    font-size: 0.9rem;
+    cursor: help;
+}
+
+.team-place-select {
+    appearance: none;
+    padding: 4px 24px 4px 8px;
+    background: var(--bg-panel-light);
+    border: 1px solid var(--border-glow);
+    border-radius: 2px;
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    text-transform: none;
+    /* Стрелка селекта */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3e%3cpath d='M1 1l4 4 4-4' stroke='%238899aa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+}
+
+.team-place-select:focus {
+    outline: none;
+    border-color: var(--gold);
+}
+
+.team-place-select option {
+    background: var(--bg-panel-light);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+}
+
+.modal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-clear {
+    appearance: none;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid var(--border-glow);
+    border-radius: 3px;
+    color: var(--text-secondary);
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.modal-clear:hover {
+    border-color: #e74c3c;
+    color: #e74c3c;
+    background: rgba(231, 76, 60, 0.08);
 }
 
 @media (max-width: 700px) {
-  .games-filters {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .games-filter {
-    min-width: 0;
-  }
-  .games-filter-reset-wrap {
-    align-self: flex-start;
-  }
-}
+    .modal-header {
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+            "title   actions"
+            "uselast uselast";
+        gap: 8px 12px;
+    }
 
-/* Поле с кнопкой «+» */
-.form-field-with-button {
-  display: flex;
-  gap: 6px;
-  align-items: stretch;
-}
+    .modal-header h3 {
+        grid-area: title;
+    }
 
-.form-field-with-button select {
-  flex: 1;
-  min-width: 0;
-}
+    .modal-use-last {
+        grid-area: uselast;
+        justify-content: flex-start;
+        font-size: 0.75rem;
+    }
 
-.form-add-btn {
-  appearance: none;
-  flex-shrink: 0;
-  width: 38px;
-  background: rgba(241, 196, 15, 0.1);
-  border: 1px solid rgba(241, 196, 15, 0.4);
-  border-radius: 3px;
-  color: var(--gold);
-  font-family: var(--font-ui);
-  font-size: 1.2rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
+    .modal-header-actions {
+        grid-area: actions;
+    }
 
-.form-add-btn:hover {
-  background: rgba(241, 196, 15, 0.2);
-  border-color: var(--gold);
-  box-shadow: 0 0 8px rgba(241, 196, 15, 0.4);
-}
-
-.form-add-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-/* Карточка командной игры */
-.game-card.is-team .game-format-badge.is-team {
-  background: rgba(155, 89, 182, 0.1);
-  border-color: rgba(155, 89, 182, 0.5);
-  color: #bb8fce;
-}
-
-/* Отображение команды в карточке */
-.game-team {
-  --race-color: #8899aa;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 3px;
-  white-space: nowrap;
-}
-
-.game-team.is-winner {
-  background: rgba(241, 196, 15, 0.08);
-}
-
-.game-team-label {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-}
-
-.game-team.is-winner .game-team-label {
-  color: var(--gold);
-}
-
-.game-team-members {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.9rem;
-}
-
-/* Селект команды в форме */
-.player-entry .team-select {
-  text-align: center;
-  font-weight: 700;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  color: var(--text-primary);
-}
-
-/* Строка в командном режиме — расширяем */
-.player-entry.is-team-mode {
-  grid-template-columns: minmax(0, 1fr) 60px 90px minmax(0, 110px) 36px;
-}
-
-@media (max-width: 700px) {
-  .player-entry.is-team-mode {
-    grid-template-columns: minmax(0, 1fr) 50px 70px 36px;
-    grid-template-areas:
-      "name  race  team  remove"
-      "winner winner winner winner";
-  }
-  .player-entry.is-team-mode .player-autocomplete { grid-area: name; }
-  .player-entry.is-team-mode .race-select { grid-area: race; }
-  .player-entry.is-team-mode .team-select { grid-area: team; }
-  .player-entry.is-team-mode .winner-checkbox { grid-area: winner; }
-  .player-entry.is-team-mode .remove-player { grid-area: remove; }
-}
-
-/* Переключатель командного режима */
-.team-mode-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 14px;
-  background: rgba(155, 89, 182, 0.08);
-  border: 1px solid rgba(155, 89, 182, 0.4);
-  border-radius: 3px;
-  cursor: pointer;
-  font-family: var(--font-ui);
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  color: var(--text-secondary);
-  user-select: none;
-  width: fit-content;
-  transition: all 0.15s;
-}
-
-.team-mode-toggle:hover {
-  background: rgba(155, 89, 182, 0.15);
-  color: var(--text-primary);
-}
-
-.team-mode-toggle input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  min-width: 16px;
-  min-height: 16px;
-  margin: 0;
-  accent-color: #9b59b6;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.team-mode-toggle:has(input:checked) {
-  background: rgba(155, 89, 182, 0.2);
-  border-color: #9b59b6;
-  color: #bb8fce;
-  box-shadow: 0 0 8px rgba(155, 89, 182, 0.3);
-}
-
-.team-mode-options {
-  margin-top: 8px;
-}
-
-.team-mode-options[hidden] {
-  display: none;
-}
-
-.form-section-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-@media (max-width: 700px) {
-  .form-section-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
+    .modal-clear {
+        padding: 6px 10px;
+        font-size: 0.7rem;
+    }
 }

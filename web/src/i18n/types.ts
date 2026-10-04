@@ -325,6 +325,12 @@ export type TranslationKey =
     | 'games.error_team_size_mismatch'
     | 'games.error_teams_uneven'
     | 'games.distribute_teams'
+    | 'games.team_short'
+    
+    | 'games.clear_form'
+| 'games.clear_form_confirm'
+| "games.use_last_game"
+
     // Экран загрузки
     | 'loading.text'
     ;

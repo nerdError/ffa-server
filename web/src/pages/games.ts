@@ -12,6 +12,72 @@ import {
 import type { PlayerWithStats, PlayersListResponse } from '../types';
 import type { GameListItem, GamesListResponse, GameFull } from '../types-games';
 
+const LAST_GAME_KEY = 'games:lastGameSettings';
+
+interface LastGameSettings {
+    format_id: number | null;
+    host_id: number | null;
+    map_id: number | null;
+    mod_id: number | null;
+    duration_min: number | null;
+    is_team: boolean;
+    team_size: number;
+    players: Array<{
+        player_id: number | null;
+        race: 'T' | 'Z' | 'P' | 'R';
+        team: number | null;
+    }>;
+}
+
+/**
+ * Сохраняет настройки формы (кроме результата) в localStorage.
+ */
+function saveLastGameSettings(): void {
+    try {
+        const settings: LastGameSettings = {
+            format_id: formatSelect?.value ? Number(formatSelect.value) : null,
+            host_id: hostSelect?.value ? Number(hostSelect.value) : null,
+            map_id: mapSelect?.value ? Number(mapSelect.value) : null,
+            mod_id: modSelect?.value ? Number(modSelect.value) : null,
+            duration_min: durationInput?.value ? Number(durationInput.value) : null,
+            is_team: Boolean(isTeamCheckbox?.checked),
+            team_size: Number(teamSizeSelect?.value ?? '2'),
+            players: drafts
+                .filter((d) => d.player_id !== null)
+                .map((d) => ({
+                    player_id: d.player_id,
+                    race: d.race,
+                    team: d.team,
+                })),
+        };
+        localStorage.setItem(LAST_GAME_KEY, JSON.stringify(settings));
+    } catch (err) {
+        console.warn('[games] failed to save last game settings:', err);
+    }
+}
+
+/**
+ * Загружает настройки последней игры из localStorage.
+ */
+function loadLastGameSettings(): LastGameSettings | null {
+    try {
+        const raw = localStorage.getItem(LAST_GAME_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw) as LastGameSettings;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Очищает сохранённые настройки.
+ */
+function clearLastGameSettings(): void {
+    try {
+        localStorage.removeItem(LAST_GAME_KEY);
+    } catch { }
+}
+
 // ============================================================
 // Состояние модуля
 // ============================================================
@@ -99,6 +165,13 @@ export function mountGames(params: URLSearchParams): void {
     isTeamCheckbox = document.getElementById('field-is-team') as HTMLInputElement | null;
     teamSizeSelect = document.getElementById('field-team-size') as HTMLSelectElement | null;
     teamModeOptions = document.getElementById('team-mode-options');
+
+    document.getElementById('btn-clear-form')?.addEventListener('click', () => {
+        if (!confirm(t('games.clear_form_confirm'))) return;
+        clearLastGameSettings();
+        // Переоткрываем форму с нуля
+        void openCreateGameModal();
+    }, { signal });
 
     document.getElementById('btn-distribute-teams')?.addEventListener('click', () => {
         distributeTeams();
@@ -923,18 +996,11 @@ async function createModInline(): Promise<void> {
     }
 }
 
-// ============================================================
-// Модалки
-// ============================================================
 async function openCreateGameModal(): Promise<void> {
     if (!modal) return;
     editingGameId = null;
     isDirty = false;
     if (modalTitle) modalTitle.textContent = t('games.form_title');
-
-    if (isTeamCheckbox) isTeamCheckbox.checked = false;
-    if (teamSizeSelect) teamSizeSelect.value = '2';
-    updateTeamModeVisibility();
 
     await loadPlayersIfNeeded();
     await ensureAllRefsLoaded();
@@ -944,6 +1010,50 @@ async function openCreateGameModal(): Promise<void> {
     fillSelect(mapSelect, cachedMaps, t('games.select_placeholder'));
     fillSelect(modSelect, cachedMods, t('games.select_placeholder'));
 
+    // Читаем флаг «Использовать последнюю игру»
+    const useLastCheckbox = document.getElementById('field-use-last') as HTMLInputElement | null;
+    const useLast = useLastCheckbox?.checked ?? true;
+    const lastGame = useLast ? loadLastGameSettings() : null;
+
+    if (lastGame) {
+        // Применяем сохранённые настройки
+        if (formatSelect && lastGame.format_id && cachedFormats.some((f) => f.id === lastGame.format_id)) {
+            formatSelect.value = String(lastGame.format_id);
+        }
+        if (hostSelect && lastGame.host_id && cachedHosts.some((h) => h.id === lastGame.host_id)) {
+            hostSelect.value = String(lastGame.host_id);
+        }
+        if (mapSelect && lastGame.map_id && cachedMaps.some((m) => m.id === lastGame.map_id)) {
+            mapSelect.value = String(lastGame.map_id);
+        }
+        if (modSelect && lastGame.mod_id && cachedMods.some((m) => m.id === lastGame.mod_id)) {
+            modSelect.value = String(lastGame.mod_id);
+        }
+        if (durationInput && lastGame.duration_min) {
+            durationInput.value = String(lastGame.duration_min);
+        }
+        if (isTeamCheckbox) isTeamCheckbox.checked = lastGame.is_team;
+        if (teamSizeSelect) teamSizeSelect.value = String(lastGame.team_size ?? 2);
+        updateTeamModeVisibility();
+
+        drafts = lastGame.players.map((p) => ({
+            player_id: p.player_id,
+            race: p.race,
+            team: p.team,
+            is_winner: false,
+            eliminated_at: null,
+        }));
+
+        // Дата — всегда текущая
+        if (playedAtInput) playedAtInput.value = toDatetimeLocal(new Date());
+        if (notesInput) notesInput.value = '';
+
+        renderPlayerDrafts();
+        modal.classList.remove('hidden');
+        return;
+    }
+
+    // Иначе — дефолт
     if (playedAtInput) playedAtInput.value = toDatetimeLocal(new Date());
     if (durationInput) durationInput.value = '';
     if (notesInput) notesInput.value = '';
@@ -1165,9 +1275,20 @@ function createPlayerAutocomplete(
     return { wrapper, refresh };
 }
 
-// ============================================================
-// Список участников в форме
-// ============================================================
+// Палитра для команд (по кругу)
+const TEAM_COLORS = [
+    '#3498db', // синий
+    '#e74c3c', // красный
+    '#2ecc71', // зелёный
+    '#f1c40f', // жёлтый
+    '#9b59b6', // фиолетовый
+    '#e67e22', // оранжевый
+];
+
+function getTeamColor(teamNum: number): string {
+    return TEAM_COLORS[(teamNum - 1) % TEAM_COLORS.length] ?? '#8899aa';
+}
+
 function renderPlayerDrafts(): void {
     if (!playersListBox) return;
     playersListBox.innerHTML = '';
@@ -1177,152 +1298,211 @@ function renderPlayerDrafts(): void {
     const teamSize = teamMode ? Number(teamSizeSelect?.value ?? '2') : 0;
     const maxTeams = teamMode ? Math.max(1, Math.floor(totalPlayers / teamSize)) : 0;
 
-    drafts.forEach((draft, index) => {
-        const row = document.createElement('div');
-        row.className = 'player-entry';
-        if (teamMode) row.classList.add('is-team-mode');
-        if (draft.is_winner) row.classList.add('is-winner');
-
-        // --- Раса ---
-        const raceSelect = document.createElement('select');
-        raceSelect.className = 'race-select';
-
-        // --- Автокомплит ---
-        const { wrapper: autocompleteWrap } = createPlayerAutocomplete(
-            draft,
-            () => markDirty(),
-            (player) => {
-                if (player.dominant_race) {
-                    draft.race = player.dominant_race;
-                    raceSelect.value = player.dominant_race;
-                }
-            }
-        );
-
-        for (const r of ['T', 'Z', 'P', 'R']) {
-            const opt = document.createElement('option');
-            opt.value = r;
-            opt.textContent = r;
-            if (draft.race === r) opt.selected = true;
-            raceSelect.appendChild(opt);
-        }
-        raceSelect.addEventListener('change', () => {
-            draft.race = raceSelect.value as 'T' | 'Z' | 'P' | 'R';
-            markDirty();
-        });
-
-        // --- Команда (только для командного формата) ---
-        let teamSelect: HTMLSelectElement | null = null;
-        if (teamMode) {
-            teamSelect = document.createElement('select');
-            teamSelect.className = 'team-select';
-            for (let teamNum = 1; teamNum <= maxTeams; teamNum++) {
-                const opt = document.createElement('option');
-                opt.value = String(teamNum);
-                opt.textContent = `${t('games.team_label')} ${teamNum}`;
-                if (draft.team === teamNum) opt.selected = true;
-                teamSelect.appendChild(opt);
-            }
-            if (draft.team === null || draft.team > maxTeams) {
-                // Найти первую недозаполненную команду
-                const teamCounts: Record<number, number> = {};
-                for (const d of drafts) {
-                    if (d !== draft && d.team !== null) {
-                        teamCounts[d.team] = (teamCounts[d.team] ?? 0) + 1;
-                    }
-                }
+    if (teamMode) {
+        // Группируем drafts по команде, сохраняя порядок
+        const teams = new Map<number, number[]>(); // teamNum → массив индексов
+        drafts.forEach((d, i) => {
+            // Нормализуем team
+            if (d.team === null || d.team < 1 || d.team > maxTeams) {
+                // Найдём первую недозаполненную
                 let assigned = false;
-                for (let tNum = 1; tNum <= maxTeams; tNum++) {
-                    if ((teamCounts[tNum] ?? 0) < teamSize) {
-                        draft.team = tNum;
+                for (let t = 1; t <= maxTeams; t++) {
+                    const members = teams.get(t) ?? [];
+                    if (members.length < teamSize) {
+                        d.team = t;
                         assigned = true;
                         break;
                     }
                 }
-                if (!assigned) draft.team = 1; // fallback
+                if (!assigned) d.team = 1;
             }
-            teamSelect.value = String(draft.team);
-            const ts = teamSelect;
-            ts.addEventListener('change', () => {
-                draft.team = Number(ts.value);
+            const t = d.team!;
+            const arr = teams.get(t) ?? [];
+            arr.push(i);
+            teams.set(t, arr);
+        });
+
+        // Рендерим команды в порядке номеров
+        const sortedTeams = [...teams.keys()].sort((a, b) => a - b);
+        for (const teamNum of sortedTeams) {
+            const indices = teams.get(teamNum) ?? [];
+            const color = getTeamColor(teamNum);
+            const hasWinner = indices.some((i) => drafts[i]?.is_winner);
+
+            const group = document.createElement('div');
+            group.className = 'team-group';
+            group.style.setProperty('--team-color', color);
+
+            const header = document.createElement('div');
+            header.className = 'team-group-header';
+            header.innerHTML = `${t('games.team_label')} ${teamNum}`;
+            if (hasWinner) {
+                const crown = document.createElement('span');
+                crown.className = 'team-group-winner';
+                crown.textContent = '👑';
+                header.appendChild(crown);
+            }
+            group.appendChild(header);
+
+            for (const idx of indices) {
+                const row = buildPlayerRow(idx, maxTeams, true);
+                group.appendChild(row);
+            }
+
+            playersListBox.appendChild(group);
+        }
+    } else {
+        // Одиночный режим — просто список
+        for (let i = 0; i < drafts.length; i++) {
+            const row = buildPlayerRow(i, 0, false);
+            playersListBox.appendChild(row);
+        }
+    }
+}
+
+/**
+ * Строит строку участника.
+ * @param index — индекс в drafts
+ * @param maxTeams — максимум команд (для командного режима)
+ * @param teamMode — командный ли режим
+ */
+function buildPlayerRow(index: number, maxTeams: number, teamMode: boolean): HTMLElement {
+    const draft = drafts[index];
+    if (!draft) return document.createElement('div');
+
+    const totalPlayers = drafts.length;
+
+    const row = document.createElement('div');
+    row.className = 'player-entry';
+    if (teamMode) row.classList.add('is-team-mode');
+    if (draft.is_winner) row.classList.add('is-winner');
+
+    // --- Раса ---
+    const raceSelect = document.createElement('select');
+    raceSelect.className = 'race-select';
+
+    // --- Автокомплит ---
+    const { wrapper: autocompleteWrap } = createPlayerAutocomplete(
+        draft,
+        () => markDirty(),
+        (player) => {
+            if (player.dominant_race) {
+                draft.race = player.dominant_race;
+                raceSelect.value = player.dominant_race;
+            }
+        }
+    );
+
+    for (const r of ['T', 'Z', 'P', 'R']) {
+        const opt = document.createElement('option');
+        opt.value = r;
+        opt.textContent = r;
+        if (draft.race === r) opt.selected = true;
+        raceSelect.appendChild(opt);
+    }
+    raceSelect.addEventListener('change', () => {
+        draft.race = raceSelect.value as 'T' | 'Z' | 'P' | 'R';
+        markDirty();
+    });
+
+    // --- Команда (только в командном режиме) ---
+    let teamSelect: HTMLSelectElement | null = null;
+    if (teamMode) {
+        teamSelect = document.createElement('select');
+        teamSelect.className = 'team-select';
+        for (let teamNum = 1; teamNum <= maxTeams; teamNum++) {
+            const opt = document.createElement('option');
+            opt.value = String(teamNum);
+            opt.textContent = `${t('games.team_short')} ${teamNum}`;
+            if (draft.team === teamNum) opt.selected = true;
+            teamSelect.appendChild(opt);
+        }
+        if (draft.team === null || draft.team < 1 || draft.team > maxTeams) {
+            draft.team = 1;
+        }
+        teamSelect.value = String(draft.team);
+        const ts = teamSelect;
+        ts.addEventListener('change', () => {
+            draft.team = Number(ts.value);
+            // Перерисовываем группу, чтобы игрок переехал
+            renderPlayerDrafts();
+            markDirty();
+        });
+    }
+
+    // --- Победитель ---
+    const winnerWrap = document.createElement('label');
+    winnerWrap.className = 'winner-checkbox';
+    const winnerCheck = document.createElement('input');
+    winnerCheck.type = 'checkbox';
+    winnerCheck.checked = draft.is_winner;
+    winnerCheck.addEventListener('change', () => {
+        draft.is_winner = winnerCheck.checked;
+        if (winnerCheck.checked) draft.eliminated_at = null;
+        normalizeEliminatedAt();
+        renderPlayerDrafts();
+        markDirty();
+    });
+    winnerWrap.appendChild(winnerCheck);
+    const winnerText = document.createElement('span');
+    winnerText.textContent = t('games.winner_label');
+    winnerWrap.appendChild(winnerText);
+
+    // --- Место (только в одиночном режиме, не для победителей) ---
+    let placeSelect: HTMLSelectElement | null = null;
+    if (!teamMode) {
+        placeSelect = document.createElement('select');
+        placeSelect.className = 'place-select';
+
+        if (draft.is_winner) {
+            placeSelect.style.visibility = 'hidden';
+            placeSelect.disabled = true;
+        } else {
+            for (let place = 2; place <= totalPlayers; place++) {
+                const opt = document.createElement('option');
+                opt.value = String(place);
+                const medal = place === 2 ? '🥈 ' : place === 3 ? '🥉 ' : '';
+                opt.textContent = `${medal}${place}${getPlaceSuffix(place)}`;
+                const expectedElim = totalPlayers - place + 1;
+                if (draft.eliminated_at === expectedElim) opt.selected = true;
+                placeSelect.appendChild(opt);
+            }
+
+            if (draft.eliminated_at === null) {
+                draft.eliminated_at = totalPlayers - 2 + 1;
+                placeSelect.value = '2';
+            }
+
+            const ps = placeSelect;
+            ps.addEventListener('change', () => {
+                const place = Number(ps.value);
+                draft.eliminated_at = totalPlayers - place + 1;
                 markDirty();
             });
         }
+    }
 
-        // --- Победитель ---
-        const winnerWrap = document.createElement('label');
-        winnerWrap.className = 'winner-checkbox';
-        const winnerCheck = document.createElement('input');
-        winnerCheck.type = 'checkbox';
-        winnerCheck.checked = draft.is_winner;
-        winnerCheck.addEventListener('change', () => {
-            draft.is_winner = winnerCheck.checked;
-            if (winnerCheck.checked) draft.eliminated_at = null;
-            normalizeEliminatedAt();
-            renderPlayerDrafts();
-            markDirty();
-        });
-        winnerWrap.appendChild(winnerCheck);
-        const winnerText = document.createElement('span');
-        winnerText.textContent = t('games.winner_label');
-        winnerWrap.appendChild(winnerText);
-
-        // --- Селект места (только для одиночного формата, не для победителей) ---
-        let placeSelect: HTMLSelectElement | null = null;
-        if (!teamMode) {
-            placeSelect = document.createElement('select');
-            placeSelect.className = 'place-select';
-
-            if (draft.is_winner) {
-                placeSelect.style.visibility = 'hidden';
-                placeSelect.disabled = true;
-            } else {
-                for (let place = 2; place <= totalPlayers; place++) {
-                    const opt = document.createElement('option');
-                    opt.value = String(place);
-                    const medal = place === 2 ? '🥈 ' : place === 3 ? '🥉 ' : '';
-                    opt.textContent = `${medal}${place}${getPlaceSuffix(place)}`;
-                    const expectedElim = totalPlayers - place + 1;
-                    if (draft.eliminated_at === expectedElim) opt.selected = true;
-                    placeSelect.appendChild(opt);
-                }
-
-                if (draft.eliminated_at === null) {
-                    draft.eliminated_at = totalPlayers - 2 + 1;
-                    placeSelect.value = '2';
-                }
-
-                const ps = placeSelect;
-                ps.addEventListener('change', () => {
-                    const place = Number(ps.value);
-                    draft.eliminated_at = totalPlayers - place + 1;
-                    markDirty();
-                });
-            }
-        }
-
-        // --- Удалить ---
-        const removeBtn = document.createElement('button');
-        removeBtn.type = 'button';
-        removeBtn.className = 'remove-player';
-        removeBtn.textContent = '✕';
-        removeBtn.title = t('games.remove_player');
-        removeBtn.addEventListener('click', () => {
-            drafts.splice(index, 1);
-            normalizeEliminatedAt();
-            renderPlayerDrafts();
-            markDirty();
-        });
-
-        // Собираем строку
-        row.append(autocompleteWrap, raceSelect);
-        if (teamSelect) row.appendChild(teamSelect);
-        row.append(winnerWrap);
-        if (placeSelect) row.appendChild(placeSelect);
-        row.appendChild(removeBtn);
-
-        playersListBox!.appendChild(row);
+    // --- Удалить ---
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'remove-player';
+    removeBtn.textContent = '✕';
+    removeBtn.title = t('games.remove_player');
+    removeBtn.addEventListener('click', () => {
+        drafts.splice(index, 1);
+        normalizeEliminatedAt();
+        renderPlayerDrafts();
+        markDirty();
     });
+
+    // Собираем строку
+    row.append(autocompleteWrap, raceSelect);
+    if (teamSelect) row.appendChild(teamSelect);
+    row.append(winnerWrap);
+    if (placeSelect) row.appendChild(placeSelect);
+    row.appendChild(removeBtn);
+
+    return row;
 }
 
 // ============================================================
@@ -1371,8 +1551,14 @@ function normalizeEliminatedAt(): void {
 // Отправка формы
 // ============================================================
 async function submitGameForm(e: Event): Promise<void> {
+    console.log('[games] submitGameForm called');
     e.preventDefault();
-    if (!form) return;
+    console.log('[games] preventDefault called');
+    if (!form) {
+        console.log('[games] form is null');
+        return;
+    }
+    console.log('[games] form is ok');
 
     normalizeEliminatedAt();
 
@@ -1480,6 +1666,7 @@ async function submitGameForm(e: Event): Promise<void> {
                 method: 'POST', token: state.token, body: payload,
             });
         }
+        saveLastGameSettings();
         closeGameModal(true);
         await loadGames();
     } catch (err) {

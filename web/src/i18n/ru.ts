@@ -324,6 +324,12 @@ export const ru: Record<TranslationKey, string> = {
     'games.error_team_size_mismatch': 'Количество игроков должно делиться на размер команды ({size})',
     'games.error_teams_uneven': 'Все команды должны быть одинакового размера ({size})',
     'games.distribute_teams': "Распределить по командам",
+    'games.team_short': 'Команда',
+
+    'games.clear_form': 'Очистить',
+'games.clear_form_confirm': 'Очистить форму и не использовать настройки последней игры?',
+    "games.use_last_game": "Копировать предыдущие настройки",
+
     // Загрузка
     'loading.text': 'ЗАГРУЗКА…',
 };

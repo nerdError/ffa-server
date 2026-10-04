@@ -1,5 +1,5 @@
 import { apiRequest } from '../api';
-import { findPlayerByName, loadPlayers } from '../ui/players';
+import { bindCreatePlayer, findPlayerByName, loadPlayers } from '../ui/players';
 import { openPlayerScreen } from '../ui/player-detail';
 import type { PlayersListResponse } from '../types';
 import { navigateTo } from '../router';
@@ -17,6 +17,16 @@ export function mountPlayers(params: URLSearchParams): void {
             navigateTo('/', true);
         });
     }
+
+    bindCreatePlayer(() => {
+        // После создания — перезагружаем список
+        void loadPlayers({
+            onOpenPlayer: (id, name) => {
+                window.history.pushState({}, '', `/?player=${encodeURIComponent(name)}`);
+                void openPlayerScreen(id);
+            },
+        });
+    });
 
     const screen = document.getElementById('screen-players');
     const playerScreen = document.getElementById('screen-player');

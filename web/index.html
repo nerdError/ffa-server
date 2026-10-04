@@ -489,9 +489,20 @@
     <div id="game-modal" class="modal-overlay hidden">
         <div class="modal">
             <div class="modal-header">
-                <h3 id="game-modal-title" data-i18n="games.form_title">Новая игра</h3>
-                <button type="button" class="modal-close" id="game-modal-close" aria-label="Close">✕</button>
-            </div>
+    <h3 id="game-modal-title">Новая игра</h3>
+
+    <label class="modal-use-last">
+        <input type="checkbox" id="field-use-last" checked />
+        <span data-i18n="games.use_last_game">Копировать предыдущие настройки</span>
+    </label>
+
+    <div class="modal-header-actions">
+        <button type="button" id="btn-clear-form" class="modal-clear" data-i18n="games.clear_form">
+            Очистить
+        </button>
+        <button type="button" class="modal-close" id="game-modal-close" aria-label="Close">✕</button>
+    </div>
+</div>
 
             <form id="game-form" class="game-form">
                 <label class="form-field">

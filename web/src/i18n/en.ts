@@ -323,6 +323,11 @@ export const en: Record<TranslationKey, string> = {
     'games.error_team_size_mismatch': 'Player count must be divisible by team size ({size})',
     'games.error_teams_uneven': 'All teams must have the same size ({size})',
     'games.distribute_teams': 'Distribute teams',
+    'games.team_short': 'Team',
+
+    'games.clear_form': 'Clear',
+'games.clear_form_confirm': 'Clear the form and not use the last game settings?',
+    "games.use_last_game": "Copy previous settings",
 
     // Loading
     'loading.text': 'LOADING…',
