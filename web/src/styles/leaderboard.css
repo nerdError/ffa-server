@@ -1,0 +1,58 @@
+.leaderboard-table {
+  width: 100%;
+  background: var(--bg-panel);
+  border-collapse: collapse;
+  border: 1px solid var(--border-glow);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-glow);
+  font-size: 0.95rem;
+}
+
+.leaderboard-table th {
+  background: #151b24;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.leaderboard-table td:first-child {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  width: 50px;
+  text-align: center;
+}
+
+.leaderboard-table .elo-cell {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-align: right;
+  color: var(--text-primary);
+}
+
+.leaderboard-table .rank-gold td:first-child {
+  color: var(--gold);
+  text-shadow: 0 0 8px rgba(241, 196, 15, 0.5);
+}
+
+.leaderboard-table .rank-silver td:first-child {
+  color: #bdc3c7;
+}
+
+.leaderboard-table .rank-bronze td:first-child {
+  color: #cd7f32;
+}
+
+.leaderboard-table .player-aka {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+  margin-left: 6px;
+}

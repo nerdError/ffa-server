@@ -1,0 +1,153 @@
+/* =========================================
+   Секция «Игры игрока» в карточке
+   ========================================= */
+.player-games-pane {
+  max-width: 900px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+.player-games-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.player-games-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.player-games-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.player-games-all-link {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-decoration: none;
+  letter-spacing: 0.5px;
+  transition: color 0.15s;
+}
+
+.player-games-all-link:hover {
+  color: var(--gold);
+}
+
+/* Сводка */
+.player-games-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-glow);
+}
+
+.stat-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-left: 3px solid var(--border-glow);
+  border-radius: 2px;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.stat-value {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.stat-value--race-T { color: var(--race-terran); }
+.stat-value--race-Z { color: var(--race-zerg); }
+.stat-value--race-P { color: var(--race-protoss); }
+.stat-value--race-R { color: var(--race-random); }
+
+/* Список игр */
+.player-games-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.game-row {
+  display: grid;
+  grid-template-columns: 80px 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-left: 3px solid var(--border-glow);
+  border-radius: 2px;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.game-row:hover {
+  background: rgba(52, 152, 219, 0.08);
+  border-left-color: #3498db;
+}
+
+.game-row-date {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.game-row-format {
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.game-row-result {
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.game-row-result.is-win {
+  color: var(--gold);
+  text-shadow: 0 0 6px rgba(241, 196, 15, 0.4);
+}
+
+.game-row-result.is-loss {
+  color: var(--text-muted);
+}
+
+.game-row-map {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+@media (max-width: 600px) {
+  .game-row {
+    grid-template-columns: 70px 1fr auto;
+    gap: 8px;
+    font-size: 0.8rem;
+  }
+
+  .game-row-map {
+    display: none;
+  }
+}

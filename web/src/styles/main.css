@@ -5,9 +5,14 @@
 @import './components.css';
 @import './players.css';
 @import './player-card.css';
+@import './card.css';
 @import './player-detail.css';
 @import './editor.css';
 @import './radar.css';
 @import './footer.css'; 
 @import './badges.css';
 @import './games.css';
+@import './player-games.css';
+@import './admin.css';
+@import './control.css';
+@import './leaderboard.css';

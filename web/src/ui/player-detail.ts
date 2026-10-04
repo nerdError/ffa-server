@@ -6,8 +6,7 @@ import {
     renderRatingEditor,
     renderRatingsList,
 } from './ratings';
-import { renderUserBox } from '../main';
-import { applyTranslations, onLocaleChange, t } from '../i18n';
+import { applyTranslations, getLocale, onLocaleChange, t } from '../i18n';
 
 onLocaleChange(() => {
     applyTranslations();
@@ -16,8 +15,8 @@ onLocaleChange(() => {
 });
 
 export async function openPlayerScreen(playerId: number): Promise<void> {
-    navigateTo('screen-player');
-    await loadPlayerDetail(playerId);
+  showScreen('screen-player');
+  await loadPlayerDetail(playerId);
 }
 
 function mergePlayerWithDraft(
@@ -42,40 +41,40 @@ function mergePlayerWithDraft(
  * - иначе — дефолт (раса T, все параметры 3).
  */
 async function fetchInitialRating(
-  playerId: number,
-  dominantRace: Race | null
+    playerId: number,
+    dominantRace: Race | null
 ): Promise<RatingInput> {
-  try {
-    const res = await apiRequest<{ rating: any | null }>(
-      `/api/players/${playerId}/my-rating`,
-      { token: state.token }
-    );
-    const mine = res.rating;
-    if (mine) {
-      return {
-        race: mine.race,
-        adaptiveness: mine.adaptiveness,
-        greed: mine.greed,
-        survival: mine.survival,
-        turtle: mine.turtle,
-        aggression: mine.aggression,
-        variety: mine.variety,
-      };
+    try {
+        const res = await apiRequest<{ rating: any | null }>(
+            `/api/players/${playerId}/my-rating`,
+            { token: state.token }
+        );
+        const mine = res.rating;
+        if (mine) {
+            return {
+                race: mine.race,
+                adaptiveness: mine.adaptiveness,
+                greed: mine.greed,
+                survival: mine.survival,
+                turtle: mine.turtle,
+                aggression: mine.aggression,
+                variety: mine.variety,
+            };
+        }
+    } catch {
+        /* 401 — используем дефолт */
     }
-  } catch {
-    /* 401 — используем дефолт */
-  }
 
-  // Нет своей оценки — выбираем доминирующую расу игрока
-  return {
-    race: dominantRace ?? 'T',
-    adaptiveness: 3,
-    greed: 3,
-    survival: 3,
-    turtle: 3,
-    aggression: 3,
-    variety: 3,
-  };
+    // Нет своей оценки — выбираем доминирующую расу игрока
+    return {
+        race: dominantRace ?? 'T',
+        adaptiveness: 3,
+        greed: 3,
+        survival: 3,
+        turtle: 3,
+        aggression: 3,
+        variety: 3,
+    };
 }
 
 /**
@@ -166,10 +165,10 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
             const editBtn = document.createElement('button');
             editBtn.type = 'button';
             editBtn.className = 'btn-primary fade-in';
-            
+
             editBtn.dataset.i18n = mine ? 'player.rating_edit' : 'player.rating_add';
             editBtn.textContent = mine ? `${t('player.rating_edit')}` : `${t('player.rating_add')}`;
-            
+
             editBtn.addEventListener('click', () => void enterEditMode());
             actions.appendChild(editBtn);
 
@@ -177,7 +176,7 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
                 const delBtn = document.createElement('button');
                 delBtn.type = 'button';
                 delBtn.className = 'btn-danger fade-in';
-                
+
                 delBtn.dataset.i18n = "player.rating_delete"
                 delBtn.textContent = `${t("player.rating_delete")}`;
 
@@ -200,7 +199,7 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
 
                             delBtn.dataset.i18n = "player.rating_delete";
                             delBtn.textContent = `🗑 ${t("player.rating_delete")}`;
-                            
+
                             alert(
                                 `${t("player.rating_delete_error")}: ` +
                                 (err instanceof Error ? err.message : String(err))
@@ -302,7 +301,7 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
                     // На последнем игроке — кнопка «Завершить»
                     nextBtn.dataset.i18n = "common.finish";
                     nextBtn.textContent = `✓ ${t('common.finish')}`;
-                    
+
                     nextBtn.addEventListener('click', () => {
                         state.reviewMode = null;
                         window.history.pushState({}, '', '/');
@@ -327,10 +326,10 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
             const saveBtn = document.createElement('button');
             saveBtn.type = 'button';
             saveBtn.className = 'btn-primary fade-in';
-            
+
             saveBtn.dataset.i18n = "player.edit_save";
             saveBtn.textContent = t('player.edit_save');
-            
+
             saveBtn.addEventListener('click', onSave);
             actions.appendChild(saveBtn);
 
@@ -429,6 +428,7 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
         // Первичный рендер
         // ============================================================
         renderActions();
+        await renderPlayerGames(playerId);   // ← НОВОЕ
         await renderRatingsList(playerId);
     } catch (err) {
         pane.innerHTML = `<p class="error fade-in">${t('common.error')}: ${err instanceof Error ? err.message : String(err)
@@ -454,38 +454,206 @@ function renderCard(pane: HTMLElement, player: PlayerWithStats): void {
     }
 }
 
-export function showScreen(id: string): void {
-    document.querySelectorAll('.screen').forEach((s) => s.classList.add('hidden'));
-    document.getElementById(id)?.classList.remove('hidden');
-    window.dispatchEvent(new Event('session:changed'));
-}
-
-export function navigateTo(id: string): void {
-    showScreen(id);
-    renderUserBox();
+function showScreen(id: string): void {
+  document.querySelectorAll('.screen').forEach((s) => s.classList.add('hidden'));
+  document.getElementById(id)?.classList.remove('hidden');
 }
 
 async function goToNextPlayer(): Promise<void> {
-  if (!state.reviewMode?.active) return;
+    if (!state.reviewMode?.active) return;
 
-  const { queue, index } = state.reviewMode;
-  const nextIndex = index + 1;
+    const { queue, index } = state.reviewMode;
+    const nextIndex = index + 1;
 
-  if (nextIndex >= queue.length) {
-    state.reviewMode = null;
-    if (state.onBackToList) state.onBackToList();
-    return;
-  }
+    if (nextIndex >= queue.length) {
+        state.reviewMode = null;
+        if (state.onBackToList) state.onBackToList();
+        return;
+    }
 
-  const next = queue[nextIndex];
-  if (!next) return;   // на всякий случай
+    const next = queue[nextIndex];
+    if (!next) return;   // на всякий случай
 
-  state.reviewMode.index = nextIndex;
+    state.reviewMode.index = nextIndex;
 
-  window.history.pushState(
-    {},
-    '',
-    `/?player=${encodeURIComponent(next.name)}`
-  );
-  await openPlayerScreen(next.id);
+    window.history.pushState(
+        {},
+        '',
+        `/?player=${encodeURIComponent(next.name)}`
+    );
+    await openPlayerScreen(next.id);
+}
+
+import type { PlayerGameStats, GameListItem, GamesListResponse } from '../types-games';
+import { navigateTo } from '../router';
+
+// ============================================================
+// Секция «Игры игрока»
+// ============================================================
+async function renderPlayerGames(playerId: number): Promise<void> {
+    const container = document.getElementById('player-games-container');
+    if (!container) return;
+
+    container.innerHTML = '<div class="skeleton skeleton-block" style="height: 200px;"></div>';
+
+    try {
+        const [statsRes, gamesRes] = await Promise.all([
+            apiRequest<{ stats: PlayerGameStats }>(`/api/players/${playerId}/game-stats`),
+            apiRequest<GamesListResponse>(`/api/games?player_id=${playerId}&limit=10`),
+        ]);
+
+        const stats = statsRes.stats;
+        const games = gamesRes.games;
+
+        renderPlayerGamesContent(container, playerId, stats, games);
+    } catch (err) {
+        container.innerHTML = `<p class="hint">${t('player.games_load_error')}</p>`;
+    }
+}
+
+function renderPlayerGamesContent(
+    container: HTMLElement,
+    playerId: number,
+    stats: PlayerGameStats,
+    games: GameListItem[]
+): void {
+    container.innerHTML = '';
+
+    const card = document.createElement('div');
+    card.className = 'card player-games-card';
+
+    // Заголовок
+    const header = document.createElement('div');
+    header.className = 'player-games-header';
+
+    const title = document.createElement('h3');
+    title.textContent = t('player.games_title');
+
+    const allLink = document.createElement('a');
+    allLink.href = `/games?player_id=${playerId}`;
+    allLink.className = 'player-games-all-link';
+    allLink.textContent = t('player.games_all') + ' →';
+
+    header.append(title, allLink);
+    card.appendChild(header);
+
+    // Если игр нет — показать сообщение и выйти
+    if (stats.total_games === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'hint';
+        empty.textContent = t('player.games_empty');
+        card.appendChild(empty);
+        container.appendChild(card);
+        return;
+    }
+
+    // Сводка
+    const summary = document.createElement('div');
+    summary.className = 'player-games-summary';
+
+    summary.appendChild(buildStatBlock(
+        t('player.games_total'),
+        String(stats.total_games)
+    ));
+    summary.appendChild(buildStatBlock(
+        t('player.games_wins'),
+        String(stats.total_wins)
+    ));
+    summary.appendChild(buildStatBlock(
+        t('player.games_winrate'),
+        `${stats.winrate}%`
+    ));
+    if (stats.favorite_race) {
+        const raceBlock = buildStatBlock(
+            t('player.games_favorite_race'),
+            stats.favorite_race
+        );
+        raceBlock.querySelector('.stat-value')?.classList.add(`stat-value--race-${stats.favorite_race}`);
+        summary.appendChild(raceBlock);
+    }
+    if (stats.favorite_format) {
+        summary.appendChild(buildStatBlock(
+            t('player.games_favorite_format'),
+            stats.favorite_format
+        ));
+    }
+
+    card.appendChild(summary);
+
+    // Список последних игр
+    const list = document.createElement('div');
+    list.className = 'player-games-list';
+
+    for (const g of games) {
+        list.appendChild(buildGameRow(g, playerId));
+    }
+
+    card.appendChild(list);
+    container.appendChild(card);
+}
+
+function buildStatBlock(label: string, value: string): HTMLElement {
+    const block = document.createElement('div');
+    block.className = 'stat-block';
+
+    const labelEl = document.createElement('div');
+    labelEl.className = 'stat-label';
+    labelEl.textContent = label;
+
+    const valueEl = document.createElement('div');
+    valueEl.className = 'stat-value';
+    valueEl.textContent = value;
+
+    block.append(labelEl, valueEl);
+    return block;
+}
+
+function buildGameRow(g: GameListItem, playerId: number): HTMLElement {
+    const row = document.createElement('a');
+    row.className = 'game-row';
+    row.href = `/games?highlight=${g.id}`;
+
+    // Находим себя среди участников
+    const me = g.participants.find((p) => p.player_id === playerId);
+
+    // Дата
+    const date = document.createElement('span');
+    date.className = 'game-row-date';
+    const d = new Date(g.played_at);
+    date.textContent = d.toLocaleDateString(getLocale() === 'ru' ? 'ru-RU' : 'en-US', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+    });
+
+    // Формат
+    const format = document.createElement('span');
+    format.className = 'game-row-format';
+    format.textContent = g.format_name ?? '—';
+
+    // Результат игрока
+    const result = document.createElement('span');
+    result.className = 'game-row-result';
+    if (me) {
+        if (me.is_winner) {
+            result.textContent = '👑 ' + t('player.games_result_win');
+            result.classList.add('is-win');
+        } else if (me.eliminated_at !== null) {
+            const place = g.participants.length - me.eliminated_at + 1;
+            result.textContent = `#${place}`;
+            result.classList.add('is-loss');
+        } else {
+            result.textContent = '—';
+        }
+    } else {
+        result.textContent = '—';
+    }
+
+    // Карта
+    const map = document.createElement('span');
+    map.className = 'game-row-map';
+    map.textContent = g.map_name ?? '';
+
+    row.append(date, format, result, map);
+    return row;
 }

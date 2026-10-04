@@ -211,29 +211,6 @@ main {
     }
 }
 
-/* =========================================
-   Экран загрузки
-   ========================================= */
-.loading-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 24px;
-    min-height: 60vh;
-}
-
-.loading-spinner {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    border: 3px solid #1a2029;
-    border-top-color: #3498db;
-    border-right-color: #3498db;
-    animation: spin 0.9s linear infinite;
-    box-shadow: 0 0 24px rgba(52, 152, 219, 0.3);
-}
-
 @keyframes spin {
     to {
         transform: rotate(360deg);

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SC2 FFA League | StarCraft II Ratings</title>
+    <style>
+        html,
+        body {
+            background: #0a0c10;
+            color: #e0e6ed;
+            margin: 0;
+            font-family: 'Zekton', 'Segoe UI', sans-serif;
+            min-height: 100vh;
+        }
+
+        body {
+            visibility: hidden;
+        }
+
+        body.is-ready {
+            visibility: visible;
+            animation: page-fade-in 0.25s ease-out;
+        }
+
+        /* Прелоадер */
+        #app-preloader {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            background: #0a0c10;
+            z-index: 9999;
+            transition: opacity 0.25s ease-out;
+        }
+
+        body.is-ready #app-preloader {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .preloader-spinner {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 3px solid #1a2029;
+            border-top-color: #3498db;
+            border-right-color: #3498db;
+            animation: preloader-spin 0.9s linear infinite;
+            box-shadow: 0 0 24px rgba(52, 152, 219, 0.3);
+        }
+
+        .preloader-text {
+            font-family: 'Zekton', 'Segoe UI', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 4px;
+            color: #556677;
+            text-transform: uppercase;
+            animation: preloader-pulse 1.4s ease-in-out infinite;
+        }
+
+        @keyframes preloader-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes preloader-pulse {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes page-fade-in {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        html.page-leaving body {
+            opacity: 0;
+            transition: opacity 0.15s ease-out;
+        }
+    </style>
+    <script>
+        setTimeout(() => {
+            document.body.classList.add('is-ready');
+        }, 1000);
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zekton:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <style>
+        /* Ставит тёмный фон на html/body ещё до загрузки CSS,
+     чтобы не мигало белым */
+        html {
+            background: #0a0c10;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app-preloader">
+        <div class="preloader-spinner"></div>
+        <div class="preloader-text">ЗАГРУЗКА…</div>
+    </div>
+    
+    <header class="topbar">
+        <!-- data-i18n="topbar.database" data-i18n="topbar.league" -->
+        <!-- <span class="subtitle" data-i18n="topbar.database">// PLAYER DATABASE</span> -->
+        <h1>SC2 FFA LEAGUE</h1>
+        <div class="topbar-right">
+            <div class="lang-switch" id="lang-switch">
+                <button type="button" class="lang-btn" data-lang="ru">RU</button>
+                <button type="button" class="lang-btn" data-lang="en">EN</button>
+            </div>
+            <div id="user-box" class="user-box"></div>
+        </div>
+    </header>
+
+    <nav class="site-nav" id="site-nav">
+        <a href="/" class="site-nav-link is-active" data-nav="players">
+            <span class="site-nav-icon">👥</span>
+            <span data-i18n="nav.players">Игроки</span>
+        </a>
+        <a href="/games" class="site-nav-link" data-nav="games">
+            <span class="site-nav-icon">⚔️</span>
+            <span data-i18n="nav.games">Игры</span>
+        </a>
+        <!-- Будущие разделы добавляем сюда же -->
+    </nav>
+
+    <main id="app">
+        <section id="screen-auth" class="screen hidden">
+            <div class="card">
+                <h2 data-i18n="auth.login_title">Вход</h2>
+                <form id="form-login" class="form">
+                    <input type="text" name="identifier" data-i18n-placeholder="auth.identifier_placeholder"
+                        placeholder="Email или никнейм" required autocomplete="username" />
+                    <input type="password" name="password" data-i18n-placeholder="auth.password_placeholder"
+                        placeholder="Пароль" required minlength="6" autocomplete="current-password" />
+                    <button type="submit" data-i18n="common.login">Войти</button>
+                </form>
+                <p class="hint"><span data-i18n="auth.no_account">Нет аккаунта?</span> <a href="#" id="link-to-signup"
+                        data-i18n="auth.signup_link">Зарегистрироваться</a></p>
+            </div>
+
+            <div class="card hidden" id="card-signup">
+                <h2 data-i18n="auth.signup_title">Регистрация</h2>
+                <form id="form-signup" class="form">
+                    <input type="text" name="username" data-i18n-placeholder="auth.username_placeholder"
+                        placeholder="Никнейм (3-32 символа)" required minlength="3" maxlength="32"
+                        pattern="[a-zA-Z0-9_.\-]+" title="Латинские буквы, цифры, _, ., -" />
+                    <input type="email" name="email" data-i18n-placeholder="auth.email_placeholder" placeholder="Email"
+                        required />
+                    <input type="password" name="password" data-i18n-placeholder="auth.password_placeholder_signup"
+                        placeholder="Пароль (мин. 6)" required minlength="6" />
+                    <button type="submit" data-i18n="auth.signup_title">Создать аккаунт</button>
+                </form>
+                <p class="hint"><span data-i18n="auth.have_account">Уже есть аккаунт?</span> <a href="#"
+                        id="link-to-login" data-i18n="auth.login_link">Войти</a></p>
+            </div>
+        </section>
+
+        <section id="screen-players" class="screen hidden">
+            <div class="toolbar">
+                <h2 data-i18n="players.title">Игроки</h2>
+                <div class="toolbar-actions">
+                    <input type="text" id="players-search" class="players-search" placeholder="Поиск по имени или aka…"
+                        data-i18n-placeholder="admin.players_search" />
+                    <div class="view-toggle" id="view-toggle">
+                        <button type="button" class="view-toggle-btn is-active" data-view="table"
+                            data-i18n="players.view_table">☰ Таблица</button>
+                        <button type="button" class="view-toggle-btn" data-view="wall" data-i18n="players.view_cards">◈
+                            Карточки</button>
+                    </div>
+                    <form id="form-create-player" class="inline-form">
+                        <input type="text" name="name" placeholder="Имя нового игрока" required maxlength="100" />
+                        <button type="submit">Добавить</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="players-error" class="error hidden"></div>
+
+            <!-- Вид 1: таблица (существующая) -->
+            <div id="players-table-view">
+                <div class="players-table-wrap">
+                    <table class="players-table">
+                        <thead>
+                            <tr>
+                                <th data-sort-key="name" data-label="Игрок" id="col-players"
+                                    data-i18n="players.col.name"></th>
+                                <th class="col-mobile-hide" data-sort-key="races" data-label="Расы"
+                                    data-i18n="players.col.races">Расы</th>
+
+                                <!-- Десктопные колонки статов -->
+                                <th class="col-desktop" data-sort-key="adaptiveness" data-label="Адаптивность"
+                                    data-i18n="stat.adaptiveness">
+                                    Адаптивность
+                                </th>
+                                <th class="col-desktop" data-sort-key="aggression" data-label="Агрессия"
+                                    data-i18n="stat.aggression">Агрессия</th>
+                                <th class="col-desktop" data-sort-key="turtle" data-label="Черепашность"
+                                    data-i18n="stat.turtle">Черепашность
+                                </th>
+                                <th class="col-desktop" data-sort-key="variety" data-label="Разнообразие"
+                                    data-i18n="stat.variety">Разнообразие
+                                </th>
+                                <th class="col-desktop" data-sort-key="survival" data-label="Выживание"
+                                    data-i18n="stat.survival">Выживание</th>
+                                <th class="col-desktop" data-sort-key="greed" data-label="Халява"
+                                    data-i18n="stat.greed">Халява</th>
+
+                                <!-- Мобильная колонка со статами (по умолчанию скрыта) -->
+                                <th class="col-mobile" data-i18n='players.col.stats'>Статы</th>
+
+                                <!-- <th data-sort-key="total" data-label="Итого" class="total-col col-mobile-hide">Итого</th> -->
+                                <!-- <th class="players-actions-header"></th> -->
+                            </tr>
+                        </thead>
+                        <tbody id="players-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Вид 2: стена со стилями игры -->
+            <div id="players-wall-view" class="hidden">
+                <div id="players-wall" class="players-wall"></div>
+            </div>
+        </section>
+
+        <section id="screen-player" class="screen hidden">
+            <button id="btn-back" class="btn-secondary" data-i18n="player.back">← Назад</button>
+
+            <div class="player-stage" id="player-stage">
+                <div class="player-card-pane" id="player-card-pane"></div>
+                <aside class="player-edit-pane" id="player-edit-pane">
+                    <div id="rating-form-container"></div>
+                </aside>
+            </div>
+
+            <div class="player-actions" id="player-actions"></div>
+
+            <div id="player-games-container" class="player-games-pane"></div>
+
+            <div id="ratings-list-container" class="player-ratings-pane"></div>
+        </section>
+    </main>
+
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-line">
+            Made by <span class="footer-author">nerdError</span>
+            <span class="footer-year">2026</span>
+        </div>
+        <div class="footer-line">
+            Inspired by <span class="footer-author2">Asfarion</span>
+        </div>
+        <div class="footer-contacts">
+
+            <!-- <span class="footer-sep">·</span> -->
+
+        </div>
+
+        <button type="button" class="footer-link footer-link--discord" id="copy-discord"
+            data-i18n-title="footer.discord_copy" title="Скопировать тег">
+            Discord: nerderror
+
+
+        </button>
+
+        <button type="button" class="footer-link footer-link--email" id="copy-email"
+            data-i18n-title="footer.discord_copy" title="Скопировать Email">
+            admin@sc2-ffa-league.ru
+        </button>
+
+        <label>Поддержать (Сбер)</label>
+        <button type="button" class="footer-link footer-link--card" id="copy-card" data-i18n-title="footer.discord_copy"
+            title="Скопировать карту для поддержки">
+            2202 2081 6733 1108
+        </button>
+
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+</body>
+
+<script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>

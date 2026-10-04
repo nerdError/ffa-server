@@ -47,7 +47,7 @@ export interface PlayerWithStats {
   name: string;
   aka: string | null;
   races: Race[];
-  dominant_race: Race | null;   // ← НОВОЕ
+  dominant_race: Race | null;
   vote_count: number;
   adaptiveness: number | null;
   greed: number | null;
@@ -55,6 +55,8 @@ export interface PlayerWithStats {
   turtle: number | null;
   aggression: number | null;
   variety: number | null;
+  elo: number;                 
+  games_played: number;         
 }
 
 /** Оценка в публичном списке — теперь с username */

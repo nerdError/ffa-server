@@ -58,6 +58,8 @@ export function saveSession(user: AuthUser, accessToken: string, refreshToken?: 
         state.refreshToken = refreshToken;
         localStorage.setItem(STORAGE_REFRESH, refreshToken);
     }
+
+    window.dispatchEvent(new Event('session:changed'));
 }
 
 export function clearSession(): void {
@@ -67,4 +69,6 @@ export function clearSession(): void {
     localStorage.removeItem(STORAGE_USER);
     localStorage.removeItem(STORAGE_TOKEN);
     localStorage.removeItem(STORAGE_REFRESH);
+
+    window.dispatchEvent(new Event('session:changed'));
 }

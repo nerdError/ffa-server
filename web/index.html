@@ -4,22 +4,105 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SC2 FFA League | StarCraft II Ratings</title>
+    <title>SC2 FFA League</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Zekton:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        html,
+        body {
+            background: #0a0c10;
+            color: #e0e6ed;
+            margin: 0;
+            font-family: 'Zekton', 'Segoe UI', sans-serif;
+            min-height: 100vh;
+        }
 
-    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="shortcut icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/site.webmanifest" />
+        body {
+            visibility: hidden;
+        }
+
+        body.is-ready {
+            visibility: visible;
+            animation: page-fade-in 0.25s ease-out;
+        }
+
+        #app-preloader {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            background: #0a0c10;
+            z-index: 9999;
+            transition: opacity 0.25s ease-out;
+        }
+
+        body.is-ready #app-preloader {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .preloader-spinner {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 3px solid #1a2029;
+            border-top-color: #3498db;
+            border-right-color: #3498db;
+            animation: preloader-spin 0.9s linear infinite;
+            box-shadow: 0 0 24px rgba(52, 152, 219, 0.3);
+        }
+
+        .preloader-text {
+            font-family: 'Zekton', 'Segoe UI', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 4px;
+            color: #556677;
+            text-transform: uppercase;
+            animation: preloader-pulse 1.4s ease-in-out infinite;
+        }
+
+        @keyframes preloader-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes preloader-pulse {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes page-fade-in {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
 </head>
 
 <body>
+    <div id="app-preloader">
+        <div class="preloader-spinner"></div>
+        <div class="preloader-text">ЗАГРУЗКА…</div>
+    </div>
+
     <header class="topbar">
-        <!-- data-i18n="topbar.database" data-i18n="topbar.league" -->
-        <!-- <span class="subtitle" data-i18n="topbar.database">// PLAYER DATABASE</span> -->
         <h1>SC2 FFA LEAGUE</h1>
         <div class="topbar-right">
             <div class="lang-switch" id="lang-switch">
@@ -31,7 +114,7 @@
     </header>
 
     <nav class="site-nav" id="site-nav">
-        <a href="/" class="site-nav-link is-active" data-nav="players">
+        <a href="/" class="site-nav-link" data-nav="players">
             <span class="site-nav-icon">👥</span>
             <span data-i18n="nav.players">Игроки</span>
         </a>
@@ -39,10 +122,16 @@
             <span class="site-nav-icon">⚔️</span>
             <span data-i18n="nav.games">Игры</span>
         </a>
-        <!-- Будущие разделы добавляем сюда же -->
+        <a href="/leaderboard" class="site-nav-link" data-nav="leaderboard">
+            <span class="site-nav-icon">🏆</span>
+            <span data-i18n="nav.leaderboard">Лидерборд</span>
+        </a>
     </nav>
 
     <main id="app">
+        <!-- ============================================ -->
+        <!-- Секция: авторизация -->
+        <!-- ============================================ -->
         <section id="screen-auth" class="screen hidden">
             <div class="card">
                 <h2 data-i18n="auth.login_title">Вход</h2>
@@ -53,8 +142,10 @@
                         placeholder="Пароль" required minlength="6" autocomplete="current-password" />
                     <button type="submit" data-i18n="common.login">Войти</button>
                 </form>
-                <p class="hint"><span data-i18n="auth.no_account">Нет аккаунта?</span> <a href="#" id="link-to-signup"
-                        data-i18n="auth.signup_link">Зарегистрироваться</a></p>
+                <p class="hint">
+                    <span data-i18n="auth.no_account">Нет аккаунта?</span>
+                    <a href="#" id="link-to-signup" data-i18n="auth.signup_link">Зарегистрироваться</a>
+                </p>
             </div>
 
             <div class="card hidden" id="card-signup">
@@ -62,86 +153,78 @@
                 <form id="form-signup" class="form">
                     <input type="text" name="username" data-i18n-placeholder="auth.username_placeholder"
                         placeholder="Никнейм (3-32 символа)" required minlength="3" maxlength="32"
-                        pattern="[a-zA-Z0-9_.\-]+" title="Латинские буквы, цифры, _, ., -" />
+                        pattern="[a-zA-Z0-9_.\-]+" />
                     <input type="email" name="email" data-i18n-placeholder="auth.email_placeholder" placeholder="Email"
                         required />
                     <input type="password" name="password" data-i18n-placeholder="auth.password_placeholder_signup"
                         placeholder="Пароль (мин. 6)" required minlength="6" />
                     <button type="submit" data-i18n="auth.signup_title">Создать аккаунт</button>
                 </form>
-                <p class="hint"><span data-i18n="auth.have_account">Уже есть аккаунт?</span> <a href="#"
-                        id="link-to-login" data-i18n="auth.login_link">Войти</a></p>
+                <p class="hint">
+                    <span data-i18n="auth.have_account">Уже есть аккаунт?</span>
+                    <a href="#" id="link-to-login" data-i18n="auth.login_link">Войти</a>
+                </p>
             </div>
         </section>
 
+        <!-- ============================================ -->
+        <!-- Секция: список игроков -->
+        <!-- ============================================ -->
         <section id="screen-players" class="screen hidden">
             <div class="toolbar">
                 <h2 data-i18n="players.title">Игроки</h2>
                 <div class="toolbar-actions">
-                    <input type="text" id="players-search" class="players-search" placeholder="Поиск по имени или aka…"
-                        data-i18n-placeholder="admin.players_search" />
+                    <input type="text" id="players-search" class="players-search"
+                        data-i18n-placeholder="players.search_placeholder" placeholder="Поиск по имени или aka…" />
                     <div class="view-toggle" id="view-toggle">
-                        <button type="button" class="view-toggle-btn is-active" data-view="table"
-                            data-i18n="players.view_table">☰ Таблица</button>
-                        <button type="button" class="view-toggle-btn" data-view="wall" data-i18n="players.view_cards">◈
-                            Карточки</button>
+                        <button type="button" class="view-toggle-btn is-active" data-view="table">
+                            ☰ <span data-i18n="players.view_table">Таблица</span>
+                        </button>
+                        <button type="button" class="view-toggle-btn" data-view="wall">
+                            ◈ <span data-i18n="players.view_cards">Карточки</span>
+                        </button>
                     </div>
                     <form id="form-create-player" class="inline-form">
-                        <input type="text" name="name" placeholder="Имя нового игрока" required maxlength="100" />
-                        <button type="submit">Добавить</button>
+                        <input type="text" name="name" data-i18n-placeholder="players.add_placeholder"
+                            placeholder="Имя нового игрока" required maxlength="100" />
+                        <button type="submit" data-i18n="players.add_button">Добавить</button>
                     </form>
                 </div>
             </div>
 
             <div id="players-error" class="error hidden"></div>
 
-            <!-- Вид 1: таблица (существующая) -->
             <div id="players-table-view">
-                <div class="players-table-wrap">
-                    <table class="players-table">
-                        <thead>
-                            <tr>
-                                <th data-sort-key="name" data-label="Игрок" id="col-players"
-                                    data-i18n="players.col.name"></th>
-                                <th class="col-mobile-hide" data-sort-key="races" data-label="Расы"
-                                    data-i18n="players.col.races">Расы</th>
-
-                                <!-- Десктопные колонки статов -->
-                                <th class="col-desktop" data-sort-key="adaptiveness" data-label="Адаптивность"
-                                    data-i18n="stat.adaptiveness">
-                                    Адаптивность
-                                </th>
-                                <th class="col-desktop" data-sort-key="aggression" data-label="Агрессия"
-                                    data-i18n="stat.aggression">Агрессия</th>
-                                <th class="col-desktop" data-sort-key="turtle" data-label="Черепашность"
-                                    data-i18n="stat.turtle">Черепашность
-                                </th>
-                                <th class="col-desktop" data-sort-key="variety" data-label="Разнообразие"
-                                    data-i18n="stat.variety">Разнообразие
-                                </th>
-                                <th class="col-desktop" data-sort-key="survival" data-label="Выживание"
-                                    data-i18n="stat.survival">Выживание</th>
-                                <th class="col-desktop" data-sort-key="greed" data-label="Халява"
-                                    data-i18n="stat.greed">Халява</th>
-
-                                <!-- Мобильная колонка со статами (по умолчанию скрыта) -->
-                                <th class="col-mobile" data-i18n='players.col.stats'>Статы</th>
-
-                                <!-- <th data-sort-key="total" data-label="Итого" class="total-col col-mobile-hide">Итого</th> -->
-                                <!-- <th class="players-actions-header"></th> -->
-                            </tr>
-                        </thead>
-                        <tbody id="players-tbody"></tbody>
-                    </table>
-                </div>
+                <table class="players-table">
+                    <thead>
+                        <tr>
+                            <th data-sort-key="name" data-i18n="players.col.name">Игрок</th>
+                            <th data-sort-key="elo" data-i18n="players.col.elo">Elo</th>
+                            <th class="col-mobile-hide" data-i18n="players.col.races">Расы</th>
+                            <th class="col-desktop" data-sort-key="adaptiveness" data-i18n="stat.adaptiveness">
+                                Адаптивность</th>
+                            <th class="col-desktop" data-sort-key="aggression" data-i18n="stat.aggression">Агрессия</th>
+                            <th class="col-desktop" data-sort-key="turtle" data-i18n="stat.turtle">Черепашность</th>
+                            <th class="col-desktop" data-sort-key="variety" data-i18n="stat.variety">Разнообразие</th>
+                            <th class="col-desktop" data-sort-key="survival" data-i18n="stat.survival">Выживание</th>
+                            <th class="col-desktop" data-sort-key="greed" data-i18n="stat.greed">Халява</th>
+                            <th class="col-mobile" data-i18n="players.col.stats">Статы</th>
+                            <!-- <th data-sort-key="total" data-i18n="players.col.total" class="total-col col-mobile-hide">Итого</th>
+                            <th class="players-actions-header"></th> -->
+                        </tr>
+                    </thead>
+                    <tbody id="players-tbody"></tbody>
+                </table>
             </div>
 
-            <!-- Вид 2: стена со стилями игры -->
             <div id="players-wall-view" class="hidden">
                 <div id="players-wall" class="players-wall"></div>
             </div>
         </section>
 
+        <!-- ============================================ -->
+        <!-- Секция: карточка игрока -->
+        <!-- ============================================ -->
         <section id="screen-player" class="screen hidden">
             <button id="btn-back" class="btn-secondary" data-i18n="player.back">← Назад</button>
 
@@ -154,58 +237,324 @@
 
             <div class="player-actions" id="player-actions"></div>
 
+            <div id="player-games-container" class="player-games-pane"></div>
+
             <div id="ratings-list-container" class="player-ratings-pane"></div>
         </section>
 
-        <!-- Экран загрузки (показывается, пока валидируется токен) -->
-        <section id="screen-loading" class="screen">
-            <div class="loading-box">
-                <div class="loading-spinner"></div>
-                <div class="loading-text" data-i18n="loading.text">ЗАГРУЗКА…</div>
+        <!-- ============================================ -->
+        <!-- Секция: игры -->
+        <!-- ============================================ -->
+        <section id="screen-games" class="screen hidden">
+            <div class="toolbar">
+                <h2 data-i18n="games.title">Игры</h2>
+                <div class="toolbar-actions">
+                    <input type="text" id="games-search" class="players-search"
+                        data-i18n-placeholder="games.search_placeholder" placeholder="Поиск по игроку…" />
+                    <button type="button" id="btn-create-game" class="btn-primary" data-i18n="games.add_button" hidden>+
+                        Добавить игру</button>
+                </div>
+            </div>
+
+            <!-- Панель фильтров -->
+            <div class="games-filters" id="games-filters">
+                <div class="games-filter">
+                    <label class="games-filter-label" data-i18n="games.filter_format">Формат</label>
+                    <select id="filter-format" class="games-filter-select">
+                        <option value="" data-i18n="games.filter_all">Все</option>
+                    </select>
+                </div>
+                <div class="games-filter">
+                    <label class="games-filter-label" data-i18n="games.filter_host">Проводящий</label>
+                    <select id="filter-host" class="games-filter-select">
+                        <option value="" data-i18n="games.filter_all">Все</option>
+                    </select>
+                </div>
+                <div class="games-filter">
+                    <label class="games-filter-label" data-i18n="games.filter_map">Карта</label>
+                    <select id="filter-map" class="games-filter-select">
+                        <option value="" data-i18n="games.filter_all">Все</option>
+                    </select>
+                </div>
+                <div class="games-filter-reset-wrap">
+                    <button type="button" id="btn-reset-filters" class="btn-secondary" hidden
+                        data-i18n="games.filter_reset">Сбросить</button>
+                </div>
+            </div>
+
+            <!-- Активные фильтры -->
+            <div class="games-active-filters" id="games-active-filters"></div>
+
+            <div id="games-error" class="error hidden"></div>
+
+            <div id="games-list-container">
+                <div class="skeleton skeleton-block"></div>
+            </div>
+        </section>
+
+        <!-- ============================================ -->
+        <!-- Секция: управление оверлеем -->
+        <!-- ============================================ -->
+        <section id="screen-control" class="screen hidden">
+            <div class="control-main">
+                <section class="control-section control-overlay-panel">
+                    <h2 data-i18n="control.obs_panel_title">OBS BROWSER SOURCE</h2>
+                    <p class="control-overlay-hint" data-i18n="control.obs_hint">
+                        Скопируйте ссылку ниже и вставьте её в OBS как Browser Source.
+                    </p>
+                    <div class="control-overlay-url">
+                        <input type="text" id="overlay-url" class="control-input control-overlay-input" readonly
+                            value="" />
+                        <button type="button" id="btn-copy-url" class="control-copy-btn"
+                            data-i18n-title="control.copy_url">
+                            <span class="control-copy-icon">⧉</span>
+                            <span class="control-copy-label" data-i18n="control.copy_url">Копировать</span>
+                        </button>
+                        <a id="btn-open-overlay" href="/overlay" target="_blank" rel="noopener noreferrer"
+                            class="control-open-btn" data-i18n-title="control.open_overlay">
+                            <span class="control-open-icon">↗</span>
+                            <span class="control-open-label" data-i18n="control.open_overlay">Открыть</span>
+                        </a>
+                        <button type="button" id="btn-regenerate-token" class="control-regen-btn">
+                            <span class="control-regen-icon">↻</span>
+                            <span class="control-regen-label" data-i18n="control.regenerate_token">Перевыпустить</span>
+                        </button>
+                    </div>
+                </section>
+
+                <section class="control-section">
+                    <h2 data-i18n="control.players_title">ИГРОКИ</h2>
+                    <input type="text" id="control-search" class="control-search"
+                        data-i18n-placeholder="control.players_search" placeholder="Поиск игрока…" autocomplete="off" />
+                    <div id="control-players" class="control-players"></div>
+                </section>
+
+                <section class="control-section">
+                    <h2 data-i18n="control.show_title">ПОКАЗ</h2>
+                    <div class="control-actions">
+                        <button type="button" id="btn-hide" class="btn-danger" data-i18n="control.hide_button">Скрыть
+                            карточку</button>
+                    </div>
+                    <div class="control-current" id="control-current" data-i18n="control.current_nothing">Ничего не
+                        показывается</div>
+                </section>
+
+                <section class="control-section">
+                    <h2 data-i18n="control.settings_title">НАСТРОЙКИ</h2>
+                    <label class="control-label">
+                        <span data-i18n="control.view_mode_label">Режим показа</span>
+                        <select id="setting-view-mode" class="control-select">
+                            <option value="average" data-i18n="control.view_mode_average">Средние оценки</option>
+                            <option value="personal" data-i18n="control.view_mode_personal">Мои оценки</option>
+                        </select>
+                    </label>
+                    <label class="control-label">
+                        <span data-i18n="control.animation_label">Анимация появления</span>
+                        <select id="setting-animation" class="control-select">
+                            <option value="fade" data-i18n="control.animation_fade">Fade</option>
+                            <option value="slide-left" data-i18n="control.animation_slide_left">Вылет слева</option>
+                            <option value="slide-right" data-i18n="control.animation_slide_right">Вылет справа</option>
+                            <option value="slide-up" data-i18n="control.animation_slide_up">Вылет снизу</option>
+                            <option value="slide-down" data-i18n="control.animation_slide_down">Вылет сверху</option>
+                            <option value="none" data-i18n="control.animation_none">Без анимации</option>
+                        </select>
+                    </label>
+                    <label class="control-label control-label--inline">
+                        <input type="checkbox" id="setting-autohide" />
+                        <span data-i18n="control.autohide_label">Автоматически скрывать</span>
+                    </label>
+                    <label class="control-label">
+                        <span data-i18n="control.autohide_delay_label">Скрывать через (секунд)</span>
+                        <input type="number" id="setting-delay" class="control-input" min="1" max="600" value="7" />
+                    </label>
+                </section>
+            </div>
+        </section>
+
+        <!-- ============================================ -->
+        <!-- Секция: админ-панель -->
+        <!-- ============================================ -->
+        <section id="screen-admin" class="screen hidden">
+            <div class="admin-main">
+                <section class="admin-section">
+                    <div class="admin-section-header">
+                        <h2 data-i18n="admin.users_title">Пользователи</h2>
+                        <input type="text" id="admin-search" class="admin-search"
+                            data-i18n-placeholder="admin.users_search" placeholder="Поиск по email или нику…"
+                            autocomplete="off" />
+                    </div>
+                    <div id="admin-users" class="admin-users">
+                        <div class="skeleton skeleton-block"></div>
+                    </div>
+                </section>
+
+                <section class="admin-section">
+                    <div class="admin-section-header">
+                        <h2 data-i18n="admin.players_title">Игроки</h2>
+                        <input type="text" id="admin-players-search" class="admin-search"
+                            data-i18n-placeholder="admin.players_search" placeholder="Поиск по имени или aka…"
+                            autocomplete="off" />
+                    </div>
+                    <p class="hint" data-i18n="admin.players_hint">Удаление игрока каскадно удалит все его оценки.</p>
+                    <div id="admin-players" class="admin-players">
+                        <div class="skeleton skeleton-block"></div>
+                    </div>
+                </section>
+
+                <section class="admin-section">
+                    <div class="admin-section-header">
+                        <h2 data-i18n="admin.formats_title">Форматы игр</h2>
+                        <button type="button" id="btn-add-format" class="btn-primary" data-i18n="admin.add_format">
+                            + Добавить формат
+                        </button>
+                    </div>
+                    <div id="admin-formats" class="admin-refs-list">
+                        <div class="skeleton skeleton-block"></div>
+                    </div>
+                </section>
+
+                <section class="admin-section">
+                    <div class="admin-section-header">
+                        <h2 data-i18n="admin.hosts_title">Ведущие</h2>
+                        <button type="button" id="btn-add-host" class="btn-primary" data-i18n="admin.add_host">
+                            + Добавить ведущего
+                        </button>
+                    </div>
+                    <div id="admin-hosts" class="admin-refs-list">
+                        <div class="skeleton skeleton-block"></div>
+                    </div>
+                </section>
+
+                <section class="admin-section">
+                    <div class="admin-section-header">
+                        <h2 data-i18n="admin.maps_title">Карты</h2>
+                        <button type="button" id="btn-add-maps" class="btn-primary" data-i18n="admin.add_map">
+                            + Добавить карту
+                        </button>
+                    </div>
+                    <div id="admin-maps" class="admin-refs-list"></div>
+                </section>
+
+                <section class="admin-section">
+                    <div class="admin-section-header">
+                        <h2 data-i18n="admin.mods_title">Моды</h2>
+                        <button type="button" id="btn-add-mods" class="btn-primary" data-i18n="admin.add_mod">
+                            + Добавить мод
+                        </button>
+                    </div>
+                    <div id="admin-mods" class="admin-refs-list"></div>
+                </section>
+            </div>
+        </section>
+
+        <section id="screen-leaderboard" class="screen hidden">
+            <div class="toolbar">
+                <h2 data-i18n="leaderboard.title">Лидерборд</h2>
+            </div>
+            <div id="leaderboard-container">
+                <div class="skeleton skeleton-block"></div>
             </div>
         </section>
     </main>
 
-    </main>
-
     <footer class="site-footer">
         <div class="footer-line">
-            Made by <span class="footer-author">nerdError</span>
+            <span data-i18n="footer.made_by">Made by</span> <span class="footer-author">nerdError</span>
             <span class="footer-year">2026</span>
         </div>
         <div class="footer-line">
-            Inspired by <span class="footer-author2">Asfarion</span>
+            <span data-i18n="footer.inspired_by">Inspired by</span> <span class="footer-author2">Asfarion</span>
         </div>
         <div class="footer-contacts">
-
-            <!-- <span class="footer-sep">·</span> -->
-
+            <a class="footer-link footer-link--telegram" href="https://t.me/nerderror404" target="_blank"
+                rel="noopener noreferrer">
+                Telegram: @nerderror404
+            </a>
+            <span class="footer-sep">·</span>
+            <button type="button" class="footer-link footer-link--discord" id="copy-discord"
+                data-i18n-title="footer.discord_copy" title="Скопировать тег">
+                Discord: nerderror
+            </button>
         </div>
-
-        <button type="button" class="footer-link footer-link--discord" id="copy-discord"
-            data-i18n-title="footer.discord_copy" title="Скопировать тег">
-            Discord: nerderror
-
-
-        </button>            
-        
-        <button type="button" class="footer-link footer-link--email" id="copy-email"
-                data-i18n-title="footer.discord_copy" title="Скопировать Email">
-                admin@sc2-ffa-league.ru
-            </button>
-            
-            <label>Поддержать (Сбер)</label>
-            <button type="button" class="footer-link footer-link--card" id="copy-card"
-                data-i18n-title="footer.discord_copy" title="Скопировать карту для поддержки">
-                2202 2081 6733 1108
-            </button>
-
     </footer>
 
-    <script type="module" src="/src/main.ts"></script>
-</body>
+    <!-- Модалка создания/редактирования игры -->
+    <div id="game-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="game-modal-title" data-i18n="games.form_title">Новая игра</h3>
+                <button type="button" class="modal-close" id="game-modal-close" aria-label="Close">✕</button>
+            </div>
 
-<script type="module" src="/src/main.ts"></script>
+            <form id="game-form" class="game-form">
+                <label class="form-field">
+                    <span data-i18n="games.field_date">Дата и время</span>
+                    <input type="datetime-local" name="played_at" id="field-played-at" required />
+                </label>
+
+                <div class="form-row">
+                    <label class="form-field">
+                        <span data-i18n="games.field_format">Формат</span>
+                        <select name="format_id" id="field-format" required></select>
+                    </label>
+                    <label class="form-field">
+                        <span data-i18n="games.field_host">Проводящий</span>
+                        <select name="host_id" id="field-host" required></select>
+                    </label>
+                </div>
+
+                <div class="form-row">
+                    <label class="form-field">
+                        <span data-i18n="games.field_map">Карта</span>
+                        <div class="form-field-with-button">
+                            <select name="map_id" id="field-map" required></select>
+                            <button type="button" id="btn-add-map" class="form-add-btn"
+                                title="Добавить карту">+</button>
+                        </div>
+                    </label>
+                    <label class="form-field">
+                        <span data-i18n="games.field_mod">Мод</span>
+                        <div class="form-field-with-button">
+                            <select name="mod_id" id="field-mod" required></select>
+                            <button type="button" id="btn-add-mod" class="form-add-btn" title="Добавить мод">+</button>
+                        </div>
+                    </label>
+                </div>
+
+                <label class="form-field">
+                    <span data-i18n="games.field_duration">Длительность (мин, опционально)</span>
+                    <input type="number" name="duration_min" id="field-duration" min="1" max="999" />
+                </label>
+
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <span data-i18n="games.field_players">Участники</span>
+                        <button type="button" id="btn-add-player" class="btn-secondary" data-i18n="games.add_player">
+                            + Добавить игрока
+                        </button>
+                    </div>
+                    <p class="form-hint" data-i18n="games.players_hint">
+                        Отметьте победителя галочкой. Для остальных укажите место.
+                    </p>
+                    <div id="players-list" class="players-list"></div>
+                </div>
+
+                <label class="form-field">
+                    <span data-i18n="games.field_notes">Заметки (опционально)</span>
+                    <textarea name="notes" id="field-notes" rows="3"></textarea>
+                </label>
+
+                <div class="form-actions">
+                    <button type="button" id="btn-cancel-game" class="btn-secondary"
+                        data-i18n="common.cancel">Отмена</button>
+                    <button type="submit" id="btn-save-game" class="btn-primary"
+                        data-i18n="common.save">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
 </body>
 
 </html>

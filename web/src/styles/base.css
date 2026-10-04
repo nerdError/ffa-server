@@ -70,3 +70,12 @@ main {
   max-width: 100%;
   box-sizing: border-box;
 }
+
+/* body {
+  animation: page-fade-in 0.2s ease-out;
+}
+
+@keyframes page-fade-in {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+} */

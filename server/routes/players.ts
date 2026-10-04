@@ -183,3 +183,25 @@ playersRouter.patch('/:id/name', async (req, res) => {
 
   res.json({ ok: true, player: data });
 });
+
+// ============================================================
+// GET /api/players/:id/game-stats
+// ============================================================
+playersRouter.get('/:id/game-stats', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid player id' });
+  }
+
+  const client = anonClient();
+  const { data, error } = await client.rpc('get_player_game_stats', {
+    p_player_id: id,
+  });
+
+  if (error) {
+    console.error('[players/game-stats] error:', error);
+    return res.status(500).json({ error: 'DB error' });
+  }
+
+  res.json({ stats: data });
+});

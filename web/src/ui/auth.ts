@@ -14,6 +14,9 @@ export function bindAuth(cb: AuthCallbacks): void {
     const screenAuth = document.getElementById('screen-auth');
     if (!formLogin || !formSignup || !cardSignup || !screenAuth) return;
 
+    if (formLogin.dataset.bound === 'true') return;
+    formLogin.dataset.bound = 'true';
+
     const loginCard = screenAuth.querySelector('.card');
     if (!loginCard) return;
 

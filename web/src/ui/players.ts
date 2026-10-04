@@ -38,7 +38,7 @@ const RACE_LABELS: Record<Race, string> = {
 };
 
 type SortDirection = 'asc' | 'desc';
-type SortKey = 'name' | 'total' | 'races' | StatKey;
+type SortKey = 'name' | 'total' | 'races' | 'elo' | StatKey;
 
 let sortKey: SortKey = 'name';
 let sortDirection: SortDirection = 'asc';
@@ -161,15 +161,6 @@ function renderPlayersTable(
     if (!tbody) return;
     tbody.innerHTML = '';
 
-
-    document.querySelector("#players-table-view > div > table > thead > tr > th.col-mobile-hide")!.textContent = t("players.col.races");
-    document.querySelector("#players-table-view > div > table > thead > tr > th:nth-child(3)")!.textContent = t("stat.adaptiveness");
-    document.querySelector("#players-table-view > div > table > thead > tr > th:nth-child(4)")!.textContent = t("stat.aggression");
-    document.querySelector("#players-table-view > div > table > thead > tr > th:nth-child(5)")!.textContent = t("stat.turtle");
-    document.querySelector("#players-table-view > div > table > thead > tr > th:nth-child(6)")!.textContent = t("stat.variety");
-    document.querySelector("#players-table-view > div > table > thead > tr > th:nth-child(7)")!.textContent = t("stat.survival");
-    document.querySelector("#players-table-view > div > table > thead > tr > th:nth-child(8)")!.textContent = t("stat.greed");
-
     const filtered = searchQuery
         ? _players.filter((p) =>
             p.name.toLowerCase().includes(searchQuery) ||
@@ -204,6 +195,16 @@ function renderPlayersTable(
         });
         tdName.appendChild(link);
         tr.appendChild(tdName);
+
+        // Elo
+        const tdElo = document.createElement('td');
+        tdElo.className = 'elo-cell';
+        tdElo.textContent = p.elo > 0 ? String(p.elo) : '—';
+        // Подсветим топ-3
+        if (p.elo >= 1600) tdElo.classList.add('elo-cell--high');
+        else if (p.elo >= 1550) tdElo.classList.add('elo-cell--mid');
+        tr.appendChild(tdElo);
+
 
         // Расы
         // Расы (скрывается на мобиле)
@@ -367,13 +368,11 @@ function calcTotal(p: PlayerWithStats): number | null {
 
 type SimpleSortKey = Exclude<SortKey, 'races'>;
 
-function getSortValue(
-    p: PlayerWithStats,
-    key: SimpleSortKey
-): string | number | null {
-    if (key === 'name') return p.name.toLowerCase();
-    if (key === 'total') return calcTotal(p);
-    return p[key]; // теперь key — StatKey, p[key] — number | null
+function getSortValue(p: PlayerWithStats, key: SimpleSortKey): string | number | null {
+  if (key === 'name') return p.name.toLowerCase();
+  if (key === 'total') return calcTotal(p);
+  if (key === 'elo') return p.elo;
+  return p[key];
 }
 
 /**
@@ -703,4 +702,14 @@ function bindViewToggle(cb: PlayersCallbacks): void {
     });
 
     viewToggleBound = true;
+}
+
+/**
+ * Ищет игрока в кэше по имени.
+ * Возвращает объект или null, если кэш пуст или игрок не найден.
+ */
+export function findPlayerByName(name: string): { id: number; name: string } | null {
+  const lower = name.toLowerCase();
+  const found = cachedPlayers.find((p) => p.name.toLowerCase() === lower);
+  return found ? { id: found.id, name: found.name } : null;
 }

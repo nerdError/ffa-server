@@ -325,3 +325,184 @@
   border-color: #2ecc71;
   color: #2ecc71;
 }
+
+/* Скролл для длинных списков */
+.admin-users,
+.admin-players {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #2a3a4a #11151c;
+}
+
+.admin-users::-webkit-scrollbar,
+.admin-players::-webkit-scrollbar {
+  width: 8px;
+}
+
+.admin-users::-webkit-scrollbar-track,
+.admin-players::-webkit-scrollbar-track {
+  background: #11151c;
+  border-radius: 4px;
+}
+
+.admin-users::-webkit-scrollbar-thumb,
+.admin-players::-webkit-scrollbar-thumb {
+  background: #2a3a4a;
+  border-radius: 4px;
+}
+
+.admin-users::-webkit-scrollbar-thumb:hover,
+.admin-players::-webkit-scrollbar-thumb:hover {
+  background: #3a4a5a;
+}
+
+.admin-user-registered {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  margin-top: 2px;
+}
+
+.admin-user-delete-btn {
+  appearance: none;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid rgba(231, 76, 60, 0.4);
+  border-radius: 3px;
+  color: rgba(231, 76, 60, 0.7);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.15s;
+}
+
+.admin-user-delete-btn:hover {
+  background: rgba(231, 76, 60, 0.15);
+  border-color: #e74c3c;
+  color: #e74c3c;
+  box-shadow: 0 0 8px rgba(231, 76, 60, 0.4);
+}
+
+/* Список справочников (форматы, ведущие) */
+.admin-refs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 40vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.admin-ref-card {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  background: #11151c;
+  border: 1px solid var(--border-glow);
+  border-radius: 3px;
+}
+
+
+.admin-ref-card > .admin-ref-input:first-of-type {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-ref-card > .admin-ref-input:not(:first-of-type) {
+  flex: 0 1 120px;
+}
+
+.admin-ref-card > .admin-ref-input--small {
+  flex: 0 0 80px;
+}
+
+.admin-ref-card > .admin-ref-actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.admin-ref-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-ref-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-ref-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.admin-ref-input {
+  padding: 6px 10px;
+  background: var(--bg-panel-light);
+  border: 1px solid var(--border-glow);
+  border-radius: 3px;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-ref-input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.admin-ref-input--small {
+  width: 80px;
+  text-align: center;
+  font-family: var(--font-mono);
+}
+
+.admin-ref-btn {
+  appearance: none;
+  padding: 6px 12px;
+  border: 1px solid var(--border-glow);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.15s;
+}
+
+.admin-ref-btn:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.admin-ref-btn--save {
+  border-color: rgba(46, 204, 113, 0.4);
+  color: #2ecc71;
+}
+
+.admin-ref-btn--save:hover {
+  background: rgba(46, 204, 113, 0.15);
+  border-color: #2ecc71;
+}
+
+.admin-ref-btn--delete {
+  border-color: rgba(231, 76, 60, 0.4);
+  color: rgba(231, 76, 60, 0.7);
+}
+
+.admin-ref-btn--delete:hover {
+  background: rgba(231, 76, 60, 0.15);
+  border-color: #e74c3c;
+  color: #e74c3c;
+}

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../../lib/auth.js';
+import { supabaseAdmin } from '../../lib/supabase-admin.js';
 
 export const gameRefsRouter = Router();
 
@@ -21,7 +22,7 @@ const REFS: Record<RefType, RefConfig> = {
   formats: {
     table: 'game_formats',
     minRole: 'admin',
-    fields: ['name', 'slug', 'sort_order'],
+    fields: ['name', 'slug', 'sort_order', 'elo_weight'],
     orderBy: 'sort_order',
   },
   hosts: {
@@ -49,7 +50,7 @@ function isRefType(value: string): value is RefType {
 }
 
 /**
- * Middleware: проверяет, что refType валиден и кладёт конфиг в req.
+ * Middleware: проверяет, что refType валиден, кладёт конфиг в req.
  */
 gameRefsRouter.use('/:refType', (req, res, next) => {
   const { refType } = req.params;
@@ -111,7 +112,7 @@ function pickFields(body: any, allowed: string[]): Record<string, unknown> {
 gameRefsRouter.get('/:refType', async (req, res) => {
   const config: RefConfig = (req as any).refConfig;
 
-  const { data, error } = await (await import('../../lib/supabase-admin.js')).supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from(config.table)
     .select('*')
     .order(config.orderBy, { ascending: true });
@@ -137,7 +138,7 @@ gameRefsRouter.post('/:refType', async (req, res) => {
   if (Object.keys(payload).length === 0) {
     return res.status(400).json({ error: 'No valid fields provided' });
   }
-  if (typeof payload.name !== 'string' || !payload.name.trim()) {
+  if (typeof payload.name !== 'string' || !(payload.name as string).trim()) {
     return res.status(400).json({ error: 'name is required' });
   }
   payload.name = String(payload.name).trim();
@@ -164,6 +165,7 @@ gameRefsRouter.post('/:refType', async (req, res) => {
 // ============================================================
 gameRefsRouter.patch('/:refType/:id', async (req, res) => {
   const config: RefConfig = (req as any).refConfig;
+  const refType: RefType = (req as any).refType;
   const check = await checkRole(req, res, config.minRole);
   if (!check.ok) return;
 
@@ -178,7 +180,7 @@ gameRefsRouter.patch('/:refType/:id', async (req, res) => {
     return res.status(400).json({ error: 'No valid fields provided' });
   }
   if (payload.name !== undefined) {
-    if (typeof payload.name !== 'string' || !payload.name.trim()) {
+    if (typeof payload.name !== 'string' || !(payload.name as string).trim()) {
       return res.status(400).json({ error: 'name cannot be empty' });
     }
     payload.name = String(payload.name).trim();
@@ -202,6 +204,16 @@ gameRefsRouter.patch('/:refType/:id', async (req, res) => {
     return res.status(404).json({ error: 'Item not found' });
   }
 
+  // Если обновили формат (например, elo_weight) — пересчитываем Elo
+  if (refType === 'formats') {
+    const { error: recalcError } = await check.client.rpc('recalculate_all_ratings');
+    if (recalcError) {
+      console.error('[game-refs] recalculate after format update failed:', recalcError);
+      // Не возвращаем ошибку клиенту — формат обновлён успешно.
+      // Просто логируем.
+    }
+  }
+
   res.json({ item: data });
 });
 
@@ -210,6 +222,7 @@ gameRefsRouter.patch('/:refType/:id', async (req, res) => {
 // ============================================================
 gameRefsRouter.delete('/:refType/:id', async (req, res) => {
   const config: RefConfig = (req as any).refConfig;
+  const refType: RefType = (req as any).refType;
   const check = await checkRole(req, res, config.minRole);
   if (!check.ok) return;
 
@@ -231,6 +244,14 @@ gameRefsRouter.delete('/:refType/:id', async (req, res) => {
   }
   if (!data) {
     return res.status(404).json({ error: 'Item not found' });
+  }
+
+  // Если удалили формат — пересчитываем Elo
+  if (refType === 'formats') {
+    const { error: recalcError } = await check.client.rpc('recalculate_all_ratings');
+    if (recalcError) {
+      console.error('[game-refs] recalculate after format delete failed:', recalcError);
+    }
   }
 
   res.json({ deleted: data });

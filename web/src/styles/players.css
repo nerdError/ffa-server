@@ -2,33 +2,33 @@
    Таблица игроков
    ========================================= */
 .players-table {
-  width: 100%;
-  /* max-width: 1200px; */
-  margin: 0 auto;
-  background: var(--bg-panel);
-  border-collapse: collapse;
-  border: 1px solid var(--border-glow);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-  table-layout: auto;
+    width: 100%;
+    /* max-width: 1200px; */
+    margin: 0 auto;
+    background: var(--bg-panel);
+    border-collapse: collapse;
+    border: 1px solid var(--border-glow);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    table-layout: auto;
 }
 
 .players-table th,
 .players-table td {
-  padding: 12px 14px;
-  text-align: left;
-  border-bottom: 1px solid var(--border-glow);
-  font-size: 0.95rem;
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-glow);
+    font-size: 0.95rem;
 }
 
 .players-table th {
-  background: #151b24;
-  font-weight: 600;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  white-space: nowrap;
-  text-align: center;
+    background: #151b24;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    text-align: center;
 }
 
 .players-table th[id=col-players] {
@@ -36,11 +36,11 @@
 }
 
 .players-table tr:last-child td {
-  border-bottom: none;
+    border-bottom: none;
 }
 
 .players-table tbody tr:hover td {
-  background: rgba(52, 152, 219, 0.05);
+    background: rgba(52, 152, 219, 0.05);
 }
 
 /* =========================================
@@ -48,67 +48,71 @@
    ========================================= */
 .players-table .stat-cell,
 .players-table td.col-desktop {
-  /* padding по вертикали = 8px, чтобы полоска не сливалась с border-bottom ячейки */
-  padding: 6px 14px;
-  min-width: 110px;
-  vertical-align: middle;
+    /* padding по вертикали = 8px, чтобы полоска не сливалась с border-bottom ячейки */
+    padding: 6px 14px;
+    min-width: 110px;
+    vertical-align: middle;
 }
 
 /* =========================================
    Имя игрока
    ========================================= */
 .player-name-link {
-  color: inherit;
-  cursor: pointer;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 1rem;
-  letter-spacing: 0.5px;
-  transition: text-shadow 0.2s, filter 0.2s;
+    color: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+    transition: text-shadow 0.2s, filter 0.2s;
 }
+
 .player-name-link:hover {
-  text-shadow: 0 0 8px currentColor;
-  filter: brightness(1.2);
+    text-shadow: 0 0 8px currentColor;
+    filter: brightness(1.2);
 }
 
 /* =========================================
    Бейджи рас
    ========================================= */
 .race-badge {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 2px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  margin-right: 6px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  border: 1px solid;
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 2px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-right: 6px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border: 1px solid;
 }
 
 .race-badge.race-T {
-  background: rgba(52, 152, 219, 0.15);
-  color: var(--race-terran);
-  border-color: var(--race-terran);
-  text-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+    background: rgba(52, 152, 219, 0.15);
+    color: var(--race-terran);
+    border-color: var(--race-terran);
+    text-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
 }
+
 .race-badge.race-Z {
-  background: rgba(155, 89, 182, 0.15);
-  color: var(--race-zerg);
-  border-color: var(--race-zerg);
-  text-shadow: 0 0 5px rgba(155, 89, 182, 0.5);
+    background: rgba(155, 89, 182, 0.15);
+    color: var(--race-zerg);
+    border-color: var(--race-zerg);
+    text-shadow: 0 0 5px rgba(155, 89, 182, 0.5);
 }
+
 .race-badge.race-P {
-  background: rgba(241, 196, 15, 0.15);
-  color: var(--race-protoss);
-  border-color: var(--race-protoss);
-  text-shadow: 0 0 5px rgba(241, 196, 15, 0.5);
+    background: rgba(241, 196, 15, 0.15);
+    color: var(--race-protoss);
+    border-color: var(--race-protoss);
+    text-shadow: 0 0 5px rgba(241, 196, 15, 0.5);
 }
+
 .race-badge.race-R {
-  background: rgba(149, 165, 166, 0.15);
-  color: var(--race-random);
-  border-color: var(--race-random);
-  text-shadow: 0 0 5px rgba(149, 165, 166, 0.5);
+    background: rgba(149, 165, 166, 0.15);
+    color: var(--race-random);
+    border-color: var(--race-random);
+    text-shadow: 0 0 5px rgba(149, 165, 166, 0.5);
 }
 
 /* =========================================
@@ -116,176 +120,248 @@
    ========================================= */
 .players-table .total-col,
 .players-table .total-cell {
-  text-align: right;
-  width: 100px;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  color: var(--text-primary);
-  font-size: 1rem;
-  white-space: nowrap;
+    text-align: right;
+    width: 100px;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 1rem;
+    white-space: nowrap;
 }
 
 /* =========================================
    Кликабельные заголовки
    ========================================= */
 .players-table th[data-sort-key] {
-  cursor: pointer;
-  user-select: none;
-  transition: filter 0.15s, background 0.15s;
-  white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transition: filter 0.15s, background 0.15s;
+    white-space: nowrap;
 }
 
 .players-table th[data-sort-key]:hover {
-  background: #1a2029;
-  filter: brightness(1.3);
+    background: #1a2029;
+    filter: brightness(1.3);
 }
 
 .players-table th.is-sorted {
-  background: #1a2029;
-  filter: brightness(1.2);
+    background: #1a2029;
+    filter: brightness(1.2);
 }
 
 .players-table th.is-sorted-asc,
 .players-table th.is-sorted-desc {
-  background: #1a2029;
-  border-bottom-color: #3498db;
+    background: #1a2029;
+    border-bottom-color: #3498db;
 }
 
-/* =========================================
-   Цвета заголовков по параметрам
-   ========================================= */
-.players-table th:nth-child(1) { color: var(--text-secondary); }
-.players-table th:nth-child(2) { color: var(--text-secondary); }
-.players-table th:nth-child(3) { color: #e67e22; }
-.players-table th:nth-child(4) { color: #e74c3c; }
-.players-table th:nth-child(5) { color: #2ecc71; }
-.players-table th:nth-child(6) { color: #9b59b6; }
-.players-table th:nth-child(7) { color: #3498db; }
-.players-table th:nth-child(8) { color: #f1c40f; }
-.players-table th:nth-child(9) { color: var(--text-primary); }
+/* Цвета заголовков по колонкам
+   Порядок: 1.Игрок, 2.Elo, 3.Расы, 4.Адаптивность, 5.Агрессия,
+            6.Черепашность, 7.Разнообразие, 8.Выживание, 9.Халява,
+            10.Итого, 11.Действия */
+.players-table th:nth-child(1) {
+    color: var(--text-secondary);
+}
+
+/* Игрок */
+.players-table th:nth-child(2) {
+    color: var(--gold);
+}
+
+/* Elo */
+.players-table th:nth-child(3) {
+    color: var(--text-secondary);
+}
+
+/* Расы */
+.players-table th:nth-child(4) {
+    color: #e67e22;
+}
+
+/* Адаптивность */
+.players-table th:nth-child(5) {
+    color: #e74c3c;
+}
+
+/* Агрессия */
+.players-table th:nth-child(6) {
+    color: #2ecc71;
+}
+
+/* Черепашность */
+.players-table th:nth-child(7) {
+    color: #9b59b6;
+}
+
+/* Разнообразие */
+.players-table th:nth-child(8) {
+    color: #3498db;
+}
+
+/* Выживание */
+.players-table th:nth-child(9) {
+    color: #f1c40f;
+}
+
+/* Халява */
+.players-table th:nth-child(10) {
+    color: var(--text-primary);
+}
+
+/* Итого */
+.players-table th:nth-child(11) {
+    color: var(--text-primary);
+}
+
+/* Действия */
 
 /* =========================================
    Полоски статов (десктоп)
    ========================================= */
 .stat-bar-wrap {
-  --stat-color: #8899aa;
-  display: block;
-  width: 100%;
+    --stat-color: #8899aa;
+    display: block;
+    width: 100%;
 }
 
 .stat-bar {
-  position: relative;
-  height: 6px;
-  background: #1a2029;
-  border-radius: 3px;
-  overflow: hidden;
+    position: relative;
+    height: 6px;
+    background: #1a2029;
+    border-radius: 3px;
+    overflow: hidden;
 }
 
 .stat-bar-fill {
-  height: 100%;
-  background: var(--stat-color);
-  border-radius: 3px;
-  box-shadow: 0 0 6px var(--stat-color);
-  transition: width 0.3s ease-out;
+    height: 100%;
+    background: var(--stat-color);
+    border-radius: 3px;
+    box-shadow: 0 0 6px var(--stat-color);
+    transition: width 0.3s ease-out;
 }
 
 .stat-bar-wrap--empty .stat-bar-fill {
-  background: transparent;
-  box-shadow: none;
+    background: transparent;
+    box-shadow: none;
 }
 
 /* =========================================
    Расы в таблице
    ========================================= */
 .players-table .races-cell {
-  vertical-align: middle;
+    vertical-align: middle;
 }
 
 .races-cell-inner {
-  display: inline-flex;
-  gap: 4px;
-  align-items: center;
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
 }
 
 .race-icon {
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
-  display: block;
-  filter: none;
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    display: block;
+    filter: none;
 }
 
 /* =========================================
    Стат-пилюли (для списка оценок)
    ========================================= */
 .stat-pill {
-  display: inline-block;
-  min-width: 36px;
-  text-align: center;
-  padding: 3px 8px;
-  border-radius: 2px;
-  font-weight: 700;
-  font-size: 0.9rem;
-  font-family: var(--font-mono);
-  letter-spacing: 0.5px;
-  border: 1px solid;
+    display: inline-block;
+    min-width: 36px;
+    text-align: center;
+    padding: 3px 8px;
+    border-radius: 2px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
+    border: 1px solid;
 }
 
-.stat-1 { background: rgba(231, 76, 60, 0.15);  color: #e74c3c; border-color: #e74c3c; }
-.stat-2 { background: rgba(230, 126, 34, 0.15); color: #e67e22; border-color: #e67e22; }
-.stat-3 { background: rgba(241, 196, 15, 0.15); color: #f1c40f; border-color: #f1c40f; }
-.stat-4 { background: rgba(46, 204, 113, 0.15); color: #2ecc71; border-color: #2ecc71; }
-.stat-5 { background: rgba(39, 174, 96, 0.25);  color: #27ae60; border-color: #27ae60; box-shadow: 0 0 6px rgba(39, 174, 96, 0.3); }
+.stat-1 {
+    background: rgba(231, 76, 60, 0.15);
+    color: #e74c3c;
+    border-color: #e74c3c;
+}
+
+.stat-2 {
+    background: rgba(230, 126, 34, 0.15);
+    color: #e67e22;
+    border-color: #e67e22;
+}
+
+.stat-3 {
+    background: rgba(241, 196, 15, 0.15);
+    color: #f1c40f;
+    border-color: #f1c40f;
+}
+
+.stat-4 {
+    background: rgba(46, 204, 113, 0.15);
+    color: #2ecc71;
+    border-color: #2ecc71;
+}
+
+.stat-5 {
+    background: rgba(39, 174, 96, 0.25);
+    color: #27ae60;
+    border-color: #27ae60;
+    box-shadow: 0 0 6px rgba(39, 174, 96, 0.3);
+}
 
 .stat-empty {
-  background: transparent;
-  color: var(--text-muted);
-  border-color: var(--border-glow);
+    background: transparent;
+    color: var(--text-muted);
+    border-color: var(--border-glow);
 }
 
 .stat-value {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 0.9rem;
-  letter-spacing: 0.5px;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
 }
 
 /* =========================================
    Стена игроков
    ========================================= */
 .players-wall-main {
-  /* max-width: 1200px; */
-  margin: 32px auto;
-  padding: 0 32px;
-  flex: 1;
+    /* max-width: 1200px; */
+    margin: 32px auto;
+    padding: 0 32px;
+    flex: 1;
 }
 
 .players-wall-header {
-  margin-bottom: 24px;
-  text-align: center;
+    margin-bottom: 24px;
+    text-align: center;
 }
 
 .players-wall-header h2 {
-  margin: 0 0 8px;
-  font-size: 1.6rem;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: #fff;
-  text-shadow: 0 0 15px rgba(52, 152, 219, 0.3);
+    margin: 0 0 8px;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #fff;
+    text-shadow: 0 0 15px rgba(52, 152, 219, 0.3);
 }
 
 .players-wall-count {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  letter-spacing: 1px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    letter-spacing: 1px;
 }
 
 .players-wall {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 40px 32px;
-  width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 40px 32px;
+    width: 100%;
 }
 
 /* @media (max-width: 1200px) {
@@ -297,341 +373,370 @@
 } */
 
 .player-tile {
-  position: relative;
-  background: linear-gradient(135deg, #141a22 0%, #0a0c10 100%);
-  border: 1px solid var(--border-glow);
-  border-radius: 4px;
-  padding: 22px 18px 16px;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.2s ease;
-  overflow: hidden;
-  text-decoration: none;
-  color: inherit;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
+    position: relative;
+    background: linear-gradient(135deg, #141a22 0%, #0a0c10 100%);
+    border: 1px solid var(--border-glow);
+    border-radius: 4px;
+    padding: 22px 18px 16px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.2s ease;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
 }
 
 .player-tile:hover {
-  transform: translateY(-4px);
-  border-color: var(--race-color, #3498db);
-  box-shadow:
-    0 8px 30px rgba(0, 0, 0, 0.5),
-    0 0 20px color-mix(in srgb, var(--race-color, #3498db) 30%, transparent);
+    transform: translateY(-4px);
+    border-color: var(--race-color, #3498db);
+    box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.5),
+        0 0 20px color-mix(in srgb, var(--race-color, #3498db) 30%, transparent);
 }
 
 .player-tile::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--race-color, #8899aa);
-  box-shadow: 0 0 10px var(--race-color, #8899aa);
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--race-color, #8899aa);
+    box-shadow: 0 0 10px var(--race-color, #8899aa);
 }
 
 .player-tile-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  justify-content: center;
-  padding: 0 4px;
-  min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
+    padding: 0 4px;
+    min-width: 0;
 }
 
 .player-tile-icon {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
-  flex-shrink: 0;
-  opacity: 0.9;
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    flex-shrink: 0;
+    opacity: 0.9;
 }
 
 .player-tile-name {
-  font-size: 1.1rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--race-color, #e0e6ed);
-  text-shadow: 0 0 8px color-mix(in srgb, var(--race-color, #3498db) 50%, transparent);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--race-color, #e0e6ed);
+    text-shadow: 0 0 8px color-mix(in srgb, var(--race-color, #3498db) 50%, transparent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
 }
 
 .player-tile-radar {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 4px 0;
-  min-width: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4px 0;
+    min-width: 0;
 }
 
 .player-tile-radar svg {
-  width: 100%;
-  height: auto;
-  max-width: 300px;
-  display: block;
-  overflow: visible;
+    width: 100%;
+    height: auto;
+    max-width: 300px;
+    display: block;
+    overflow: visible;
 }
 
 .player-tile-footer {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  letter-spacing: 1px;
-  width: 100%;
-  padding-top: 10px;
-  border-top: 1px solid var(--border-glow);
-  margin-top: 4px;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    width: 100%;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-glow);
+    margin-top: 4px;
 }
 
 .player-tile-footer strong {
-  color: var(--text-primary);
-  font-weight: 700;
+    color: var(--text-primary);
+    font-weight: 700;
 }
 
 /* =========================================
    Тулбар
    ========================================= */
 .toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    min-width: 0;
 }
 
 .toolbar-actions .btn-secondary {
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 /* =========================================
    Переключатель видов
    ========================================= */
 .view-toggle {
-  display: inline-flex;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-glow);
-  border-radius: 3px;
-  padding: 2px;
-  gap: 2px;
-  max-width: 100%;
-  box-sizing: border-box;
+    display: inline-flex;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-glow);
+    border-radius: 3px;
+    padding: 2px;
+    gap: 2px;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .view-toggle-btn {
-  appearance: none;
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  font-family: var(--font-ui);
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  padding: 8px 14px;
-  border-radius: 2px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
 }
 
 .view-toggle-btn:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.04);
 }
 
 .view-toggle-btn.is-active {
-  color: var(--gold);
-  background: rgba(241, 196, 15, 0.1);
-  text-shadow: 0 0 6px rgba(241, 196, 15, 0.4);
+    color: var(--gold);
+    background: rgba(241, 196, 15, 0.1);
+    text-shadow: 0 0 6px rgba(241, 196, 15, 0.4);
 }
 
 /* =========================================
    Удаление игрока (админ/модератор)
    ========================================= */
 .players-actions-cell {
-  width: 50px;
-  text-align: center;
+    width: 50px;
+    text-align: center;
 }
 
 .players-actions-header {
-  width: 50px;
+    width: 50px;
 }
 
 .player-delete-btn {
-  padding: 6px 10px;
-  background: transparent;
-  border: 1px solid rgba(231, 76, 60, 0.4);
-  border-radius: 3px;
-  color: rgba(231, 76, 60, 0.7);
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.15s;
+    padding: 6px 10px;
+    background: transparent;
+    border: 1px solid rgba(231, 76, 60, 0.4);
+    border-radius: 3px;
+    color: rgba(231, 76, 60, 0.7);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.15s;
 }
 
 .player-delete-btn:hover {
-  background: rgba(231, 76, 60, 0.15);
-  border-color: #e74c3c;
-  color: #e74c3c;
-  box-shadow: 0 0 8px rgba(231, 76, 60, 0.4);
+    background: rgba(231, 76, 60, 0.15);
+    border-color: #e74c3c;
+    color: #e74c3c;
+    box-shadow: 0 0 8px rgba(231, 76, 60, 0.4);
 }
 
 /* =========================================
    Поиск игроков
    ========================================= */
 .players-search {
-  flex: 1;
-  min-width: 220px;
-  max-width: 340px;
-  padding: 10px 14px;
-  background: var(--bg-panel-light);
-  border: 1px solid var(--border-glow);
-  border-radius: 3px;
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
-  letter-spacing: 0.3px;
-  transition: border-color 0.15s, box-shadow 0.15s;
-  box-sizing: border-box;
+    flex: 1;
+    min-width: 220px;
+    max-width: 340px;
+    padding: 10px 14px;
+    background: var(--bg-panel-light);
+    border: 1px solid var(--border-glow);
+    border-radius: 3px;
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    letter-spacing: 0.3px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-sizing: border-box;
 }
 
 .players-search::placeholder {
-  color: var(--text-muted);
+    color: var(--text-muted);
 }
 
 .players-search:focus {
-  outline: none;
-  border-color: var(--gold);
-  box-shadow: 0 0 8px rgba(241, 196, 15, 0.3);
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 8px rgba(241, 196, 15, 0.3);
 }
 
 /* =========================================
    Мобильная колонка статов
    ========================================= */
 .players-table .col-mobile {
-  display: none;
+    display: none;
 }
 
 @media (max-width: 700px) {
-  .players-table .col-desktop {
-    display: none;
-  }
-  .players-table .col-mobile {
-    display: table-cell;
-  }
+    .players-table .col-desktop {
+        display: none;
+    }
+
+    .players-table .col-mobile {
+        display: table-cell;
+    }
 }
 
 .stats-cell-mobile {
-  padding: 8px 10px;
+    padding: 8px 10px;
 }
 
 .stat-letters {
-  display: flex;
-  gap: 2px;
-  font-family: 'Zekton', sans-serif;
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 1px;
+    display: flex;
+    gap: 2px;
+    font-family: 'Zekton', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 1px;
 }
 
 .stat-letter {
-  display: inline-block;
-  text-shadow: 0 0 6px currentColor;
+    display: inline-block;
+    text-shadow: 0 0 6px currentColor;
 }
 
 /* =========================================
    Тулбар на мобильных
    ========================================= */
 @media (max-width: 900px) {
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
+    .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
 
-  .toolbar h2 {
-    font-size: 1.2rem;
-    text-align: left;
-    margin: 0;
-  }
+    .toolbar h2 {
+        font-size: 1.2rem;
+        text-align: left;
+        margin: 0;
+    }
 
-  .toolbar-actions {
-    flex-direction: column;
-    gap: 8px;
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
+    .toolbar-actions {
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
 
-  .players-search {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-  }
+    .players-search {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
 
-  .view-toggle {
-    width: 100%;
-    justify-content: stretch;
-  }
+    .view-toggle {
+        width: 100%;
+        justify-content: stretch;
+    }
 
-  .view-toggle-btn {
-    flex: 1;
-    padding: 10px 8px;
-    font-size: 0.75rem;
-    letter-spacing: 0.5px;
-  }
+    .view-toggle-btn {
+        flex: 1;
+        padding: 10px 8px;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
 
-  /* Форма добавления игрока — только на десктопе */
-  .inline-form {
-    display: none;
-  }
+    /* Форма добавления игрока — только на десктопе */
+    .inline-form {
+        display: none;
+    }
 }
 
 .players-table td.stat-cell {
-  border-bottom: none;
-  padding: 0px 0px;
+    border-bottom: none;
+    padding: 0px 0px;
 }
 
 @media (max-width: 700px) {
-  .players-table .col-mobile-hide {
-    display: none;
-  }
+    .players-table .col-mobile-hide {
+        display: none;
+    }
 
- .players-table .col-mobile-hide {
-    display: none;
-  }
+    .players-table .col-mobile-hide {
+        display: none;
+    }
 }
 
 .players-table-wrap {
-  width: 100%;
-  /* max-width: 1200px; */
-  margin: 0 auto;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  /* Тонкая рамка как визуальный намёк, что можно скроллить */
-  padding-bottom: 4px;
+    width: 100%;
+    /* max-width: 1200px; */
+    margin: 0 auto;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Тонкая рамка как визуальный намёк, что можно скроллить */
+    padding-bottom: 4px;
 }
 
 .stat-cell {
     padding: 0px 0px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.players-table .elo-cell {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    text-align: right;
+    white-space: nowrap;
+}
+
+.players-table .elo-cell--high {
+    color: var(--gold);
+    text-shadow: 0 0 6px rgba(241, 196, 15, 0.4);
+}
+
+.players-table .elo-cell--mid {
+    color: #5dade2;
+}
+
+/* Колонка Elo */
+.players-table .elo-col {
+    text-align: right;
+    min-width: 70px;
 }

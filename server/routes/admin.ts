@@ -332,3 +332,29 @@ adminRouter.patch('/players/:id/name', async (req, res) => {
 
   res.json({ ok: true, player: data });
 });
+
+// ============================================================
+// DELETE /api/admin/users/:id
+// Удалить пользователя (только админ)
+// ============================================================
+adminRouter.delete('/users/:id', async (req, res) => {
+  const userId = req.params.id;
+  if (!userId || typeof userId !== 'string') {
+    return res.status(400).json({ error: 'Invalid user id' });
+  }
+
+  // Нельзя удалить самого себя
+  const selfId = (req as any).userId as string;
+  if (userId === selfId) {
+    return res.status(400).json({ error: 'Cannot delete your own account' });
+  }
+
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+  if (error) {
+    console.error('[admin/users/delete] error:', error);
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.json({ ok: true });
+});

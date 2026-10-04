@@ -16,6 +16,7 @@ import { authenticate } from '../lib/auth';
 import { adminRouter } from './routes/admin';
 import { gameRefsRouter } from './routes/game-refs';
 import { gamesRouter } from './routes/games';
+import { leaderboardRouter } from './routes/leaderboard';
 
 const execFileAsync = promisify(execFile);
 
@@ -118,6 +119,7 @@ app.use('/api/control', controlRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/game-refs', gameRefsRouter);   // ← НОВОЕ
 app.use('/api/games', gamesRouter);   // ← НОВОЕ
+app.use('/api/ratings/leaderboard', leaderboardRouter);
 
 // Health-check
 app.get('/api/health', (_req, res) => {
@@ -158,18 +160,6 @@ const distDir = path.resolve(__dirname, '..', 'dist');
 // Явные страницы (до express.static и до SPA-фолбэка!)
 app.get('/overlay', (_req, res) => {
   res.sendFile(path.join(distDir, 'overlay.html'));
-});
-
-app.get('/control', (_req, res) => {
-  res.sendFile(path.join(distDir, 'control.html'));
-});
-
-app.get('/admin', (_req, res) => {
-  res.sendFile(path.join(distDir, 'admin.html'));
-});
-
-app.get('/games', (_req, res) => {
-  res.sendFile(path.join(distDir, 'games.html'));
 });
 
 // Общая статика (assets, favicon и т.д.)

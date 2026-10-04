@@ -7,6 +7,7 @@ export interface GameFormat {
   name: string;
   slug: string;
   sort_order: number;
+  elo_weight: number;
   created_at: string;
 }
 

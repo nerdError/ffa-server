@@ -5,12 +5,123 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Games | SC2 FFA League</title>
+    <style>
+        html,
+        body {
+            background: #0a0c10;
+            color: #e0e6ed;
+            margin: 0;
+            font-family: 'Zekton', 'Segoe UI', sans-serif;
+            min-height: 100vh;
+        }
+
+        body {
+            visibility: hidden;
+        }
+
+        body.is-ready {
+            visibility: visible;
+            animation: page-fade-in 0.25s ease-out;
+        }
+
+        /* Прелоадер */
+        #app-preloader {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            background: #0a0c10;
+            z-index: 9999;
+            transition: opacity 0.25s ease-out;
+        }
+
+        body.is-ready #app-preloader {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .preloader-spinner {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 3px solid #1a2029;
+            border-top-color: #3498db;
+            border-right-color: #3498db;
+            animation: preloader-spin 0.9s linear infinite;
+            box-shadow: 0 0 24px rgba(52, 152, 219, 0.3);
+        }
+
+        .preloader-text {
+            font-family: 'Zekton', 'Segoe UI', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 4px;
+            color: #556677;
+            text-transform: uppercase;
+            animation: preloader-pulse 1.4s ease-in-out infinite;
+        }
+
+        @keyframes preloader-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes preloader-pulse {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes page-fade-in {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        html.page-leaving body {
+            opacity: 0;
+            transition: opacity 0.15s ease-out;
+        }
+    </style>
+    <script>
+        setTimeout(() => {
+            document.body.classList.add('is-ready');
+        }, 1000);
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Zekton:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Ставит тёмный фон на html/body ещё до загрузки CSS,
+     чтобы не мигало белым */
+        html {
+            background: #0a0c10;
+        }
+    </style>
 </head>
 
 <body>
+    <div id="app-preloader">
+        <div class="preloader-spinner"></div>
+        <div class="preloader-text">ЗАГРУЗКА…</div>
+    </div>
+    
     <header class="topbar">
         <h1>SC2 FFA LEAGUE</h1>
         <div class="topbar-right">
@@ -113,6 +224,10 @@
                                 + Добавить игрока
                             </button>
                         </div>
+                        <p class="form-hint" data-i18n="games.players_hint">
+                            Отметьте победителя галочкой. Для остальных укажите место — последний выбывший занимает 2-е
+                            место.
+                        </p>
                         <div id="players-list" class="players-list"></div>
                     </div>
 

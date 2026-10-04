@@ -1,41 +1,48 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Player Overlay</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Zekton:wght@500;600;700&family=Consolas&display=swap" rel="stylesheet">
-  <style>
-    /* Сбрасываем всё — OBS ожидает прозрачный фон */
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: transparent;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-    }
-    #root {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    /* На случай, если игрок не найден */
-    .overlay-error {
-      font-family: 'Zekton', sans-serif;
-      color: #e74c3c;
-      font-size: 20px;
-      text-align: center;
-      padding: 20px;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Player Overlay</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zekton:wght@500;600;700&family=Consolas&display=swap"
+        rel="stylesheet">
+    <style>
+        /* Сбрасываем всё — OBS ожидает прозрачный фон */
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #root {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* На случай, если игрок не найден */
+        .overlay-error {
+            font-family: 'Zekton', sans-serif;
+            color: #e74c3c;
+            font-size: 20px;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
 </head>
+
 <body>
-  <div id="root"></div>
-  <script type="module" src="/src/overlay.ts"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/overlay.ts"></script>
 </body>
+
 </html>

@@ -51,7 +51,7 @@ export function buildPlayerCardElement(
     opts: { compact?: boolean } = {}
 ): HTMLElement {
     const { compact = false } = opts;
-    
+
     const race = dominantRace(player.races);
     const color = pickRaceColor(player.races);
 
@@ -89,7 +89,7 @@ export function buildPlayerCardElement(
         akaEl.textContent = ` aka ${player.aka}`;
         nameEl.appendChild(akaEl);
     }
-    
+
     const raceEl = document.createElement('div');
     raceEl.className = 'pc-race';
     raceEl.textContent = RACE_NAMES[race].toUpperCase() +
@@ -97,18 +97,27 @@ export function buildPlayerCardElement(
     titleBlock.append(nameEl, raceEl);
     header.appendChild(titleBlock);
 
+    const statsBlock = document.createElement('div');
+    statsBlock.className = 'pc-stats-block';
+
+    // Elo
+    const eloBlock = document.createElement('div');
+    eloBlock.className = 'pc-votes';
+    eloBlock.innerHTML = `
+  <div class="pc-votes-label">ELO</div>
+  <div class="pc-votes-count pc-elo-value">${player.games_played > 0 ? player.elo : '—'}</div>
+`;
+
+    // Голоса
     const votesBlock = document.createElement('div');
     votesBlock.className = 'pc-votes';
-    const votesLabel = document.createElement('div');
-    votesLabel.className = 'pc-votes-label';
-    votesLabel.dataset.i18n = 'player.votes'
-    votesLabel.textContent = t('player.votes');
-    const votesCount = document.createElement('div');
-    votesCount.className = 'pc-votes-count';
-    votesCount.textContent = String(player.vote_count);
-    votesBlock.append(votesLabel, votesCount);
-    header.appendChild(votesBlock);
+    votesBlock.innerHTML = `
+  <div class="pc-votes-label">ГОЛОСОВ</div>
+  <div class="pc-votes-count">${player.vote_count}</div>
+`;
 
+    statsBlock.append(eloBlock, votesBlock);
+    header.appendChild(statsBlock);
     card.appendChild(header);
 
     // --- Тело: радар слева, легенда справа ---
