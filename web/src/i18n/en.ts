@@ -326,8 +326,14 @@ export const en: Record<TranslationKey, string> = {
     'games.team_short': 'Team',
 
     'games.clear_form': 'Clear',
-'games.clear_form_confirm': 'Clear the form and not use the last game settings?',
+    'games.clear_form_confirm': 'Clear the form and not use the last game settings?',
     "games.use_last_game": "Copy previous settings",
+
+    'games.track_elim_label': 'Track elimination order',
+    'games.new_player': 'New',
+    'games.new_player_prompt': 'New player name:',
+    'games.new_player_error': 'Failed to create player: ',
+    'games.not_eliminated': 'Not eliminated',
 
     // Loading
     'loading.text': 'LOADING…',

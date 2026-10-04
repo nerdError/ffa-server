@@ -326,10 +326,17 @@ export type TranslationKey =
     | 'games.error_teams_uneven'
     | 'games.distribute_teams'
     | 'games.team_short'
-    
+
     | 'games.clear_form'
-| 'games.clear_form_confirm'
-| "games.use_last_game"
+    | 'games.clear_form_confirm'
+    | "games.use_last_game"
+
+    | 'games.use_last_game'
+    | 'games.track_elim_label'
+    | 'games.new_player'
+    | 'games.new_player_prompt'
+    | 'games.new_player_error'
+    | 'games.not_eliminated'
 
     // Экран загрузки
     | 'loading.text'

@@ -489,20 +489,20 @@
     <div id="game-modal" class="modal-overlay hidden">
         <div class="modal">
             <div class="modal-header">
-    <h3 id="game-modal-title">Новая игра</h3>
+                <h3 id="game-modal-title" data-i18n="games.form_title">Новая игра</h3>
 
-    <label class="modal-use-last">
-        <input type="checkbox" id="field-use-last" checked />
-        <span data-i18n="games.use_last_game">Копировать предыдущие настройки</span>
-    </label>
+                <label class="modal-use-last">
+                    <input type="checkbox" id="field-use-last" checked />
+                    <span data-i18n="games.use_last_game">Копировать предыдущие настройки</span>
+                </label>
 
-    <div class="modal-header-actions">
-        <button type="button" id="btn-clear-form" class="modal-clear" data-i18n="games.clear_form">
-            Очистить
-        </button>
-        <button type="button" class="modal-close" id="game-modal-close" aria-label="Close">✕</button>
-    </div>
-</div>
+                <div class="modal-header-actions">
+                    <button type="button" id="btn-clear-form" class="modal-clear" data-i18n="games.clear_form">
+                        Очистить
+                    </button>
+                    <button type="button" class="modal-close" id="game-modal-close" aria-label="Close">✕</button>
+                </div>
+            </div>
 
             <form id="game-form" class="game-form">
                 <label class="form-field">
@@ -548,9 +548,10 @@
                     <div class="form-section-header">
                         <span data-i18n="games.field_players">Участники</span>
                         <div class="form-section-actions">
-                            <button type="button" id="btn-distribute-teams" class="btn-secondary" hidden
-                                data-i18n="games.distribute_teams">
-                                Распределить по командам
+                            <button type="button" id="btn-create-player-inline" class="btn-icon-add"
+                                title="Создать нового игрока в базе">
+                                <span class="btn-icon-add-icon">+</span>
+                                <span class="btn-icon-add-label" data-i18n="games.new_player">Новый</span>
                             </button>
                             <button type="button" id="btn-add-player" class="btn-secondary"
                                 data-i18n="games.add_player">
@@ -559,25 +560,33 @@
                         </div>
                     </div>
 
-                    <label class="team-mode-toggle">
-                        <input type="checkbox" id="field-is-team" />
-                        <span data-i18n="games.is_team_label">Командная игра</span>
-                    </label>
+                    <div class="form-toggles">
+                        <label class="team-mode-toggle">
+                            <input type="checkbox" id="field-is-team" />
+                            <span data-i18n="games.is_team_label">Командная игра</span>
+                        </label>
 
-                    <div class="team-mode-options" id="team-mode-options" hidden>
-                        <label class="form-field">
-                            <span data-i18n="games.team_size_label">Размер команды</span>
-                            <select id="field-team-size" class="games-filter-select">
-                                <option value="2">2v2</option>
-                                <option value="3">3v3</option>
-                                <option value="4">4v4</option>
-                            </select>
+                        <div class="team-mode-options" id="team-mode-options" hidden>
+                            <label class="form-field form-field--inline">
+                                <span data-i18n="games.team_size_label">Размер команды</span>
+                                <select id="field-team-size" class="games-filter-select">
+                                    <option value="2">2v2</option>
+                                    <option value="3">3v3</option>
+                                    <option value="4">4v4</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <label class="elim-mode-toggle">
+                            <input type="checkbox" id="field-track-elim" checked />
+                            <span data-i18n="games.track_elim_label">Учитывать порядок выбывания</span>
                         </label>
                     </div>
 
                     <p class="form-hint" data-i18n="games.players_hint">
-                        Отметьте победителя галочкой. Для остальных укажите место.
+                        Отметьте победителя. Остальным укажите порядок выбывания — или оставьте «Не выбыл».
                     </p>
+
                     <div id="players-list" class="players-list"></div>
                 </div>
 

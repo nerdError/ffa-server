@@ -327,8 +327,14 @@ export const ru: Record<TranslationKey, string> = {
     'games.team_short': 'Команда',
 
     'games.clear_form': 'Очистить',
-'games.clear_form_confirm': 'Очистить форму и не использовать настройки последней игры?',
+    'games.clear_form_confirm': 'Очистить форму и не использовать настройки последней игры?',
     "games.use_last_game": "Копировать предыдущие настройки",
+
+    'games.track_elim_label': 'Учитывать порядок выбывания',
+    'games.new_player': 'Новый',
+    'games.new_player_prompt': 'Имя нового игрока:',
+    'games.new_player_error': 'Не удалось создать игрока: ',
+    'games.not_eliminated': 'Не выбыл',
 
     // Загрузка
     'loading.text': 'ЗАГРУЗКА…',
