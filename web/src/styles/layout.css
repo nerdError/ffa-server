@@ -445,3 +445,15 @@ main {
     padding: 12px 16px;
   }
 }
+
+.topbar-link--profile {
+  background: rgba(52, 152, 219, 0.1);
+  border-color: rgba(52, 152, 219, 0.5);
+  color: #5dade2;
+}
+
+.topbar-link--profile:hover {
+  background: rgba(52, 152, 219, 0.2);
+  border-color: #3498db;
+  box-shadow: 0 0 12px rgba(52, 152, 219, 0.4);
+}

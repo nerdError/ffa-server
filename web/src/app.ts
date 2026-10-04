@@ -18,15 +18,16 @@ export function setupApp(): void {
     setupLangSwitch();
     renderUserBox();
     setupFooterDiscordCopy();
+    setupSupportButton();
+
+    window.addEventListener('session:changed', () => {
+        renderUserBox();
+    });
 
     onLocaleChange(() => {
         applyTranslations();
         renderUserBox();
         updateTitle();
-    });
-
-    window.addEventListener('session:changed', () => {
-        renderUserBox();
     });
 }
 
@@ -62,6 +63,7 @@ export function renderUserBox(): void {
             nameWrap.appendChild(badge);
         }
 
+
         // Кнопка админа
         let adminLink: HTMLAnchorElement | null = null;
         if (state.user.is_admin) {
@@ -88,6 +90,14 @@ export function renderUserBox(): void {
                 navigateTo('/', true);
             })();
         });
+
+        if (state.user.player_id) {
+            const profileLink = document.createElement('a');
+            profileLink.href = `/?player=${encodeURIComponent(state.user.player_name ?? '')}`;
+            profileLink.className = 'topbar-link topbar-link--profile';
+            profileLink.innerHTML = `👤 <span class="btn-label">${t('topbar.my_profile')}</span>`;
+            box.appendChild(profileLink);
+        }
 
         box.append(controlLink);
         if (adminLink) box.append(adminLink);
@@ -140,4 +150,57 @@ function setupFooterDiscordCopy(): void {
             }, 1500);
         } catch { }
     });
+}
+
+/**
+ * Кнопка поддержки: копирует номер карты и показывает toast.
+ */
+function setupSupportButton(): void {
+  const btn = document.getElementById('btn-support');
+  if (!btn) return;
+
+  const CARD_NUMBER = '2202208167331108';
+
+  // Готовим toast один раз
+  let toast = document.getElementById('support-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'support-toast';
+    toast.className = 'support-toast';
+    document.body.appendChild(toast);
+  }
+
+  btn.addEventListener('click', () => {
+    void (async () => {
+      try {
+        await navigator.clipboard.writeText(CARD_NUMBER);
+        showSupportToast(toast!, true);
+      } catch {
+        // Fallback: показать номер и подсказать скопировать вручную
+        showSupportToast(toast!, false);
+      }
+    })();
+  });
+}
+
+function showSupportToast(toast: HTMLElement, copied: boolean): void {
+  toast.innerHTML = `
+    <span class="support-toast-title">${t('support.card_title')}</span>
+    <span class="support-toast-card">2202 2081 6733 1108</span>
+    <span class="support-toast-status">${
+      copied
+        ? '✓ ' + t('support.copied')
+        : t('support.copy_manually_short')
+    }</span>
+  `;
+
+  toast.classList.add('is-visible');
+
+  // Скрываем через 3 секунды
+  const timer = setTimeout(() => {
+    toast.classList.remove('is-visible');
+  }, 3000);
+
+  // Если кликнули снова до скрытия — сбрасываем таймер
+  toast.dataset.timer = String(timer);
 }

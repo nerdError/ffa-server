@@ -13,18 +13,20 @@ export interface GameRef {
   name: string;
   slug?: string;
   aka?: string | null;
+  is_team?: boolean;
 }
 
 export interface GameListItem {
   id: number;
   played_at: string;
   duration_min: number | null;
-  format_id: number | null;      // ← НОВОЕ
+  format_id: number | null;
   format_name: string | null;
   format_slug: string | null;
-  host_id: number | null;        // ← НОВОЕ
+  is_team: boolean;
+  host_id: number | null;
   host_name: string | null;
-  map_id: number | null;         // ← НОВОЕ
+  map_id: number | null;
   map_name: string | null;
   mod_name: string | null;
   player_count: number;
@@ -53,12 +55,4 @@ export interface GamesListResponse {
 
 export interface GameResponse {
   game: GameFull;
-}
-
-export interface PlayerGameStats {
-  total_games: number;
-  total_wins: number;
-  winrate: number;
-  favorite_race: 'T' | 'Z' | 'P' | 'R' | null;
-  favorite_format: string | null;
 }

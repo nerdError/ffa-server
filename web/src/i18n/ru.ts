@@ -295,6 +295,35 @@ export const ru: Record<TranslationKey, string> = {
     'admin.delete_mod_confirm': 'Удалить мод "{name}"?\n\nИгры с этим модом останутся, но потеряют привязку.',
     'common.empty': 'пусто',
 
+    'admin.link_user': 'Связать',
+    'admin.link_user_title': 'Связать игрока с профилем пользователя',
+    'admin.link_user_prompt': 'Email или никнейм пользователя для игрока "{name}":',
+    'admin.link_user_error': 'Не удалось связать: ',
+    'admin.unlink_user': 'Отвязать',
+    'admin.unlink_user_title': 'Отвязать игрока от профиля пользователя',
+    'admin.unlink_user_confirm': 'Отвязать игрока "{name}" от профиля пользователя?',
+    'admin.linked_player': 'Связан с игроком',
+    'admin.my_profile': 'Мой профиль',
+
+    'topbar.my_profile': 'Мой профиль',
+
+    'players.me_suffix': ' (вы)',
+
+    'support.button': 'Поддержать проект',
+    'support.card_title': 'Номер карты (Сбер)',
+    'support.copied': 'Скопировано!',
+    'support.copy_manually_short': 'Скопируйте вручную',
+
+    'games.team_label': 'Команда',
+    'games.error_need_two_teams': 'Для командного формата нужно минимум две команды',
+    'games.error_multiple_winner_teams': 'Победителями может быть только одна команда',
+    'games.error_incomplete_winner_team': 'Все игроки команды-победителя должны быть отмечены',
+
+    'games.is_team_label': 'Командная игра',
+    'games.team_size_label': 'Размер команды',
+    'games.error_team_size_mismatch': 'Количество игроков должно делиться на размер команды ({size})',
+    'games.error_teams_uneven': 'Все команды должны быть одинакового размера ({size})',
+    'games.distribute_teams': "Распределить по командам",
     // Загрузка
     'loading.text': 'ЗАГРУЗКА…',
 };

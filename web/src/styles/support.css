@@ -1,0 +1,115 @@
+/* =========================================
+   Кнопка поддержки проекта
+   ========================================= */
+.footer-support {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 4px;
+}
+
+.support-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  background: linear-gradient(135deg, rgba(241, 196, 15, 0.08), rgba(241, 196, 15, 0.02));
+  border: 1px solid rgba(241, 196, 15, 0.4);
+  border-radius: 24px;
+  color: var(--gold);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.support-btn:hover {
+  background: linear-gradient(135deg, rgba(241, 196, 15, 0.15), rgba(241, 196, 15, 0.05));
+  border-color: var(--gold);
+  box-shadow: 0 0 16px rgba(241, 196, 15, 0.3);
+  transform: translateY(-1px);
+}
+
+.support-btn:active {
+  transform: translateY(0);
+}
+
+.support-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* =========================================
+   Toast-уведомление при копировании
+   ========================================= */
+.support-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  z-index: 10000;
+  max-width: calc(100vw - 32px);
+  padding: 14px 22px;
+  background: linear-gradient(135deg, #1a2029, #0f1318);
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  box-shadow:
+    0 0 24px rgba(241, 196, 15, 0.4),
+    0 8px 32px rgba(0, 0, 0, 0.6);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  letter-spacing: 0.3px;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.3s ease;
+}
+
+.support-toast.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.support-toast-title {
+  display: block;
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.support-toast-card {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 1px;
+  margin: 4px 0;
+}
+
+.support-toast-status {
+  display: block;
+  color: #2ecc71;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+@media (max-width: 480px) {
+  .support-toast {
+    bottom: 16px;
+    padding: 12px 18px;
+    font-size: 0.85rem;
+  }
+  .support-toast-card {
+    font-size: 0.95rem;
+  }
+}

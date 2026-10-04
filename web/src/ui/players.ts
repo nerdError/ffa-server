@@ -177,13 +177,19 @@ function renderPlayersTable(
     for (const p of filtered) {
         const tr = document.createElement('tr');
 
+        // Если это наш собственный профиль — подсветить
+        // Подсветить свою строку
+        if (state.user?.player_id && p.id === state.user.player_id) {
+            tr.classList.add('is-me');
+        }
+
         // Имя (ссылка) — в цвет расы
         const tdName = document.createElement('td');
         const link = document.createElement('a');
         link.className = 'player-name-link';
 
         link.textContent = getLocalePlayerName(p.name);
-        
+
         link.href = '#';
         link.style.color = pickRaceColor(p.races);           // ← цвет расы
         link.style.setProperty('--race-color', pickRaceColor(p.races)); // ← для hover
@@ -204,7 +210,6 @@ function renderPlayersTable(
         if (p.elo >= 1600) tdElo.classList.add('elo-cell--high');
         else if (p.elo >= 1550) tdElo.classList.add('elo-cell--mid');
         tr.appendChild(tdElo);
-
 
         // Расы
         // Расы (скрывается на мобиле)
@@ -247,6 +252,7 @@ function renderPlayersTable(
             td.appendChild(statBarCell(p[axis.key], axis.color));
             tr.appendChild(td);
         }
+
 
         // Итого — сумма всех средних
         // const tdTotal = document.createElement('td');
@@ -369,10 +375,10 @@ function calcTotal(p: PlayerWithStats): number | null {
 type SimpleSortKey = Exclude<SortKey, 'races'>;
 
 function getSortValue(p: PlayerWithStats, key: SimpleSortKey): string | number | null {
-  if (key === 'name') return p.name.toLowerCase();
-  if (key === 'total') return calcTotal(p);
-  if (key === 'elo') return p.elo;
-  return p[key];
+    if (key === 'name') return p.name.toLowerCase();
+    if (key === 'total') return calcTotal(p);
+    if (key === 'elo') return p.elo;
+    return p[key];
 }
 
 /**
@@ -709,7 +715,7 @@ function bindViewToggle(cb: PlayersCallbacks): void {
  * Возвращает объект или null, если кэш пуст или игрок не найден.
  */
 export function findPlayerByName(name: string): { id: number; name: string } | null {
-  const lower = name.toLowerCase();
-  const found = cachedPlayers.find((p) => p.name.toLowerCase() === lower);
-  return found ? { id: found.id, name: found.name } : null;
+    const lower = name.toLowerCase();
+    const found = cachedPlayers.find((p) => p.name.toLowerCase() === lower);
+    return found ? { id: found.id, name: found.name } : null;
 }

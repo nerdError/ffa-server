@@ -46,6 +46,7 @@ export interface PlayerWithStats {
   id: number;
   name: string;
   aka: string | null;
+  user_id: string | null; 
   races: Race[];
   dominant_race: Race | null;
   vote_count: number;
@@ -109,6 +110,8 @@ export interface AuthUser {
   username?: string | null;
   is_moderator?: boolean;
   is_admin?: boolean;
+  player_id?: number | null;
+  player_name?: string | null;
 }
 
 export interface LoginResponse {

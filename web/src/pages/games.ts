@@ -2,8 +2,8 @@ import { apiRequest } from '../api';
 import { state } from '../state';
 import { t, getLocale, onLocaleChange } from '../i18n';
 import {
-    createRef,
     listRefs,
+    createRef,
     type GameFormat,
     type GameHost,
     type GameMap,
@@ -14,6 +14,26 @@ import type { GameListItem, GamesListResponse, GameFull } from '../types-games';
 
 // ============================================================
 // Состояние модуля
+// ============================================================
+let abortController: AbortController | null = null;
+let cachedGames: GameListItem[] = [];
+let searchQuery = '';
+
+let cachedPlayers: PlayerWithStats[] = [];
+let cachedFormats: GameFormat[] = [];
+let cachedHosts: GameHost[] = [];
+let cachedMaps: GameMap[] = [];
+let cachedMods: GameMod[] = [];
+
+
+let isTeamCheckbox: HTMLInputElement | null = null;
+
+let teamSizeSelect: HTMLSelectElement | null = null;
+let teamModeOptions: HTMLElement | null = null;
+
+
+// ============================================================
+// Фильтры
 // ============================================================
 interface FiltersState {
     formatId: number | null;
@@ -27,25 +47,13 @@ const filters: FiltersState = {
     mapId: null,
 };
 
-
-let abortController: AbortController | null = null;
-let cachedGames: GameListItem[] = [];
-let searchQuery = '';
-
-let cachedPlayers: PlayerWithStats[] = [];
-let cachedFormats: GameFormat[] = [];
-let cachedHosts: GameHost[] = [];
-let cachedMaps: GameMap[] = [];
-let cachedMods: GameMod[] = [];
-
-
-
 // ============================================================
 // Форма
 // ============================================================
 interface GamePlayerDraft {
     player_id: number | null;
     race: 'T' | 'Z' | 'P' | 'R';
+    team: number | null;
     is_winner: boolean;
     eliminated_at: number | null;
 }
@@ -88,13 +96,38 @@ export function mountGames(params: URLSearchParams): void {
     playedAtInput = document.getElementById('field-played-at') as HTMLInputElement | null;
     durationInput = document.getElementById('field-duration') as HTMLInputElement | null;
     notesInput = document.getElementById('field-notes') as HTMLTextAreaElement | null;
-    document.getElementById('btn-add-map')?.addEventListener('click', () => {
-        void createMapInline();
+    isTeamCheckbox = document.getElementById('field-is-team') as HTMLInputElement | null;
+    teamSizeSelect = document.getElementById('field-team-size') as HTMLSelectElement | null;
+    teamModeOptions = document.getElementById('team-mode-options');
+
+    document.getElementById('btn-distribute-teams')?.addEventListener('click', () => {
+        distributeTeams();
     }, { signal });
 
-    document.getElementById('btn-add-mod')?.addEventListener('click', () => {
-        void createModInline();
+    isTeamCheckbox?.addEventListener('change', () => {
+        updateTeamModeVisibility();
+        normalizeEliminatedAt();
+        renderPlayerDrafts();
+        markDirty();
     }, { signal });
+
+    teamSizeSelect?.addEventListener('change', () => {
+        normalizeEliminatedAt();
+        renderPlayerDrafts();
+        markDirty();
+    }, { signal });
+
+    // Читаем фильтры из URL
+    filters.formatId = params.get('format') ? Number(params.get('format')) : null;
+    filters.hostId = params.get('host') ? Number(params.get('host')) : null;
+    filters.mapId = params.get('map') ? Number(params.get('map')) : null;
+
+    const urlQ = params.get('q');
+    if (urlQ) {
+        searchQuery = urlQ.toLowerCase();
+        const searchInput = document.getElementById('games-search') as HTMLInputElement | null;
+        if (searchInput) searchInput.value = urlQ;
+    }
 
     // Кнопка создания
     const createBtn = document.getElementById('btn-create-game');
@@ -114,44 +147,7 @@ export function mountGames(params: URLSearchParams): void {
         renderGames();
     }, { signal });
 
-    // Модалка
-    document.getElementById('game-modal-close')?.addEventListener('click', () => closeGameModal(), { signal });
-    document.getElementById('btn-cancel-game')?.addEventListener('click', () => closeGameModal(), { signal });
-    form?.addEventListener('submit', (e) => void submitGameForm(e), { signal });
-    document.getElementById('btn-add-player')?.addEventListener('click', () => {
-        drafts.push({ player_id: null, race: 'T', is_winner: false, eliminated_at: null });
-        normalizeEliminatedAt();
-        renderPlayerDrafts();
-        markDirty();
-    }, { signal });
-
-    // Клавиатура: Escape
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
-            closeGameModal();
-        }
-    }, { signal });
-
-    // Locale change
-    onLocaleChange(() => {
-        renderGames();
-        if (modal && !modal.classList.contains('hidden')) {
-            renderPlayerDrafts();
-        }
-    });
-
-    // Читаем фильтры из URL
-    const urlFormat = params.get('format');
-    const urlHost = params.get('host');
-    const urlMap = params.get('map');
-    filters.formatId = urlFormat ? Number(urlFormat) : null;
-    filters.hostId = urlHost ? Number(urlHost) : null;
-    filters.mapId = urlMap ? Number(urlMap) : null;
-
-    // Загружаем справочники для селектов
-    void setupFilterSelects();
-
-    // Обработчики селектов
+    // Фильтры
     document.getElementById('filter-format')?.addEventListener('change', (e) => {
         const v = (e.target as HTMLSelectElement).value;
         filters.formatId = v ? Number(v) : null;
@@ -174,10 +170,68 @@ export function mountGames(params: URLSearchParams): void {
         resetFilters();
     }, { signal });
 
+    // Модалка
+    document.getElementById('game-modal-close')?.addEventListener('click', () => closeGameModal(), { signal });
+    document.getElementById('btn-cancel-game')?.addEventListener('click', () => closeGameModal(), { signal });
+    form?.addEventListener('submit', (e) => void submitGameForm(e), { signal });
+    document.getElementById('btn-add-player')?.addEventListener('click', () => {
+        drafts.push({ player_id: null, race: 'T', team: null, is_winner: false, eliminated_at: null });
+        normalizeEliminatedAt();
+        renderPlayerDrafts();
+        markDirty();
+    }, { signal });
+
+    document.getElementById('btn-add-map')?.addEventListener('click', () => {
+        void createMapInline();
+    }, { signal });
+
+    document.getElementById('btn-add-mod')?.addEventListener('click', () => {
+        void createModInline();
+    }, { signal });
+
+    isTeamCheckbox?.addEventListener('change', () => {
+        normalizeEliminatedAt();
+        renderPlayerDrafts();
+        markDirty();
+    }, { signal });
+
+    // Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+            closeGameModal();
+        }
+    }, { signal });
+
+    // Смена языка
+    onLocaleChange(() => {
+        renderGames();
+        if (modal && !modal.classList.contains('hidden')) {
+            renderPlayerDrafts();
+        }
+    });
+
+    // Начальная загрузка
     void loadGames().then(() => {
         const highlightId = params.get('highlight');
         if (highlightId) highlightGame(Number(highlightId));
     });
+    void setupFilterSelects();
+}
+
+function distributeTeams(): void {
+    const teamSize = Number(teamSizeSelect?.value ?? '2');
+    drafts.forEach((d, i) => {
+        d.team = Math.floor(i / teamSize) + 1;
+    });
+    renderPlayerDrafts();
+    markDirty();
+}
+
+function updateTeamModeVisibility(): void {
+    const enabled = Boolean(isTeamCheckbox?.checked);
+    if (teamModeOptions) teamModeOptions.hidden = !enabled;
+    const distributeBtn = document.getElementById('btn-distribute-teams');
+    if (distributeBtn) distributeBtn.hidden = !enabled;
 }
 
 export function unmountGames(): void {
@@ -186,9 +240,9 @@ export function unmountGames(): void {
 }
 
 // ============================================================
-// Загрузка списка игр
+// Загрузка игр
 // ============================================================
-async function loadGames(playerId?: string | null): Promise<void> {
+async function loadGames(): Promise<void> {
     const container = document.getElementById('games-list-container');
     const errorBox = document.getElementById('games-error');
     if (!container) return;
@@ -197,6 +251,9 @@ async function loadGames(playerId?: string | null): Promise<void> {
     errorBox?.classList.add('hidden');
 
     try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const playerId = urlParams.get('player_id');
+
         const url = playerId
             ? `/api/games?player_id=${encodeURIComponent(playerId)}`
             : '/api/games';
@@ -212,6 +269,10 @@ async function loadGames(playerId?: string | null): Promise<void> {
         }
         container.innerHTML = '';
     }
+}
+
+function hasActiveFilters(): boolean {
+    return filters.formatId !== null || filters.hostId !== null || filters.mapId !== null;
 }
 
 function renderGames(): void {
@@ -230,7 +291,6 @@ function renderGames(): void {
         filtered = filtered.filter((g) => g.map_id === filters.mapId);
     }
 
-    // Фильтр по поиску
     if (searchQuery) {
         filtered = filtered.filter((g) => {
             const hay = [
@@ -255,16 +315,16 @@ function renderGames(): void {
     }
 }
 
-function hasActiveFilters(): boolean {
-    return filters.formatId !== null || filters.hostId !== null || filters.mapId !== null;
-}
-
+// ============================================================
+// Карточка игры
+// ============================================================
 function buildGameCard(g: GameListItem): HTMLElement {
     const card = document.createElement('div');
     card.className = 'game-card';
     card.dataset.gameId = String(g.id);
+    if (g.is_team) card.classList.add('is-team');
 
-    // --- Шапка: дата + длительность справа ---
+    // --- Шапка ---
     const header = document.createElement('div');
     header.className = 'game-card-header';
 
@@ -279,14 +339,16 @@ function buildGameCard(g: GameListItem): HTMLElement {
         hour: '2-digit', minute: '2-digit',
     });
     leftMeta.appendChild(date);
-    if (g.format_name && g.format_id) {
+
+    if (g.format_name) {
         const format = document.createElement('span');
         format.className = 'game-format-badge';
-        format.textContent = g.format_name;
+        if (g.is_team) format.classList.add('is-team');
+        format.textContent = g.format_name + (g.is_team ? ` · ${t('games.team_label')}` : '');
         format.title = t('games.click_to_filter');
         format.addEventListener('click', (e) => {
             e.stopPropagation();
-            setFilter('format', g.format_id!);
+            if (g.format_id) setFilter('format', g.format_id);
         });
         leftMeta.appendChild(format);
     }
@@ -302,18 +364,18 @@ function buildGameCard(g: GameListItem): HTMLElement {
 
     card.appendChild(header);
 
-    // --- Мета: карта · мод · хост ---
+    // --- Мета ---
     const meta = document.createElement('div');
     meta.className = 'game-card-meta';
 
-    if (g.map_name && g.map_id) {
+    if (g.map_name) {
         const mapEl = document.createElement('span');
         mapEl.className = 'game-clickable';
         mapEl.textContent = g.map_name;
         mapEl.title = t('games.click_to_filter');
         mapEl.addEventListener('click', (e) => {
             e.stopPropagation();
-            setFilter('map', g.map_id!);
+            if (g.map_id) setFilter('map', g.map_id);
         });
         meta.appendChild(mapEl);
     }
@@ -323,10 +385,9 @@ function buildGameCard(g: GameListItem): HTMLElement {
         meta.appendChild(document.createTextNode(g.mod_name));
     }
 
-    if (g.host_name && g.host_id) {
+    if (g.host_name) {
         if (meta.childNodes.length > 0) meta.appendChild(document.createTextNode(' · '));
-        const hostLabel = document.createTextNode(`${t('games.host_label')}: `);
-        meta.appendChild(hostLabel);
+        meta.appendChild(document.createTextNode(`${t('games.host_label')}: `));
 
         const hostEl = document.createElement('span');
         hostEl.className = 'game-clickable';
@@ -334,7 +395,7 @@ function buildGameCard(g: GameListItem): HTMLElement {
         hostEl.title = t('games.click_to_filter');
         hostEl.addEventListener('click', (e) => {
             e.stopPropagation();
-            setFilter('host', g.host_id!);
+            if (g.host_id) setFilter('host', g.host_id);
         });
         meta.appendChild(hostEl);
     }
@@ -345,49 +406,17 @@ function buildGameCard(g: GameListItem): HTMLElement {
     const players = document.createElement('div');
     players.className = 'game-card-players';
 
-    // Сортируем участников: победитель сверху, потом по месту
-    const sorted = [...g.participants].sort((a, b) => {
-        const placeA = getPlayerPlace(a, g.participants.length);
-        const placeB = getPlayerPlace(b, g.participants.length);
-        return placeA - placeB;
-    });
-
-    sorted.forEach((p, index) => {
-        if (index > 0) {
-            const sep = document.createElement('span');
-            sep.className = 'game-player-sep';
-            sep.textContent = '·';
-            players.appendChild(sep);
-        }
-
-        const playerEl = document.createElement('span');
-        playerEl.className = 'game-player';
-        if (p.is_winner) playerEl.classList.add('is-winner');
-        playerEl.style.setProperty('--race-color', getRaceColor(p.race));
-
-        const place = getPlayerPlace(p, g.participants.length);
-
-        const medal = document.createElement('span');
-        medal.className = 'game-player-medal';
-        medal.textContent = place === 1 ? '🥇' : place === 2 ? '🥈' : place === 3 ? '🥉' : `#${place}`;
-
-        const race = document.createElement('span');
-        race.className = 'game-player-race';
-        race.textContent = p.race;
-
-        const name = document.createElement('span');
-        name.className = 'game-player-name';
-        name.textContent = p.player_name;
-        if (p.player_aka) name.title = `aka ${p.player_aka}`;
-
-        playerEl.append(medal, race, name);
-
-        players.appendChild(playerEl);
-    });
+    if (g.is_team) {
+        // Командный режим: группируем по team
+        renderTeamPlayers(players, g);
+    } else {
+        // Одиночный режим
+        renderSoloPlayers(players, g);
+    }
 
     card.appendChild(players);
 
-    // --- Действия (для модераторов) ---
+    // --- Действия для модераторов ---
     const canEdit = Boolean(state.user?.is_moderator || state.user?.is_admin);
     if (canEdit) {
         const actions = document.createElement('div');
@@ -420,15 +449,131 @@ function buildGameCard(g: GameListItem): HTMLElement {
     return card;
 }
 
-/**
- * Вычисляет место игрока (1-е — победитель, остальные — из eliminated_at).
- */
-function getPlayerPlace(
+function renderSoloPlayers(container: HTMLElement, g: GameListItem): void {
+    const sorted = [...g.participants].sort((a, b) => {
+        const placeA = getSoloPlace(a, g.participants.length);
+        const placeB = getSoloPlace(b, g.participants.length);
+        return placeA - placeB;
+    });
+
+    sorted.forEach((p, index) => {
+        if (index > 0) {
+            const sep = document.createElement('span');
+            sep.className = 'game-player-sep';
+            sep.textContent = '·';
+            container.appendChild(sep);
+        }
+
+        const place = getSoloPlace(p, g.participants.length);
+
+        const el = document.createElement('span');
+        el.className = 'game-player';
+        if (p.is_winner) el.classList.add('is-winner');
+        el.style.setProperty('--race-color', getRaceColor(p.race));
+
+        const medal = document.createElement('span');
+        medal.className = 'game-player-medal';
+        medal.textContent = place === 1 ? '🥇' : place === 2 ? '🥈' : place === 3 ? '🥉' : `#${place}`;
+
+        const race = document.createElement('span');
+        race.className = 'game-player-race';
+        race.textContent = p.race;
+
+        const name = document.createElement('span');
+        name.className = 'game-player-name';
+        name.textContent = p.player_name;
+
+        el.append(medal, race, name);
+        container.appendChild(el);
+    });
+}
+
+function renderTeamPlayers(container: HTMLElement, g: GameListItem): void {
+    // Группируем участников по team
+    const teamMap = new Map<number, typeof g.participants>();
+    for (const p of g.participants) {
+        const teamNum = p.team ?? 0;
+        const arr = teamMap.get(teamNum) ?? [];
+        arr.push(p);
+        teamMap.set(teamNum, arr);
+    }
+
+    // Определяем команды и их место
+    const teams: { teamNum: number; players: typeof g.participants; place: number; isWinner: boolean }[] = [];
+    for (const [teamNum, players] of teamMap.entries()) {
+        const isWinner = players.some((p) => p.is_winner);
+        const elimAt = players[0]?.eliminated_at ?? null;
+        // Место команды: 1 у победителей, у остальных — по eliminated_at
+        const place = isWinner
+            ? 1
+            : elimAt !== null
+                ? teamMap.size - elimAt + 1
+                : 1;
+        teams.push({ teamNum, players, place, isWinner });
+    }
+
+    teams.sort((a, b) => a.place - b.place);
+
+    teams.forEach((team, index) => {
+        if (index > 0) {
+            const sep = document.createElement('span');
+            sep.className = 'game-player-sep';
+            sep.textContent = '·';
+            container.appendChild(sep);
+        }
+
+        const teamEl = document.createElement('span');
+        teamEl.className = 'game-team';
+        if (team.isWinner) teamEl.classList.add('is-winner');
+
+        const medal = document.createElement('span');
+        medal.className = 'game-player-medal';
+        medal.textContent = team.place === 1 ? '🥇' : team.place === 2 ? '🥈' : team.place === 3 ? '🥉' : `#${team.place}`;
+        teamEl.appendChild(medal);
+
+        const teamLabel = document.createElement('span');
+        teamLabel.className = 'game-team-label';
+        teamLabel.textContent = `${t('games.team_label')} ${team.teamNum}`;
+        teamEl.appendChild(teamLabel);
+
+        const members = document.createElement('span');
+        members.className = 'game-team-members';
+
+        team.players.forEach((p, i) => {
+            if (i > 0) {
+                const sep = document.createElement('span');
+                sep.className = 'game-player-sep';
+                sep.textContent = '+';
+                members.appendChild(sep);
+            }
+
+            const pEl = document.createElement('span');
+            pEl.className = 'game-player';
+            pEl.style.setProperty('--race-color', getRaceColor(p.race));
+
+            const race = document.createElement('span');
+            race.className = 'game-player-race';
+            race.textContent = p.race;
+
+            const name = document.createElement('span');
+            name.className = 'game-player-name';
+            name.textContent = p.player_name;
+
+            pEl.append(race, name);
+            members.appendChild(pEl);
+        });
+
+        teamEl.appendChild(members);
+        container.appendChild(teamEl);
+    });
+}
+
+function getSoloPlace(
     player: { is_winner: boolean; eliminated_at: number | null },
     totalPlayers: number
 ): number {
     if (player.is_winner) return 1;
-    if (player.eliminated_at === null) return 1; // fallback
+    if (player.eliminated_at === null) return 1;
     return totalPlayers - player.eliminated_at + 1;
 }
 
@@ -455,19 +600,220 @@ function highlightGame(gameId: number): void {
 }
 
 // ============================================================
-// Форма: справочники и игроки
+// Фильтры
 // ============================================================
-async function loadAllRefs(): Promise<void> {
-    const [formats, hosts, maps, mods] = await Promise.all([
-        listRefs<GameFormat>('formats'),
-        listRefs<GameHost>('hosts'),
-        listRefs<GameMap>('maps'),
-        listRefs<GameMod>('mods'),
-    ]);
-    cachedFormats = formats;
-    cachedHosts = hosts;
-    cachedMaps = maps;
-    cachedMods = mods;
+async function setupFilterSelects(): Promise<void> {
+    try {
+        if (cachedFormats.length === 0 || cachedHosts.length === 0 || cachedMaps.length === 0) {
+            const [formats, hosts, maps] = await Promise.all([
+                listRefs<GameFormat>('formats'),
+                listRefs<GameHost>('hosts'),
+                listRefs<GameMap>('maps'),
+            ]);
+            cachedFormats = formats;
+            cachedHosts = hosts;
+            cachedMaps = maps;
+        }
+
+        fillFilterSelect('filter-format', cachedFormats);
+        fillFilterSelect('filter-host', cachedHosts);
+        fillFilterSelect('filter-map', cachedMaps);
+
+        const formatSel = document.getElementById('filter-format') as HTMLSelectElement | null;
+        const hostSel = document.getElementById('filter-host') as HTMLSelectElement | null;
+        const mapSel = document.getElementById('filter-map') as HTMLSelectElement | null;
+
+        if (formatSel && filters.formatId !== null) formatSel.value = String(filters.formatId);
+        if (hostSel && filters.hostId !== null) hostSel.value = String(filters.hostId);
+        if (mapSel && filters.mapId !== null) mapSel.value = String(filters.mapId);
+
+        renderActiveFilterChips();
+    } catch (err) {
+        console.error('[games] failed to load refs for filters:', err);
+    }
+}
+
+function fillFilterSelect(
+    selectId: string,
+    items: { id: number; name: string }[]
+): void {
+    const select = document.getElementById(selectId) as HTMLSelectElement | null;
+    if (!select) return;
+
+    const currentValue = select.value;
+    select.innerHTML = '';
+
+    const allOpt = document.createElement('option');
+    allOpt.value = '';
+    allOpt.textContent = t('games.filter_all');
+    select.appendChild(allOpt);
+
+    for (const item of items) {
+        const opt = document.createElement('option');
+        opt.value = String(item.id);
+        opt.textContent = item.name;
+        select.appendChild(opt);
+    }
+
+    select.value = currentValue;
+}
+
+function applyFilters(): void {
+    updateUrlFromFilters();
+    renderGames();
+    renderActiveFilterChips();
+}
+
+function resetFilters(): void {
+    filters.formatId = null;
+    filters.hostId = null;
+    filters.mapId = null;
+
+    const formatSel = document.getElementById('filter-format') as HTMLSelectElement | null;
+    const hostSel = document.getElementById('filter-host') as HTMLSelectElement | null;
+    const mapSel = document.getElementById('filter-map') as HTMLSelectElement | null;
+    if (formatSel) formatSel.value = '';
+    if (hostSel) hostSel.value = '';
+    if (mapSel) mapSel.value = '';
+
+    applyFilters();
+}
+
+function updateUrlFromFilters(): void {
+    const url = new URL(window.location.href);
+
+    if (filters.formatId !== null) url.searchParams.set('format', String(filters.formatId));
+    else url.searchParams.delete('format');
+
+    if (filters.hostId !== null) url.searchParams.set('host', String(filters.hostId));
+    else url.searchParams.delete('host');
+
+    if (filters.mapId !== null) url.searchParams.set('map', String(filters.mapId));
+    else url.searchParams.delete('map');
+
+    window.history.replaceState({}, '', url.pathname + url.search);
+}
+
+function setFilter(type: 'format' | 'host' | 'map', id: number): void {
+    if (type === 'format') filters.formatId = id;
+    if (type === 'host') filters.hostId = id;
+    if (type === 'map') filters.mapId = id;
+
+    const selectId = type === 'format' ? 'filter-format' : type === 'host' ? 'filter-host' : 'filter-map';
+    const sel = document.getElementById(selectId) as HTMLSelectElement | null;
+    if (sel) sel.value = String(id);
+
+    applyFilters();
+}
+
+function renderActiveFilterChips(): void {
+    const container = document.getElementById('games-active-filters');
+    const resetBtn = document.getElementById('btn-reset-filters');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    const chips: { label: string; value: string; onRemove: () => void }[] = [];
+
+    if (filters.formatId !== null) {
+        const f = cachedFormats.find((x) => x.id === filters.formatId);
+        if (f) {
+            chips.push({
+                label: t('games.filter_format'),
+                value: f.name,
+                onRemove: () => {
+                    filters.formatId = null;
+                    const sel = document.getElementById('filter-format') as HTMLSelectElement | null;
+                    if (sel) sel.value = '';
+                    applyFilters();
+                },
+            });
+        }
+    }
+
+    if (filters.hostId !== null) {
+        const h = cachedHosts.find((x) => x.id === filters.hostId);
+        if (h) {
+            chips.push({
+                label: t('games.filter_host'),
+                value: h.name,
+                onRemove: () => {
+                    filters.hostId = null;
+                    const sel = document.getElementById('filter-host') as HTMLSelectElement | null;
+                    if (sel) sel.value = '';
+                    applyFilters();
+                },
+            });
+        }
+    }
+
+    if (filters.mapId !== null) {
+        const m = cachedMaps.find((x) => x.id === filters.mapId);
+        if (m) {
+            chips.push({
+                label: t('games.filter_map'),
+                value: m.name,
+                onRemove: () => {
+                    filters.mapId = null;
+                    const sel = document.getElementById('filter-map') as HTMLSelectElement | null;
+                    if (sel) sel.value = '';
+                    applyFilters();
+                },
+            });
+        }
+    }
+
+    if (resetBtn) resetBtn.hidden = chips.length === 0;
+
+    for (const chip of chips) {
+        const el = document.createElement('div');
+        el.className = 'filter-chip';
+
+        const label = document.createElement('span');
+        label.className = 'filter-chip-label';
+        label.textContent = chip.label + ':';
+
+        const value = document.createElement('span');
+        value.className = 'filter-chip-value';
+        value.textContent = chip.value;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'filter-chip-remove';
+        removeBtn.textContent = '✕';
+        removeBtn.addEventListener('click', chip.onRemove);
+
+        el.append(label, value, removeBtn);
+        container.appendChild(el);
+    }
+}
+
+// ============================================================
+// Справочники
+// ============================================================
+async function ensureAllRefsLoaded(): Promise<void> {
+    const needReload =
+        cachedFormats.length === 0 ||
+        cachedHosts.length === 0 ||
+        cachedMaps.length === 0 ||
+        cachedMods.length === 0;
+
+    if (!needReload) return;
+
+    try {
+        const [formats, hosts, maps, mods] = await Promise.all([
+            listRefs<GameFormat>('formats'),
+            listRefs<GameHost>('hosts'),
+            listRefs<GameMap>('maps'),
+            listRefs<GameMod>('mods'),
+        ]);
+        cachedFormats = formats;
+        cachedHosts = hosts;
+        cachedMaps = maps;
+        cachedMods = mods;
+    } catch (err) {
+        console.error('[games] failed to load refs:', err);
+    }
 }
 
 async function loadPlayersIfNeeded(): Promise<void> {
@@ -528,8 +874,57 @@ function confirmClose(): boolean {
     return confirm(t('games.confirm_close'));
 }
 
+function getSelectedFormat(): GameFormat | null {
+    if (!formatSelect || !formatSelect.value) return null;
+
+    return cachedFormats.find((f) => f.id === Number(formatSelect!.value)) ?? null;
+}
+
+function isTeamMode(): boolean {
+    return Boolean(isTeamCheckbox?.checked);
+}
+
 // ============================================================
-// Открытие модалки: создание
+// Создание карты/мода inline
+// ============================================================
+async function createMapInline(): Promise<void> {
+    const name = prompt(t('games.new_map_prompt'));
+    if (name === null) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
+    try {
+        const newMap = await createRef<GameMap>('maps', { name: trimmed }, state.token);
+        cachedMaps = [...cachedMaps, newMap];
+        cachedMaps.sort((a, b) => a.name.localeCompare(b.name));
+        fillSelect(mapSelect, cachedMaps, t('games.select_placeholder'));
+        if (mapSelect) mapSelect.value = String(newMap.id);
+        markDirty();
+    } catch (err) {
+        alert(t('games.new_map_error') + (err instanceof Error ? err.message : String(err)));
+    }
+}
+
+async function createModInline(): Promise<void> {
+    const name = prompt(t('games.new_mod_prompt'));
+    if (name === null) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
+    try {
+        const newMod = await createRef<GameMod>('mods', { name: trimmed }, state.token);
+        cachedMods = [...cachedMods, newMod];
+        cachedMods.sort((a, b) => a.name.localeCompare(b.name));
+        fillSelect(modSelect, cachedMods, t('games.select_placeholder'));
+        if (modSelect) modSelect.value = String(newMod.id);
+        markDirty();
+    } catch (err) {
+        alert(t('games.new_mod_error') + (err instanceof Error ? err.message : String(err)));
+    }
+}
+
+// ============================================================
+// Модалки
 // ============================================================
 async function openCreateGameModal(): Promise<void> {
     if (!modal) return;
@@ -537,8 +932,12 @@ async function openCreateGameModal(): Promise<void> {
     isDirty = false;
     if (modalTitle) modalTitle.textContent = t('games.form_title');
 
+    if (isTeamCheckbox) isTeamCheckbox.checked = false;
+    if (teamSizeSelect) teamSizeSelect.value = '2';
+    updateTeamModeVisibility();
+
     await loadPlayersIfNeeded();
-    if (cachedFormats.length === 0) await loadAllRefs();
+    await ensureAllRefsLoaded();
 
     fillSelect(formatSelect, cachedFormats, t('games.select_placeholder'));
     fillSelect(hostSelect, cachedHosts, t('games.select_placeholder'));
@@ -556,7 +955,7 @@ async function openCreateGameModal(): Promise<void> {
 
     drafts = [];
     for (let i = 0; i < 4; i++) {
-        drafts.push({ player_id: null, race: 'T', is_winner: false, eliminated_at: null });
+        drafts.push({ player_id: null, race: 'T', team: null, is_winner: false, eliminated_at: null });
     }
     normalizeEliminatedAt();
     renderPlayerDrafts();
@@ -564,9 +963,6 @@ async function openCreateGameModal(): Promise<void> {
     modal.classList.remove('hidden');
 }
 
-// ============================================================
-// Открытие модалки: редактирование
-// ============================================================
 async function openEditGameModal(gameId: number): Promise<void> {
     if (!modal) return;
 
@@ -580,7 +976,7 @@ async function openEditGameModal(gameId: number): Promise<void> {
     }
 
     await loadPlayersIfNeeded();
-    if (cachedFormats.length === 0) await loadAllRefs();
+    await ensureAllRefsLoaded();
 
     if (modalTitle) modalTitle.textContent = t('games.form_title_edit');
 
@@ -601,9 +997,22 @@ async function openEditGameModal(gameId: number): Promise<void> {
     drafts = gameFull.players.map((p) => ({
         player_id: p.player_id,
         race: p.race,
+        team: p.team,
         is_winner: p.is_winner,
         eliminated_at: p.eliminated_at,
     }));
+
+    const hasTeams = gameFull.players.some((p) => p.team !== null);
+    if (isTeamCheckbox) isTeamCheckbox.checked = hasTeams;
+
+    // Определяем размер команды: считаем игроков в первой команде
+    if (hasTeams) {
+        const firstTeam = gameFull.players[0]?.team ?? 1;
+        const teamSize = gameFull.players.filter((p) => p.team === firstTeam).length;
+        if (teamSizeSelect) teamSizeSelect.value = String(teamSize);
+    }
+
+    updateTeamModeVisibility();
     renderPlayerDrafts();
 
     editingGameId = gameId;
@@ -756,20 +1165,29 @@ function createPlayerAutocomplete(
     return { wrapper, refresh };
 }
 
+// ============================================================
+// Список участников в форме
+// ============================================================
 function renderPlayerDrafts(): void {
     if (!playersListBox) return;
     playersListBox.innerHTML = '';
 
+    const teamMode = isTeamMode();
     const totalPlayers = drafts.length;
+    const teamSize = teamMode ? Number(teamSizeSelect?.value ?? '2') : 0;
+    const maxTeams = teamMode ? Math.max(1, Math.floor(totalPlayers / teamSize)) : 0;
 
     drafts.forEach((draft, index) => {
         const row = document.createElement('div');
         row.className = 'player-entry';
+        if (teamMode) row.classList.add('is-team-mode');
         if (draft.is_winner) row.classList.add('is-winner');
 
+        // --- Раса ---
         const raceSelect = document.createElement('select');
         raceSelect.className = 'race-select';
 
+        // --- Автокомплит ---
         const { wrapper: autocompleteWrap } = createPlayerAutocomplete(
             draft,
             () => markDirty(),
@@ -793,6 +1211,45 @@ function renderPlayerDrafts(): void {
             markDirty();
         });
 
+        // --- Команда (только для командного формата) ---
+        let teamSelect: HTMLSelectElement | null = null;
+        if (teamMode) {
+            teamSelect = document.createElement('select');
+            teamSelect.className = 'team-select';
+            for (let teamNum = 1; teamNum <= maxTeams; teamNum++) {
+                const opt = document.createElement('option');
+                opt.value = String(teamNum);
+                opt.textContent = `${t('games.team_label')} ${teamNum}`;
+                if (draft.team === teamNum) opt.selected = true;
+                teamSelect.appendChild(opt);
+            }
+            if (draft.team === null || draft.team > maxTeams) {
+                // Найти первую недозаполненную команду
+                const teamCounts: Record<number, number> = {};
+                for (const d of drafts) {
+                    if (d !== draft && d.team !== null) {
+                        teamCounts[d.team] = (teamCounts[d.team] ?? 0) + 1;
+                    }
+                }
+                let assigned = false;
+                for (let tNum = 1; tNum <= maxTeams; tNum++) {
+                    if ((teamCounts[tNum] ?? 0) < teamSize) {
+                        draft.team = tNum;
+                        assigned = true;
+                        break;
+                    }
+                }
+                if (!assigned) draft.team = 1; // fallback
+            }
+            teamSelect.value = String(draft.team);
+            const ts = teamSelect;
+            ts.addEventListener('change', () => {
+                draft.team = Number(ts.value);
+                markDirty();
+            });
+        }
+
+        // --- Победитель ---
         const winnerWrap = document.createElement('label');
         winnerWrap.className = 'winner-checkbox';
         const winnerCheck = document.createElement('input');
@@ -810,35 +1267,41 @@ function renderPlayerDrafts(): void {
         winnerText.textContent = t('games.winner_label');
         winnerWrap.appendChild(winnerText);
 
-        const placeSelect = document.createElement('select');
-        placeSelect.className = 'place-select';
+        // --- Селект места (только для одиночного формата, не для победителей) ---
+        let placeSelect: HTMLSelectElement | null = null;
+        if (!teamMode) {
+            placeSelect = document.createElement('select');
+            placeSelect.className = 'place-select';
 
-        if (draft.is_winner) {
-            placeSelect.style.visibility = 'hidden';
-            placeSelect.disabled = true;
-        } else {
-            for (let place = 2; place <= totalPlayers; place++) {
-                const opt = document.createElement('option');
-                opt.value = String(place);
-                const medal = place === 2 ? '🥈 ' : place === 3 ? '🥉 ' : '';
-                opt.textContent = `${medal}${place}${getPlaceSuffix(place)}`;
-                const expectedElim = totalPlayers - place + 1;
-                if (draft.eliminated_at === expectedElim) opt.selected = true;
-                placeSelect.appendChild(opt);
+            if (draft.is_winner) {
+                placeSelect.style.visibility = 'hidden';
+                placeSelect.disabled = true;
+            } else {
+                for (let place = 2; place <= totalPlayers; place++) {
+                    const opt = document.createElement('option');
+                    opt.value = String(place);
+                    const medal = place === 2 ? '🥈 ' : place === 3 ? '🥉 ' : '';
+                    opt.textContent = `${medal}${place}${getPlaceSuffix(place)}`;
+                    const expectedElim = totalPlayers - place + 1;
+                    if (draft.eliminated_at === expectedElim) opt.selected = true;
+                    placeSelect.appendChild(opt);
+                }
+
+                if (draft.eliminated_at === null) {
+                    draft.eliminated_at = totalPlayers - 2 + 1;
+                    placeSelect.value = '2';
+                }
+
+                const ps = placeSelect;
+                ps.addEventListener('change', () => {
+                    const place = Number(ps.value);
+                    draft.eliminated_at = totalPlayers - place + 1;
+                    markDirty();
+                });
             }
-
-            if (draft.eliminated_at === null) {
-                draft.eliminated_at = totalPlayers - 2 + 1;
-                placeSelect.value = '2';
-            }
-
-            placeSelect.addEventListener('change', () => {
-                const place = Number(placeSelect.value);
-                draft.eliminated_at = totalPlayers - place + 1;
-                markDirty();
-            });
         }
 
+        // --- Удалить ---
         const removeBtn = document.createElement('button');
         removeBtn.type = 'button';
         removeBtn.className = 'remove-player';
@@ -851,12 +1314,35 @@ function renderPlayerDrafts(): void {
             markDirty();
         });
 
-        row.append(autocompleteWrap, raceSelect, winnerWrap, placeSelect, removeBtn);
+        // Собираем строку
+        row.append(autocompleteWrap, raceSelect);
+        if (teamSelect) row.appendChild(teamSelect);
+        row.append(winnerWrap);
+        if (placeSelect) row.appendChild(placeSelect);
+        row.appendChild(removeBtn);
+
         playersListBox!.appendChild(row);
     });
 }
 
+// ============================================================
+// Нормализация eliminated_at
+// ============================================================
 function normalizeEliminatedAt(): void {
+    const teamMode = isTeamMode();
+
+    if (teamMode) {
+        const winners = drafts.filter((d) => d.is_winner);
+        const nonWinners = drafts.filter((d) => !d.is_winner);
+        for (const w of winners) w.eliminated_at = null;
+        for (const p of nonWinners) p.eliminated_at = 1;
+        return;
+    }
+
+    // Сброс team в одиночном режиме
+    for (const d of drafts) d.team = null;
+
+    // Одиночный режим — как было
     const total = drafts.length;
     const winners = drafts.filter((d) => d.is_winner);
     const nonWinners = drafts.filter((d) => !d.is_winner);
@@ -877,14 +1363,12 @@ function normalizeEliminatedAt(): void {
         if (!used.has(i)) free.push(i);
     }
     for (const p of nonWinners) {
-        if (p.eliminated_at === null) {
-            p.eliminated_at = free.shift() ?? null;
-        }
+        if (p.eliminated_at === null) p.eliminated_at = free.shift() ?? null;
     }
 }
 
 // ============================================================
-// Сохранение игры
+// Отправка формы
 // ============================================================
 async function submitGameForm(e: Event): Promise<void> {
     e.preventDefault();
@@ -907,14 +1391,68 @@ async function submitGameForm(e: Event): Promise<void> {
     const hasWinner = filledPlayers.some((d) => d.is_winner);
     if (!hasWinner) { alert(t('games.error_no_winner')); return; }
 
-    const nonWinners = filledPlayers.filter((d) => !d.is_winner);
-    const eliminations = nonWinners.map((d) => d.eliminated_at);
-    const uniqueEliminations = new Set(eliminations.filter((x) => x !== null));
-    if (uniqueEliminations.size !== eliminations.length) {
-        alert(t('games.error_duplicate_place')); return;
-    }
-    if (uniqueEliminations.size !== filledPlayers.length - 1) {
-        alert(t('games.error_missing_places')); return;
+    const teamMode = isTeamMode();
+
+    if (teamMode) {
+        const teamSize = Number(teamSizeSelect?.value ?? '2');
+
+        // Общее число игроков должно делиться на размер команды без остатка
+        if (filledPlayers.length % teamSize !== 0) {
+            alert(t('games.error_team_size_mismatch', { size: teamSize }));
+            return;
+        }
+
+        // Считаем команды и проверяем, что в каждой одинаковое число игроков
+        const teamsMap = new Map<number, number>();
+        for (const p of filledPlayers) {
+            const tNum = p.team ?? 0;
+            teamsMap.set(tNum, (teamsMap.get(tNum) ?? 0) + 1);
+        }
+
+        if (teamsMap.size < 2) {
+            alert(t('games.error_need_two_teams'));
+            return;
+        }
+
+        // Все команды должны быть одного размера
+        const teamSizes = [...teamsMap.values()];
+        const uniqueSizes = new Set(teamSizes);
+        if (uniqueSizes.size !== 1 || teamSizes[0] !== teamSize) {
+            alert(t('games.error_teams_uneven', { size: teamSize }));
+            return;
+        }
+
+        // Проверяем победителей
+        const winnerTeams = new Set(
+            filledPlayers.filter((d) => d.is_winner).map((d) => d.team ?? 0)
+        );
+        if (winnerTeams.size > 1) {
+            alert(t('games.error_multiple_winner_teams'));
+            return;
+        }
+        if (winnerTeams.size === 0) {
+            alert(t('games.error_no_winner'));
+            return;
+        }
+
+        // Все игроки команды-победителя должны быть отмечены
+        const winnerTeam = [...winnerTeams][0];
+        const winnerTeamPlayers = filledPlayers.filter((d) => (d.team ?? 0) === winnerTeam);
+        if (!winnerTeamPlayers.every((d) => d.is_winner)) {
+            alert(t('games.error_incomplete_winner_team'));
+            return;
+        }
+    } else {
+        // Одиночный формат — как раньше
+        const nonWinners = filledPlayers.filter((d) => !d.is_winner);
+        const eliminations = nonWinners.map((d) => d.eliminated_at);
+        const uniqueEliminations = new Set(eliminations.filter((x) => x !== null));
+        if (uniqueEliminations.size !== eliminations.length) {
+            alert(t('games.error_duplicate_place')); return;
+        }
+        if (uniqueEliminations.size !== filledPlayers.length - 1) {
+            alert(t('games.error_missing_places')); return;
+        }
     }
 
     const playedAtDate = new Date(playedAtInput.value);
@@ -971,272 +1509,4 @@ async function deleteGame(g: GameListItem): Promise<void> {
     } catch (err) {
         alert(t('games.delete_error') + (err instanceof Error ? err.message : String(err)));
     }
-}
-
-/**
- * Заполняет селекты справочниками.
- */
-async function setupFilterSelects(): Promise<void> {
-    try {
-        if (cachedFormats.length === 0) {
-            const [formats, hosts, maps] = await Promise.all([
-                listRefs<GameFormat>('formats'),
-                listRefs<GameHost>('hosts'),
-                listRefs<GameMap>('maps'),
-            ]);
-            cachedFormats = formats;
-            cachedHosts = hosts;
-            cachedMaps = maps;
-        }
-
-        fillFilterSelect('filter-format', cachedFormats);
-        fillFilterSelect('filter-host', cachedHosts);
-        fillFilterSelect('filter-map', cachedMaps);
-
-        // Устанавливаем текущие значения
-        const formatSel = document.getElementById('filter-format') as HTMLSelectElement | null;
-        const hostSel = document.getElementById('filter-host') as HTMLSelectElement | null;
-        const mapSel = document.getElementById('filter-map') as HTMLSelectElement | null;
-
-        if (formatSel && filters.formatId !== null) formatSel.value = String(filters.formatId);
-        if (hostSel && filters.hostId !== null) hostSel.value = String(filters.hostId);
-        if (mapSel && filters.mapId !== null) mapSel.value = String(filters.mapId);
-
-        renderActiveFilterChips();
-    } catch (err) {
-        console.error('[games] failed to load refs for filters:', err);
-    }
-}
-
-function fillFilterSelect(
-    selectId: string,
-    items: { id: number; name: string }[]
-): void {
-    const select = document.getElementById(selectId) as HTMLSelectElement | null;
-    if (!select) return;
-
-    const currentValue = select.value;
-
-    // Оставляем первый option «Все»
-    select.innerHTML = '';
-    const allOpt = document.createElement('option');
-    allOpt.value = '';
-    allOpt.textContent = t('games.filter_all');
-    select.appendChild(allOpt);
-
-    for (const item of items) {
-        const opt = document.createElement('option');
-        opt.value = String(item.id);
-        opt.textContent = item.name;
-        select.appendChild(opt);
-    }
-
-    select.value = currentValue;
-}
-
-/**
- * Применяет текущие фильтры: перерисовывает список + URL + чипы.
- */
-function applyFilters(): void {
-    updateUrlFromFilters();
-    renderGames();
-    renderActiveFilterChips();
-}
-
-/**
- * Сбрасывает все фильтры.
- */
-function resetFilters(): void {
-    filters.formatId = null;
-    filters.hostId = null;
-    filters.mapId = null;
-
-    const formatSel = document.getElementById('filter-format') as HTMLSelectElement | null;
-    const hostSel = document.getElementById('filter-host') as HTMLSelectElement | null;
-    const mapSel = document.getElementById('filter-map') as HTMLSelectElement | null;
-    if (formatSel) formatSel.value = '';
-    if (hostSel) hostSel.value = '';
-    if (mapSel) mapSel.value = '';
-
-    applyFilters();
-}
-
-/**
- * Обновляет URL с учётом фильтров.
- */
-function updateUrlFromFilters(): void {
-    const url = new URL(window.location.href);
-
-    if (filters.formatId !== null) url.searchParams.set('format', String(filters.formatId));
-    else url.searchParams.delete('format');
-
-    if (filters.hostId !== null) url.searchParams.set('host', String(filters.hostId));
-    else url.searchParams.delete('host');
-
-    if (filters.mapId !== null) url.searchParams.set('map', String(filters.mapId));
-    else url.searchParams.delete('map');
-
-    window.history.replaceState({}, '', url.pathname + url.search);
-}
-
-/**
- * Рендерит чипы активных фильтров.
- */
-function renderActiveFilterChips(): void {
-    const container = document.getElementById('games-active-filters');
-    const resetBtn = document.getElementById('btn-reset-filters');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    const chips: { label: string; value: string; onRemove: () => void }[] = [];
-
-    if (filters.formatId !== null) {
-        const f = cachedFormats.find((x) => x.id === filters.formatId);
-        if (f) {
-            chips.push({
-                label: t('games.filter_format'),
-                value: f.name,
-                onRemove: () => {
-                    filters.formatId = null;
-                    const sel = document.getElementById('filter-format') as HTMLSelectElement | null;
-                    if (sel) sel.value = '';
-                    applyFilters();
-                },
-            });
-        }
-    }
-
-    if (filters.hostId !== null) {
-        const h = cachedHosts.find((x) => x.id === filters.hostId);
-        if (h) {
-            chips.push({
-                label: t('games.filter_host'),
-                value: h.name,
-                onRemove: () => {
-                    filters.hostId = null;
-                    const sel = document.getElementById('filter-host') as HTMLSelectElement | null;
-                    if (sel) sel.value = '';
-                    applyFilters();
-                },
-            });
-        }
-    }
-
-    if (filters.mapId !== null) {
-        const m = cachedMaps.find((x) => x.id === filters.mapId);
-        if (m) {
-            chips.push({
-                label: t('games.filter_map'),
-                value: m.name,
-                onRemove: () => {
-                    filters.mapId = null;
-                    const sel = document.getElementById('filter-map') as HTMLSelectElement | null;
-                    if (sel) sel.value = '';
-                    applyFilters();
-                },
-            });
-        }
-    }
-
-    // Показываем/скрываем кнопку сброса
-    if (resetBtn) {
-        resetBtn.hidden = chips.length === 0;
-    }
-
-    // Рендерим чипы
-    for (const chip of chips) {
-        const el = document.createElement('div');
-        el.className = 'filter-chip';
-
-        const label = document.createElement('span');
-        label.className = 'filter-chip-label';
-        label.textContent = chip.label + ':';
-
-        const value = document.createElement('span');
-        value.className = 'filter-chip-value';
-        value.textContent = chip.value;
-
-        const removeBtn = document.createElement('button');
-        removeBtn.type = 'button';
-        removeBtn.className = 'filter-chip-remove';
-        removeBtn.textContent = '✕';
-        removeBtn.addEventListener('click', chip.onRemove);
-
-        el.append(label, value, removeBtn);
-        container.appendChild(el);
-    }
-}
-
-function setFilter(type: 'format' | 'host' | 'map', id: number): void {
-    if (type === 'format') filters.formatId = id;
-    if (type === 'host') filters.hostId = id;
-    if (type === 'map') filters.mapId = id;
-
-    // Синхронизируем селект
-    const selectId = type === 'format' ? 'filter-format' : type === 'host' ? 'filter-host' : 'filter-map';
-    const sel = document.getElementById(selectId) as HTMLSelectElement | null;
-    if (sel) sel.value = String(id);
-
-    applyFilters();
-}
-
-/**
- * Создаёт новую карту через prompt и обновляет селект.
- */
-async function createMapInline(): Promise<void> {
-  const name = prompt(t('games.new_map_prompt'));
-  if (name === null) return;
-
-  const trimmed = name.trim();
-  if (!trimmed) return;
-
-  try {
-    const newMap = await createRef<GameMap>(
-      'maps',
-      { name: trimmed },
-      state.token
-    );
-
-    // Обновляем кэш
-    cachedMaps = [...cachedMaps, newMap];
-    cachedMaps.sort((a, b) => a.name.localeCompare(b.name));
-
-    // Перестраиваем селект
-    fillSelect(mapSelect, cachedMaps, t('games.select_placeholder'));
-    if (mapSelect) mapSelect.value = String(newMap.id);
-
-    markDirty();
-  } catch (err) {
-    alert(t('games.new_map_error') + (err instanceof Error ? err.message : String(err)));
-  }
-}
-
-/**
- * Создаёт новый мод через prompt и обновляет селект.
- */
-async function createModInline(): Promise<void> {
-  const name = prompt(t('games.new_mod_prompt'));
-  if (name === null) return;
-
-  const trimmed = name.trim();
-  if (!trimmed) return;
-
-  try {
-    const newMod = await createRef<GameMod>(
-      'mods',
-      { name: trimmed },
-      state.token
-    );
-
-    cachedMods = [...cachedMods, newMod];
-    cachedMods.sort((a, b) => a.name.localeCompare(b.name));
-
-    fillSelect(modSelect, cachedMods, t('games.select_placeholder'));
-    if (modSelect) modSelect.value = String(newMod.id);
-
-    markDirty();
-  } catch (err) {
-    alert(t('games.new_mod_error') + (err instanceof Error ? err.message : String(err)));
-  }
 }

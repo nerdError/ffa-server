@@ -128,6 +128,7 @@
         </a>
     </nav>
 
+
     <main id="app">
         <!-- ============================================ -->
         <!-- Секция: авторизация -->
@@ -465,6 +466,12 @@
         <div class="footer-line">
             <span data-i18n="footer.inspired_by">Inspired by</span> <span class="footer-author2">Asfarion</span>
         </div>
+        <div class="footer-support">
+            <button type="button" id="btn-support" class="support-btn" title="Скопировать номер карты">
+                <span class="support-icon">💛</span>
+                <span class="support-label" data-i18n="support.button">Поддержать проект</span>
+            </button>
+        </div>
         <div class="footer-contacts">
             <a class="footer-link footer-link--telegram" href="https://t.me/nerderror404" target="_blank"
                 rel="noopener noreferrer">
@@ -529,10 +536,34 @@
                 <div class="form-section">
                     <div class="form-section-header">
                         <span data-i18n="games.field_players">Участники</span>
-                        <button type="button" id="btn-add-player" class="btn-secondary" data-i18n="games.add_player">
-                            + Добавить игрока
-                        </button>
+                        <div class="form-section-actions">
+                            <button type="button" id="btn-distribute-teams" class="btn-secondary" hidden
+                                data-i18n="games.distribute_teams">
+                                Распределить по командам
+                            </button>
+                            <button type="button" id="btn-add-player" class="btn-secondary"
+                                data-i18n="games.add_player">
+                                + Добавить игрока
+                            </button>
+                        </div>
                     </div>
+
+                    <label class="team-mode-toggle">
+                        <input type="checkbox" id="field-is-team" />
+                        <span data-i18n="games.is_team_label">Командная игра</span>
+                    </label>
+
+                    <div class="team-mode-options" id="team-mode-options" hidden>
+                        <label class="form-field">
+                            <span data-i18n="games.team_size_label">Размер команды</span>
+                            <select id="field-team-size" class="games-filter-select">
+                                <option value="2">2v2</option>
+                                <option value="3">3v3</option>
+                                <option value="4">4v4</option>
+                            </select>
+                        </label>
+                    </div>
+
                     <p class="form-hint" data-i18n="games.players_hint">
                         Отметьте победителя галочкой. Для остальных укажите место.
                     </p>

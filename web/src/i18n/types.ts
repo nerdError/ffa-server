@@ -297,6 +297,34 @@ export type TranslationKey =
     | 'common.save'
     | 'common.delete'
 
+    | 'admin.link_user'
+    | 'admin.link_user_title'
+    | 'admin.link_user_prompt'
+    | 'admin.link_user_error'
+    | 'admin.unlink_user'
+    | 'admin.unlink_user_title'
+    | 'admin.unlink_user_confirm'
+    | 'admin.linked_player'
+    | 'admin.my_profile'
+
+    | 'topbar.my_profile'
+
+    | 'players.me_suffix'
+
+    | 'support.button'
+    | 'support.copied'
+    | 'support.card_title'
+    | 'support.copy_manually_short'
+
+    | 'games.team_label'
+    | 'games.error_need_two_teams'
+    | 'games.error_multiple_winner_teams'
+    | 'games.error_incomplete_winner_team'
+    | 'games.is_team_label'
+    | 'games.team_size_label'
+    | 'games.error_team_size_mismatch'
+    | 'games.error_teams_uneven'
+    | 'games.distribute_teams'
     // Экран загрузки
     | 'loading.text'
     ;

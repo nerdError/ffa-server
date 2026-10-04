@@ -2,18 +2,17 @@
    Футер сайта
    ========================================= */
 .site-footer {
-  margin-top: auto;             /* прижимает к низу при flex-column body */
-  padding: 20px 32px;
-  border-top: 1px solid var(--border-glow);
-  background: linear-gradient(to top, #0d1117, transparent);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
+  padding: 20px 16px;
+  background: linear-gradient(to top, #0d1117, transparent);
+  border-top: 1px solid var(--border-glow);
+  color: var(--text-muted);
   font-family: var(--font-ui);
   font-size: 0.8rem;
   letter-spacing: 1px;
-  color: var(--text-muted);
   text-align: center;
 }
 

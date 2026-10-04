@@ -138,7 +138,13 @@ authRouter.get('/me', async (req, res) => {
     .eq('user_id', auth.user.id)
     .maybeSingle();
 
-  // Получаем роли
+  // Ищем связанного игрока
+  const { data: linkedPlayer } = await auth.client
+    .from('players')
+    .select('id, name')
+    .eq('user_id', auth.user.id)
+    .maybeSingle();
+
   const { data: isMod } = await auth.client.rpc('is_moderator');
   const { data: isAdmin } = await auth.client.rpc('is_admin');
 
@@ -149,6 +155,8 @@ authRouter.get('/me', async (req, res) => {
       username: profile?.username ?? null,
       is_moderator: Boolean(isMod),
       is_admin: Boolean(isAdmin),
+      player_id: linkedPlayer?.id ?? null,
+      player_name: linkedPlayer?.name ?? null,
     },
   });
 });

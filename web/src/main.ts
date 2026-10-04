@@ -29,6 +29,8 @@ async function bootstrap(): Promise<void> {
                     username: string | null;
                     is_moderator: boolean;
                     is_admin: boolean;
+                    player_id: number | null;
+                    player_name: string | null;
                 };
             }>('/api/auth/me', { token: state.token });
 
@@ -39,6 +41,8 @@ async function bootstrap(): Promise<void> {
                     username: me.user.username,
                     is_moderator: me.user.is_moderator,
                     is_admin: me.user.is_admin,
+                    player_id: me.user.player_id ?? null,
+                    player_name: me.user.player_name ?? null,
                 },
                 state.token
             );

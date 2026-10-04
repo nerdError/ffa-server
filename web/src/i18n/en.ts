@@ -295,6 +295,35 @@ export const en: Record<TranslationKey, string> = {
     'admin.delete_mod_confirm': 'Delete mod "{name}"?\n\nGames with this mod will remain but lose the link.',
     'common.empty': 'empty',
 
+    'admin.link_user': 'Link',
+    'admin.link_user_title': 'Link player to user profile',
+    'admin.link_user_prompt': 'Email or username to link to player "{name}":',
+    'admin.link_user_error': 'Failed to link: ',
+    'admin.unlink_user': 'Unlink',
+    'admin.unlink_user_title': 'Unlink player from user profile',
+    'admin.unlink_user_confirm': 'Unlink player "{name}" from user profile?',
+    'admin.linked_player': 'Linked to player',
+    'admin.my_profile': 'My profile',
+
+    'topbar.my_profile': 'My profile',
+
+    'players.me_suffix': ' (you)',
+
+    'support.button': 'Support the project',
+    'support.card_title': 'Card number (Sber)',
+    'support.copied': 'Copied!',
+    'support.copy_manually_short': 'Copy manually',
+
+    'games.team_label': 'Team',
+    'games.error_need_two_teams': 'Team format requires at least two teams',
+    'games.error_multiple_winner_teams': 'Only one team can be the winner',
+    'games.error_incomplete_winner_team': 'All players of the winning team must be marked',
+    'games.is_team_label': 'Team game',
+    'games.team_size_label': 'Team size',
+    'games.error_team_size_mismatch': 'Player count must be divisible by team size ({size})',
+    'games.error_teams_uneven': 'All teams must have the same size ({size})',
+    'games.distribute_teams': 'Distribute teams',
+
     // Loading
     'loading.text': 'LOADING…',
 };

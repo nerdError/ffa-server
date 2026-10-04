@@ -585,7 +585,7 @@ function renderPlayerGamesContent(
     list.className = 'player-games-list';
 
     for (const g of games) {
-        list.appendChild(buildGameRow(g, playerId));
+        list.appendChild(buildGameRow(g, playerId, g.participants.find(p => p.player_id === playerId)?.player_name ?? ''));
     }
 
     card.appendChild(list);
@@ -608,10 +608,10 @@ function buildStatBlock(label: string, value: string): HTMLElement {
     return block;
 }
 
-function buildGameRow(g: GameListItem, playerId: number): HTMLElement {
+function buildGameRow(g: GameListItem, playerId: number, playerName: string): HTMLElement {
     const row = document.createElement('a');
     row.className = 'game-row';
-    row.href = `/games?highlight=${g.id}`;
+    row.href = `/games?q=${encodeURIComponent(playerName)}&highlight=${g.id}`;
 
     // Находим себя среди участников
     const me = g.participants.find((p) => p.player_id === playerId);

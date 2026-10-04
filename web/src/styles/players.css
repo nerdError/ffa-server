@@ -740,3 +740,14 @@
     text-align: right;
     min-width: 70px;
 }
+
+.players-table tr.is-me td {
+  background: rgba(241, 196, 15, 0.06);
+}
+
+.players-table tr.is-me .player-name-link::after {
+  content: ' (вы)';
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+}

@@ -506,3 +506,63 @@
   border-color: #e74c3c;
   color: #e74c3c;
 }
+
+/* Кнопка связывания игрока с профилем */
+.admin-link-btn {
+  appearance: none;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid rgba(52, 152, 219, 0.4);
+  border-radius: 3px;
+  color: rgba(52, 152, 219, 0.8);
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.admin-link-btn:hover {
+  background: rgba(52, 152, 219, 0.15);
+  border-color: #3498db;
+  color: #5dade2;
+  box-shadow: 0 0 8px rgba(52, 152, 219, 0.4);
+}
+
+/* Когда игрок уже связан — фиолетовая (как «отвязать») */
+.admin-link-btn.is-linked {
+  border-color: rgba(155, 89, 182, 0.4);
+  color: rgba(155, 89, 182, 0.8);
+}
+
+.admin-link-btn.is-linked:hover {
+  background: rgba(155, 89, 182, 0.15);
+  border-color: #9b59b6;
+  color: #bb8fce;
+  box-shadow: 0 0 8px rgba(155, 89, 182, 0.4);
+}
+
+.admin-player-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-linked-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  background: rgba(52, 152, 219, 0.1);
+  border: 1px solid rgba(52, 152, 219, 0.3);
+  border-radius: 2px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: rgba(52, 152, 219, 0.9);
+  letter-spacing: 0.5px;
+  width: fit-content;
+  cursor: help;
+}
