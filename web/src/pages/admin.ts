@@ -44,6 +44,50 @@ interface AdminRating {
     updated_at: string;
 }
 
+interface AdminLog {
+    id: number;
+    created_at: string;
+    actor_id: string | null;
+    actor_username: string | null;
+    action: string;
+    entity_type: string | null;
+    entity_id: number | null;
+    summary: string;
+    details: Record<string, unknown>;
+}
+
+interface AdminLogsResponse {
+    logs: AdminLog[];
+    total: number;
+}
+
+const LOG_ACTIONS: { value: string; key: string }[] = [
+    { value: 'auth.signup', key: 'log.action.signup' },
+    { value: 'auth.login', key: 'log.action.login' },
+    { value: 'auth.logout', key: 'log.action.logout' },
+    { value: 'player.create', key: 'log.action.player_create' },
+    { value: 'player.rename', key: 'log.action.player_rename' },
+    { value: 'player.aka', key: 'log.action.player_aka' },
+    { value: 'player.delete', key: 'log.action.player_delete' },
+    { value: 'player.link', key: 'log.action.player_link' },
+    { value: 'player.unlink', key: 'log.action.player_unlink' },
+    { value: 'rating.create', key: 'log.action.rating_create' },
+    { value: 'rating.update', key: 'log.action.rating_update' },
+    { value: 'rating.delete', key: 'log.action.rating_delete' },
+    { value: 'game.create', key: 'log.action.game_create' },
+    { value: 'game.update', key: 'log.action.game_update' },
+    { value: 'game.delete', key: 'log.action.game_delete' },
+    { value: 'ref.create', key: 'log.action.ref_create' },
+    { value: 'ref.update', key: 'log.action.ref_update' },
+    { value: 'ref.delete', key: 'log.action.ref_delete' },
+    { value: 'role.grant', key: 'log.action.role_grant' },
+    { value: 'role.revoke', key: 'log.action.role_revoke' },
+    { value: 'user.delete', key: 'log.action.user_delete' },
+];
+
+const LOG_ACTION_LABELS: Record<string, string> = {};
+for (const a of LOG_ACTIONS) LOG_ACTION_LABELS[a.value] = a.key;
+
 interface RefConfig {
     type: RefType;
     containerId: string;
@@ -104,6 +148,9 @@ let usersBox: HTMLElement | null = null;
 let playersBox: HTMLElement | null = null;
 let searchInput: HTMLInputElement | null = null;
 let playersSearchInput: HTMLInputElement | null = null;
+let logsBox: HTMLElement | null = null;
+let logsSearchInput: HTMLInputElement | null = null;
+let logsActionSelect: HTMLSelectElement | null = null;
 
 const refsCache: Record<RefType, RefItem[]> = {
     formats: [],
@@ -136,6 +183,9 @@ export function mountAdmin(_params: URLSearchParams): void {
     playersBox = document.getElementById('admin-players');
     searchInput = document.getElementById('admin-search') as HTMLInputElement | null;
     playersSearchInput = document.getElementById('admin-players-search') as HTMLInputElement | null;
+    logsBox = document.getElementById('admin-logs');
+    logsSearchInput = document.getElementById('admin-logs-search') as HTMLInputElement | null;
+    logsActionSelect = document.getElementById('admin-logs-action') as HTMLSelectElement | null;
 
     searchInput?.addEventListener('input', () => {
         void loadUsers(searchInput!.value);
@@ -143,6 +193,17 @@ export function mountAdmin(_params: URLSearchParams): void {
 
     playersSearchInput?.addEventListener('input', () => {
         renderPlayersFiltered();
+    }, { signal });
+
+    populateLogActionOptions();
+    logsSearchInput?.addEventListener('input', () => {
+        void loadLogs();
+    }, { signal });
+    logsActionSelect?.addEventListener('change', () => {
+        void loadLogs();
+    }, { signal });
+    document.getElementById('btn-admin-logs-refresh')?.addEventListener('click', () => {
+        void loadLogs(true);
     }, { signal });
 
     // Справочники: кнопки «+ Добавить»
@@ -155,6 +216,7 @@ export function mountAdmin(_params: URLSearchParams): void {
 
     void loadUsers();
     void loadPlayers();
+    void loadLogs();
 
     for (const config of REF_CONFIGS) {
         void loadRefs(config);
@@ -826,4 +888,93 @@ async function unlinkUser(p: PlayerWithStats): Promise<void> {
     } catch (err) {
         alert(t('common.error') + ': ' + (err instanceof Error ? err.message : String(err)));
     }
+}
+
+// ============================================================
+// Лог действий
+// ============================================================
+function populateLogActionOptions(): void {
+    if (!logsActionSelect) return;
+    while (logsActionSelect.options.length > 1) logsActionSelect.remove(1);
+    for (const a of LOG_ACTIONS) {
+        const opt = document.createElement('option');
+        opt.value = a.value;
+        opt.textContent = t(a.key as any);
+        logsActionSelect.appendChild(opt);
+    }
+}
+
+async function loadLogs(showSpinner = false): Promise<void> {
+    if (!logsBox) return;
+    if (showSpinner) logsBox.innerHTML = '<div class="skeleton skeleton-block"></div>';
+
+    const params = new URLSearchParams();
+    const q = logsSearchInput?.value.trim() ?? '';
+    const action = logsActionSelect?.value ?? '';
+    if (q) params.set('q', q);
+    if (action) params.set('action', action);
+    params.set('limit', '200');
+
+    try {
+        const res = await apiRequest<AdminLogsResponse>(
+            `/api/admin/logs?${params.toString()}`,
+            { token: state.token }
+        );
+        renderLogs(res.logs);
+    } catch (err) {
+        logsBox.innerHTML = `<p class="error">${t('common.error')}: ${err instanceof Error ? err.message : String(err)
+            }</p>`;
+    }
+}
+
+function renderLogs(logs: AdminLog[]): void {
+    if (!logsBox) return;
+
+    if (logs.length === 0) {
+        logsBox.innerHTML = `<p class="hint">${t('admin.logs_empty')}</p>`;
+        return;
+    }
+
+    logsBox.innerHTML = '';
+    for (const log of logs) {
+        logsBox.appendChild(buildLogRow(log));
+    }
+}
+
+function buildLogRow(log: AdminLog): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'admin-log-row';
+
+    const d = new Date(log.created_at);
+
+    const time = document.createElement('div');
+    time.className = 'admin-log-time';
+    time.textContent = d.toLocaleString(getLocale() === 'ru' ? 'ru-RU' : 'en-US', {
+        day: '2-digit', month: '2-digit', year: '2-digit',
+        hour: '2-digit', minute: '2-digit',
+    });
+    time.title = d.toLocaleString();
+
+    const actor = document.createElement('div');
+    actor.className = 'admin-log-actor';
+    actor.textContent = log.actor_username
+        || (log.actor_id ? log.actor_id.slice(0, 8) : t('admin.logs_system'));
+    if (!log.actor_username && log.actor_id) actor.title = log.actor_id;
+
+    const badge = document.createElement('span');
+    const prefix = log.action.split('.')[0];
+    badge.className = `admin-log-badge admin-log-badge--${prefix}`;
+    badge.textContent = actionLabel(log.action);
+
+    const summary = document.createElement('div');
+    summary.className = 'admin-log-summary';
+    summary.textContent = log.summary;
+
+    row.append(time, actor, badge, summary);
+    return row;
+}
+
+function actionLabel(action: string): string {
+    const key = LOG_ACTION_LABELS[action];
+    return key ? t(key as any) : action;
 }

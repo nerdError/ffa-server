@@ -445,6 +445,25 @@
                     </div>
                     <div id="admin-mods" class="admin-refs-list"></div>
                 </section>
+
+                <section class="admin-section">
+                    <div class="admin-section-header">
+                        <h2 data-i18n="admin.logs_title">Лог действий</h2>
+                        <div class="admin-logs-controls">
+                            <select id="admin-logs-action" class="admin-logs-select">
+                                <option value="" data-i18n="admin.logs_filter_all">Все действия</option>
+                            </select>
+                            <input type="text" id="admin-logs-search" class="admin-search"
+                                data-i18n-placeholder="admin.logs_search" placeholder="Поиск по логу…"
+                                autocomplete="off" />
+                            <button type="button" id="btn-admin-logs-refresh" class="btn-secondary"
+                                data-i18n="admin.logs_refresh">Обновить</button>
+                        </div>
+                    </div>
+                    <div id="admin-logs" class="admin-logs">
+                        <div class="skeleton skeleton-block"></div>
+                    </div>
+                </section>
             </div>
         </section>
 

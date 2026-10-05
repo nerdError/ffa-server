@@ -1,8 +1,16 @@
 import { Router } from 'express';
 import { authenticate } from '../../lib/auth.js';
 import { supabaseAdmin } from '../../lib/supabase-admin.js';
+import { logAction } from '../../lib/action-log.js';
 
 export const gameRefsRouter = Router();
+
+const REF_LABELS: Record<string, string> = {
+  formats: 'формат',
+  hosts: 'ведущий',
+  maps: 'карта',
+  mods: 'мод',
+};
 
 // ============================================================
 // Конфигурация справочников
@@ -130,6 +138,7 @@ gameRefsRouter.get('/:refType', async (req, res) => {
 // ============================================================
 gameRefsRouter.post('/:refType', async (req, res) => {
   const config: RefConfig = (req as any).refConfig;
+  const refType: RefType = (req as any).refType;
   const check = await checkRole(req, res, config.minRole);
   if (!check.ok) return;
 
@@ -156,6 +165,15 @@ gameRefsRouter.post('/:refType', async (req, res) => {
     console.error(`[game-refs] ${config.table} insert error:`, error);
     return res.status(500).json({ error: 'DB error' });
   }
+
+  void logAction({
+    action: 'ref.create',
+    actorId: check.userId,
+    entityType: refType,
+    entityId: data.id,
+    summary: `Добавлен справочник (${REF_LABELS[refType]}): "${data.name}"`,
+    details: { refType, name: data.name },
+  });
 
   res.status(201).json({ item: data });
 });
@@ -214,6 +232,15 @@ gameRefsRouter.patch('/:refType/:id', async (req, res) => {
     }
   }
 
+  void logAction({
+    action: 'ref.update',
+    actorId: check.userId,
+    entityType: refType,
+    entityId: id,
+    summary: `Изменён справочник (${REF_LABELS[refType]}): "${data.name}"`,
+    details: { refType, name: data.name },
+  });
+
   res.json({ item: data });
 });
 
@@ -253,6 +280,15 @@ gameRefsRouter.delete('/:refType/:id', async (req, res) => {
       console.error('[game-refs] recalculate after format delete failed:', recalcError);
     }
   }
+
+  void logAction({
+    action: 'ref.delete',
+    actorId: check.userId,
+    entityType: refType,
+    entityId: id,
+    summary: `Удалён справочник (${REF_LABELS[refType]}): "${data.name}"`,
+    details: { refType, name: data.name },
+  });
 
   res.json({ deleted: data });
 });

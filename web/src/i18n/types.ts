@@ -366,6 +366,37 @@ export type TranslationKey =
     | 'games.hide_all_players'
     | 'games.place_1'
 
+    // Лог действий (админ)
+    | 'admin.logs_title'
+    | 'admin.logs_search'
+    | 'admin.logs_filter_all'
+    | 'admin.logs_empty'
+    | 'admin.logs_refresh'
+    | 'admin.logs_actor'
+    | 'admin.logs_system'
+
+    | 'log.action.signup'
+    | 'log.action.login'
+    | 'log.action.logout'
+    | 'log.action.player_create'
+    | 'log.action.player_rename'
+    | 'log.action.player_aka'
+    | 'log.action.player_delete'
+    | 'log.action.player_link'
+    | 'log.action.player_unlink'
+    | 'log.action.rating_create'
+    | 'log.action.rating_update'
+    | 'log.action.rating_delete'
+    | 'log.action.game_create'
+    | 'log.action.game_update'
+    | 'log.action.game_delete'
+    | 'log.action.ref_create'
+    | 'log.action.ref_update'
+    | 'log.action.ref_delete'
+    | 'log.action.role_grant'
+    | 'log.action.role_revoke'
+    | 'log.action.user_delete'
+
     // Экран загрузки
     | 'loading.text'
     ;

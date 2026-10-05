@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { anonClient, authenticate } from '../../lib/auth.js';
+import { logAction } from '../../lib/action-log.js';
 
 export const ratingsRouter = Router({ mergeParams: true });
 
@@ -71,7 +72,7 @@ ratingsRouter.post('/:id/ratings', async (req, res) => {
 
   const { data: player, error: playerErr } = await auth.client
     .from('players')
-    .select('id')
+    .select('id, name')
     .eq('id', playerId)
     .maybeSingle();
   if (playerErr) return res.status(500).json({ error: playerErr.message });
@@ -81,6 +82,14 @@ ratingsRouter.post('/:id/ratings', async (req, res) => {
   if (validationError) return res.status(400).json({ error: validationError });
 
   const { race, ...stats } = req.body;
+
+  // Проверяем, была ли уже оценка — чтобы понять create/update
+  const { data: existing } = await auth.client
+    .from('ratings')
+    .select('id')
+    .eq('player_id', playerId)
+    .eq('user_id', auth.user.id)
+    .maybeSingle();
 
   const { data, error } = await auth.client
     .from('ratings')
@@ -92,6 +101,16 @@ ratingsRouter.post('/:id/ratings', async (req, res) => {
     .single();
 
   if (error) return res.status(500).json({ error: error.message });
+
+  void logAction({
+    action: existing ? 'rating.update' : 'rating.create',
+    actorId: auth.user.id,
+    entityType: 'rating',
+    entityId: data.id,
+    summary: `${existing ? 'Изменена' : 'Добавлена'} оценка игрока "${player.name}" (${race})`,
+    details: { playerId, race },
+  });
+
   return res.status(200).json({ rating: data });
 });
 
@@ -137,5 +156,15 @@ ratingsRouter.delete('/:id/my-rating', async (req, res) => {
 
   if (error) return res.status(500).json({ error: error.message });
   if (!data) return res.status(404).json({ error: 'Rating not found' });
+
+  void logAction({
+    action: 'rating.delete',
+    actorId: auth.user.id,
+    entityType: 'rating',
+    entityId: data.id,
+    summary: `Удалена своя оценка игрока #${playerId}`,
+    details: { playerId },
+  });
+
   return res.status(200).json({ deleted: data });
 });

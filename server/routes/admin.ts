@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../../lib/auth.js';
 import { supabaseAdmin } from '../../lib/supabase-admin.js';
+import { logAction } from '../../lib/action-log.js';
 
 export const adminRouter = Router();
 
@@ -21,6 +22,49 @@ adminRouter.use(async (req, res, next) => {
 
     (req as any).userId = auth.user.id;
     next();
+});
+
+// ============================================================
+// GET /api/admin/logs?q=...&action=...&limit=...&offset=...
+// Лог действий на сайте (только для админов)
+// ============================================================
+adminRouter.get('/logs', async (req, res) => {
+    const q = String(req.query.q ?? '').trim();
+    const action = String(req.query.action ?? '').trim();
+    const limit = Math.min(Math.max(Number(req.query.limit ?? 100) || 100, 1), 500);
+    const offset = Math.max(Number(req.query.offset ?? 0) || 0, 0);
+
+    let query = supabaseAdmin
+        .from('action_log')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+    if (action) query = query.eq('action', action);
+
+    if (q) {
+        // Экранируем спецсимволы PostgREST-фильтра, оставляя простой поиск
+        const safe = q.replace(/[(),%*\\]/g, ' ').trim();
+        if (safe) {
+            query = query.or(
+                `summary.ilike.%${safe}%,actor_username.ilike.%${safe}%`
+            );
+        }
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+        console.error('[admin/logs] error:', error);
+        // Отдаём админу реальную причину (роут доступен только админам)
+        return res.status(500).json({
+            error: `DB error: ${error.message}`,
+            code: error.code,
+            hint: error.hint,
+        });
+    }
+
+    res.json({ logs: data ?? [], total: count ?? 0 });
 });
 
 // ============================================================
@@ -140,6 +184,20 @@ adminRouter.post('/roles/grant', async (req, res) => {
         return res.status(500).json({ error: 'DB error' });
     }
 
+    const { data: targetProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('username')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    void logAction({
+        action: 'role.grant',
+        actorId: grantedBy,
+        entityType: 'user',
+        summary: `Выдана роль ${role} пользователю ${targetProfile?.username ?? userId}`,
+        details: { role, targetUserId: userId },
+    });
+
     res.json({ ok: true });
 });
 
@@ -149,6 +207,7 @@ adminRouter.post('/roles/grant', async (req, res) => {
 // ============================================================
 adminRouter.post('/roles/revoke', async (req, res) => {
     const { userId, role } = req.body ?? {};
+    const actorId = (req as any).userId as string;
 
     if (typeof userId !== 'string' || !userId) {
         return res.status(400).json({ error: 'userId is required' });
@@ -167,6 +226,20 @@ adminRouter.post('/roles/revoke', async (req, res) => {
         console.error('[admin/roles/revoke] error:', error);
         return res.status(500).json({ error: 'DB error' });
     }
+
+    const { data: targetProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('username')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    void logAction({
+        action: 'role.revoke',
+        actorId,
+        entityType: 'user',
+        summary: `Снята роль ${role} с пользователя ${targetProfile?.username ?? userId}`,
+        details: { role, targetUserId: userId },
+    });
 
     res.json({ ok: true });
 });
@@ -195,6 +268,15 @@ adminRouter.delete('/ratings/:id', async (req, res) => {
     if (!data) {
         return res.status(404).json({ error: 'Rating not found' });
     }
+
+    void logAction({
+        action: 'rating.delete',
+        actorId: (req as any).userId,
+        entityType: 'rating',
+        entityId: id,
+        summary: `Удалена оценка #${id} (игрок #${data.player_id})`,
+        details: { playerId: data.player_id, targetUserId: data.user_id },
+    });
 
     res.json({ ok: true, deleted: data });
 });
@@ -292,6 +374,15 @@ adminRouter.patch('/players/:id/aka', async (req, res) => {
         return res.status(404).json({ error: 'Player not found' });
     }
 
+    void logAction({
+        action: 'player.aka',
+        actorId: (req as any).userId,
+        entityType: 'player',
+        entityId: id,
+        summary: `Изменён aka игрока "${data.name}": ${trimmed || '—'}`,
+        details: { playerName: data.name, aka: trimmed || null },
+    });
+
     res.json({ ok: true, player: data });
 });
 
@@ -336,6 +427,15 @@ adminRouter.patch('/players/:id/name', async (req, res) => {
         return res.status(404).json({ error: 'Player not found' });
     }
 
+    void logAction({
+        action: 'player.rename',
+        actorId: (req as any).userId,
+        entityType: 'player',
+        entityId: id,
+        summary: `Игрок #${id} переименован в "${data.name}"`,
+        details: { playerName: data.name },
+    });
+
     res.json({ ok: true, player: data });
 });
 
@@ -355,12 +455,26 @@ adminRouter.delete('/users/:id', async (req, res) => {
         return res.status(400).json({ error: 'Cannot delete your own account' });
     }
 
+    const { data: targetProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('username')
+        .eq('user_id', userId)
+        .maybeSingle();
+
     const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (error) {
         console.error('[admin/users/delete] error:', error);
         return res.status(500).json({ error: error.message });
     }
+
+    void logAction({
+        action: 'user.delete',
+        actorId: selfId,
+        entityType: 'user',
+        summary: `Удалён пользователь ${targetProfile?.username ?? userId}`,
+        details: { targetUserId: userId },
+    });
 
     res.json({ ok: true });
 });
@@ -430,11 +544,26 @@ adminRouter.post('/players/:id/link-user', async (req, res) => {
     console.error('[admin/link-user] error:', error);
     return res.status(500).json({ error: 'DB error' });
   }
-  if (!data) {
-    return res.status(404).json({ error: 'Player not found' });
-  }
+    if (!data) {
+        return res.status(404).json({ error: 'Player not found' });
+    }
 
-  res.json({ ok: true, player: data });
+    const { data: linkProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('username')
+        .eq('user_id', targetUserId)
+        .maybeSingle();
+
+    void logAction({
+        action: 'player.link',
+        actorId: (req as any).userId,
+        entityType: 'player',
+        entityId: playerId,
+        summary: `Игрок "${data.name}" привязан к ${linkProfile?.username ?? targetUserId}`,
+        details: { targetUserId },
+    });
+
+    res.json({ ok: true, player: data });
 });
 
 // ============================================================
@@ -447,6 +576,12 @@ adminRouter.post('/players/:id/unlink-user', async (req, res) => {
     return res.status(400).json({ error: 'Invalid player id' });
   }
 
+  const { data: playerRow } = await supabaseAdmin
+    .from('players')
+    .select('name')
+    .eq('id', playerId)
+    .maybeSingle();
+
   const { error } = await supabaseAdmin
     .from('players')
     .update({ user_id: null })
@@ -456,6 +591,14 @@ adminRouter.post('/players/:id/unlink-user', async (req, res) => {
     console.error('[admin/unlink-user] error:', error);
     return res.status(500).json({ error: 'DB error' });
   }
+
+  void logAction({
+    action: 'player.unlink',
+    actorId: (req as any).userId,
+    entityType: 'player',
+    entityId: playerId,
+    summary: `Игрок "${playerRow?.name ?? playerId}" отвязан от профиля`,
+  });
 
   res.json({ ok: true });
 });

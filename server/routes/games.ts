@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticate, anonClient } from '../../lib/auth.js';
+import { logAction } from '../../lib/action-log.js';
 
 export const gamesRouter = Router();
 
@@ -171,6 +172,19 @@ gamesRouter.post('/', async (req, res) => {
         // Не возвращаем ошибку — игра создана, рейтинг можно пересчитать позже
     }
 
+    void logAction({
+        action: 'game.create',
+        actorId: auth.user.id,
+        entityType: 'game',
+        entityId: data,
+        summary: `Добавлена игра #${data} (${(players as unknown[]).length} участников)`,
+        details: {
+            playerCount: (players as unknown[]).length,
+            formatId: format_id ?? null,
+            trackElim: track_elim ?? true,
+        },
+    });
+
     // Возвращаем полную игру с участниками
     const { data: fullGame, error: fetchError } = await auth.client.rpc(
         'get_game_with_players',
@@ -251,6 +265,15 @@ gamesRouter.patch('/:id', async (req, res) => {
         console.error('[games] recalculate after update failed:', recalcError);
     }
 
+    void logAction({
+        action: 'game.update',
+        actorId: auth.user.id,
+        entityType: 'game',
+        entityId: id,
+        summary: `Изменена игра #${id} (${(players as unknown[]).length} участников)`,
+        details: { playerCount: (players as unknown[]).length },
+    });
+
     const { data: fullGame } = await auth.client.rpc('get_game_with_players', {
         p_id: id,
     });
@@ -284,6 +307,14 @@ gamesRouter.delete('/:id', async (req, res) => {
     if (!data) {
         return res.status(404).json({ error: 'Game not found or not permitted' });
     }
+
+    void logAction({
+        action: 'game.delete',
+        actorId: auth.user.id,
+        entityType: 'game',
+        entityId: id,
+        summary: `Удалена игра #${id}`,
+    });
 
     // Пересчитываем Elo после удаления игры
     const { error: recalcError } = await auth.client.rpc('recalculate_all_ratings');

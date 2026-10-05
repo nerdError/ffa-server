@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { supabase } from '../../lib/supabase.js';
 import { authenticate } from '../../lib/auth.js';
+import { logAction } from '../../lib/action-log.js';
 
 export const authRouter = Router();
 
@@ -56,6 +57,15 @@ authRouter.post('/signup', async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 
+  void logAction({
+    action: 'auth.signup',
+    actorId: data.user?.id ?? null,
+    actorUsername: trimmedUsername,
+    entityType: 'user',
+    summary: `Регистрация: ${trimmedUsername} (${email})`,
+    details: { username: trimmedUsername, email },
+  });
+
   return res.status(201).json({
     user: data.user
       ? { id: data.user.id, email: data.user.email, username: trimmedUsername }
@@ -110,6 +120,14 @@ authRouter.post('/login', async (req, res) => {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
+  void logAction({
+    action: 'auth.login',
+    actorId: data.user.id,
+    entityType: 'user',
+    summary: `Вход: ${trimmed}`,
+    details: { identifier: trimmed },
+  });
+
   return res.status(200).json({
     user: { id: data.user.id, email: data.user.email },
     access_token: data.session?.access_token,
@@ -124,6 +142,14 @@ authRouter.post('/logout', async (req, res) => {
   if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
 
   await auth.client.auth.signOut();
+
+  void logAction({
+    action: 'auth.logout',
+    actorId: auth.user.id,
+    entityType: 'user',
+    summary: `Выход: ${auth.user.email ?? auth.user.id}`,
+  });
+
   return res.status(200).json({ ok: true });
 });
 

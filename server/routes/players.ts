@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { anonClient, authenticate } from '../../lib/auth.js';
+import { logAction } from '../../lib/action-log.js';
 
 export const playersRouter = Router();
 
@@ -40,6 +41,15 @@ playersRouter.post('/', async (req, res) => {
     const status = error.code === '23505' ? 409 : 500;
     return res.status(status).json({ error: error.message });
   }
+
+  void logAction({
+    action: 'player.create',
+    actorId: auth.user.id,
+    entityType: 'player',
+    entityId: data.id,
+    summary: `Добавлен игрок "${data.name}"`,
+    details: { playerName: data.name },
+  });
 
   return res.status(201).json({ player: data });
 });
@@ -82,6 +92,16 @@ playersRouter.delete('/:id', async (req, res) => {
   if (!data) {
     return res.status(404).json({ error: 'Player not found or not permitted' });
   }
+
+  void logAction({
+    action: 'player.delete',
+    actorId: auth.user.id,
+    entityType: 'player',
+    entityId: data.id,
+    summary: `Удалён игрок "${data.name}"`,
+    details: { playerName: data.name },
+  });
+
   return res.status(200).json({ deleted: data });
 });
 
@@ -128,6 +148,15 @@ playersRouter.patch('/:id/aka', async (req, res) => {
   if (!data) {
     return res.status(404).json({ error: 'Player not found' });
   }
+
+  void logAction({
+    action: 'player.aka',
+    actorId: auth.user.id,
+    entityType: 'player',
+    entityId: id,
+    summary: `Изменён aka игрока "${data.name}": ${trimmed || '—'}`,
+    details: { playerName: data.name, aka: trimmed || null },
+  });
 
   res.json({ ok: true, player: data });
 });
@@ -180,6 +209,15 @@ playersRouter.patch('/:id/name', async (req, res) => {
   if (!data) {
     return res.status(404).json({ error: 'Player not found' });
   }
+
+  void logAction({
+    action: 'player.rename',
+    actorId: auth.user.id,
+    entityType: 'player',
+    entityId: id,
+    summary: `Игрок #${id} переименован в "${data.name}"`,
+    details: { playerName: data.name },
+  });
 
   res.json({ ok: true, player: data });
 });
