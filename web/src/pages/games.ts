@@ -1991,7 +1991,7 @@ async function openReplayGameModal(file: File): Promise<void> {
             abortController?.signal
         );
         await openCreateGameModal(res.replay);
-        alert(t('games.replay_prefilled'));
+        // alert(t('games.replay_prefilled'));
     } catch (err) {
         alert(t('games.replay_parse_error') + (err instanceof Error ? err.message : String(err)));
     } finally {
