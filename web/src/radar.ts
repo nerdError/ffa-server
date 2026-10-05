@@ -51,12 +51,19 @@ interface RadarOptions {
 
 export let lastRadarOptions: RadarOptions | null = null;
 
+// Счётчик гарантирует уникальность id градиента/фильтра для каждого
+// отрисованного радара. Без этого два радара одного игрока (например, на
+// скрытом экране стены и в карточке) делят id, и при удалении одного из них
+// `url(#...)` ломается — полигон теряет заливку и остаётся только контур.
+let radarSeq = 0;
+
 export function buildRadarSVG(opts: RadarOptions): string {
     const { stats, color, size = 480, maxLevel = 5, uniqueId, showVertices } = opts;
     lastRadarOptions = opts;
 
     // Уникальный суффикс для id внутри этого SVG
-    const uid = uniqueId ?? `r${Math.random().toString(36).slice(2, 9)}`;
+    const base = (uniqueId ?? 'r').replace(/[^a-zA-Z0-9_-]/g, '');
+    const uid = `${base}-${++radarSeq}`;
     const glowId = `glow-${uid}`;
     const gradId = `fillGradient-${uid}`;
 

@@ -1271,6 +1271,33 @@ function clearLastGameSettings(): void {
 // ============================================================
 // Создание карты/мода/игрока inline
 // ============================================================
+/** Нормализует название справочника для сопоставления. */
+function normalizeRefName(name: string): string {
+    return name.trim().toLowerCase().replace(/\.sc2map$/i, '');
+}
+
+/**
+ * Ищет карту по названию в кэше справочника. Если не найдена — создаёт
+ * новую через API и добавляет в кэш. Возвращает карту или null при ошибке.
+ */
+async function findOrCreateMapByName(name: string): Promise<GameMap | null> {
+    const target = normalizeRefName(name);
+    if (!target) return null;
+
+    const existing = cachedMaps.find((m) => normalizeRefName(m.name) === target);
+    if (existing) return existing;
+
+    try {
+        const created = await createRef<GameMap>('maps', { name: name.trim() }, state.token);
+        cachedMaps = [...cachedMaps, created].sort((a, b) => a.name.localeCompare(b.name));
+        fillSelect(mapSelect, cachedMaps, t('games.select_placeholder'));
+        return created;
+    } catch (err) {
+        console.warn('[games] auto-create map failed:', err);
+        return null;
+    }
+}
+
 async function createMapInline(): Promise<void> {
     const name = prompt(t('games.new_map_prompt'));
     if (name === null) return;
@@ -1869,8 +1896,9 @@ function matchCachedPlayer(name: string | null): PlayerWithStats | undefined {
 /**
  * Заполняет открытую форму данными из реплея.
  * Формат/ведущий/мод остаются из последних настроек — их в реплее нет.
+ * Места не проставляются: итоговый счёт игры из реплея неизвестен.
  */
-function applyReplayPrefill(prefill: ReplayPrefill): void {
+async function applyReplayPrefill(prefill: ReplayPrefill): Promise<void> {
     if (playedAtInput) {
         playedAtInput.value = prefill.playedAtMs
             ? toDatetimeLocal(new Date(prefill.playedAtMs))
@@ -1880,11 +1908,10 @@ function applyReplayPrefill(prefill: ReplayPrefill): void {
         durationInput.value = String(Math.max(1, Math.round(prefill.durationSeconds / 60)));
     }
 
-    // Карта — сопоставляем по названию из реплея
+    // Карта — сопоставляем по названию из реплея; если нет в базе, создаём
     if (mapSelect && prefill.mapTitle) {
-        const target = prefill.mapTitle.trim().toLowerCase();
-        const match = cachedMaps.find((m) => m.name.trim().toLowerCase() === target);
-        if (match) mapSelect.value = String(match.id);
+        const map = await findOrCreateMapByName(prefill.mapTitle);
+        if (map) mapSelect.value = String(map.id);
     }
 
     // Командный режим — если в реплее есть >= 2 равных команд по >= 2 игрока
@@ -1923,14 +1950,9 @@ function applyReplayPrefill(prefill: ReplayPrefill): void {
         ? (eligibleSurvivors[0]?.name ?? null)
         : null;
 
-    const totalReplayPlayers = prefill.players.length;
-
     drafts = prefill.players.map((p) => {
         const matched = matchCachedPlayer(p.name);
         const cleanName = p.name ? stripClanTag(p.name) : null;
-        const order = !teamMode && typeof p.eliminatedOrder === 'number' && p.eliminatedOrder > 0
-            ? p.eliminatedOrder
-            : null;
         const isWinner =
             p.result === 'win' || (soleSurvivorName !== null && p.name === soleSurvivorName);
         return {
@@ -1938,7 +1960,9 @@ function applyReplayPrefill(prefill: ReplayPrefill): void {
             race: normalizeReplayRace(p.race),
             team: teamMode && p.teamId !== null ? p.teamId : null,
             is_winner: isWinner,
-            place: isWinner ? 1 : (order !== null ? totalReplayPlayers - order + 1 : null),
+            // Итоговый счёт из реплея неизвестен — места не проставляем,
+            // их нужно указать вручную (победитель получит 1-е место).
+            place: null,
             raw_name: cleanName ?? p.name ?? null,
             from_replay: true,
         };
@@ -2054,7 +2078,7 @@ async function openCreateGameModal(prefill?: ReplayPrefill, fromGame?: GameFull)
 
     if (notesInput) notesInput.value = '';
 
-    if (prefill) applyReplayPrefill(prefill);
+    if (prefill) await applyReplayPrefill(prefill);
     else if (fromGame) applyGameSettingsFromGame(fromGame);
 
     normalizePlaces();
