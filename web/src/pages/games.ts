@@ -30,7 +30,10 @@ const filters = {
     formatId: null as number | null,
     hostId: null as number | null,
     mapId: null as number | null,
+    playerId: null as number | null,
 };
+
+let playerFilterName: string | null = null;
 
 // ============================================================
 // Форма
@@ -120,6 +123,13 @@ export function mountGames(params: URLSearchParams): void {
     filters.formatId = params.get('format') ? Number(params.get('format')) : null;
     filters.hostId = params.get('host') ? Number(params.get('host')) : null;
     filters.mapId = params.get('map') ? Number(params.get('map')) : null;
+
+    const playerParam = params.get('player_id');
+    filters.playerId = playerParam && Number.isInteger(Number(playerParam))
+        ? Number(playerParam)
+        : null;
+    playerFilterName = null;
+    if (filters.playerId !== null) void loadPlayerFilterName(filters.playerId);
 
     // Проверяем роли, потом настраиваем кнопки
     void ensureRolesLoaded().then(() => {
@@ -285,10 +295,8 @@ async function loadGames(): Promise<void> {
     errorBox?.classList.add('hidden');
 
     try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const playerId = urlParams.get('player_id');
-        const url = playerId
-            ? `/api/games?player_id=${encodeURIComponent(playerId)}`
+        const url = filters.playerId !== null
+            ? `/api/games?player_id=${encodeURIComponent(String(filters.playerId))}`
             : '/api/games';
         const res = await apiRequest<GamesListResponse>(url);
         cachedGames = res.games;
@@ -304,7 +312,22 @@ async function loadGames(): Promise<void> {
 }
 
 function hasActiveFilters(): boolean {
-    return filters.formatId !== null || filters.hostId !== null || filters.mapId !== null;
+    return filters.formatId !== null
+        || filters.hostId !== null
+        || filters.mapId !== null
+        || filters.playerId !== null;
+}
+
+async function loadPlayerFilterName(id: number): Promise<void> {
+    try {
+        const res = await apiRequest<{ player: PlayerWithStats }>(`/api/players/${id}`);
+        if (filters.playerId === id) {
+            playerFilterName = res.player.name + (res.player.aka ? ` (${res.player.aka})` : '');
+        }
+    } catch {
+        playerFilterName = null;
+    }
+    renderActiveFilterChips();
 }
 
 function renderGames(): void {
@@ -905,16 +928,34 @@ function applyFilters(): void {
 }
 
 function resetFilters(): void {
+    const hadPlayer = filters.playerId !== null;
     filters.formatId = null;
     filters.hostId = null;
     filters.mapId = null;
+    filters.playerId = null;
+    playerFilterName = null;
     const formatSel = document.getElementById('filter-format') as HTMLSelectElement | null;
     const hostSel = document.getElementById('filter-host') as HTMLSelectElement | null;
     const mapSel = document.getElementById('filter-map') as HTMLSelectElement | null;
     if (formatSel) formatSel.value = '';
     if (hostSel) hostSel.value = '';
     if (mapSel) mapSel.value = '';
-    applyFilters();
+
+    if (hadPlayer) {
+        updateUrlFromFilters();
+        renderActiveFilterChips();
+        void loadGames();
+    } else {
+        applyFilters();
+    }
+}
+
+function removePlayerFilter(): void {
+    filters.playerId = null;
+    playerFilterName = null;
+    updateUrlFromFilters();
+    renderActiveFilterChips();
+    void loadGames();
 }
 
 function updateUrlFromFilters(): void {
@@ -925,6 +966,8 @@ function updateUrlFromFilters(): void {
     else url.searchParams.delete('host');
     if (filters.mapId !== null) url.searchParams.set('map', String(filters.mapId));
     else url.searchParams.delete('map');
+    if (filters.playerId !== null) url.searchParams.set('player_id', String(filters.playerId));
+    else url.searchParams.delete('player_id');
     window.history.replaceState({}, '', url.pathname + url.search);
 }
 
@@ -944,6 +987,14 @@ function renderActiveFilterChips(): void {
     if (!container) return;
     container.innerHTML = '';
     const chips: { label: string; value: string; onRemove: () => void }[] = [];
+
+    if (filters.playerId !== null) {
+        chips.push({
+            label: t('games.filter_player'),
+            value: playerFilterName ?? `#${filters.playerId}`,
+            onRemove: () => removePlayerFilter(),
+        });
+    }
 
     if (filters.formatId !== null) {
         const f = cachedFormats.find((x) => x.id === filters.formatId);

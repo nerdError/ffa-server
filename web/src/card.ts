@@ -164,13 +164,21 @@ export function buildPlayerCardElement(
     const metricsBar = document.createElement('div');
     metricsBar.className = 'pc-metrics-bar';
 
+    // Безопасные значения: сервер может вернуть неполный объект
+    const gamesPlayed = Number.isFinite(player.games_played) ? player.games_played : 0;
+    const wins = Number.isFinite(player.wins) ? player.wins : 0;
+    const winrate = Number.isFinite(player.winrate) ? player.winrate : 0;
+    const activityScore = Number.isFinite(player.activity_score) ? player.activity_score : 0;
+    const elo = Number.isFinite(player.elo) ? player.elo : 1500;
+    const avgPlace = typeof player.avg_place === 'number' && Number.isFinite(player.avg_place)
+        ? player.avg_place
+        : null;
+
     // Активность — главная метрика
-    const activityValue = player.games_played > 0
-        ? player.activity_score.toFixed(1)
-        : '—';
+    const activityValue = gamesPlayed > 0 ? activityScore.toFixed(1) : '—';
     const activityMetric = document.createElement('div');
     activityMetric.className = 'pc-metric pc-metric--activity';
-    const activityRank = player.activity_rank !== null
+    const activityRank = player.activity_rank != null
         ? `#${player.activity_rank}`
         : '';
     activityMetric.innerHTML = `
@@ -185,41 +193,41 @@ export function buildPlayerCardElement(
     // Игр
     metricsBar.appendChild(buildMetric(
         t('leaderboard.games'),
-        String(player.games_played),
+        String(gamesPlayed),
         'games',
     ));
 
     // Побед
     metricsBar.appendChild(buildMetric(
         t('leaderboard.wins'),
-        String(player.wins),
-        player.wins > 0 ? 'win' : 'muted',
+        String(wins),
+        wins > 0 ? 'win' : 'muted',
     ));
 
     // Winrate
     const winrateLevel =
-        player.winrate >= 30 ? 'win' :
-            player.winrate >= 10 ? 'mid' :
+        winrate >= 30 ? 'win' :
+            winrate >= 10 ? 'mid' :
                 'muted';
     metricsBar.appendChild(buildMetric(
         t('leaderboard.winrate'),
-        `${player.winrate}%`,
+        `${winrate}%`,
         winrateLevel,
     ));
 
     // Среднее место
     metricsBar.appendChild(buildMetric(
         t('leaderboard.avg_place'),
-        player.avg_place !== null ? player.avg_place.toFixed(2) : '—',
-        player.avg_place !== null ? 'mid' : 'muted',
+        avgPlace !== null ? avgPlace.toFixed(2) : '—',
+        avgPlace !== null ? 'mid' : 'muted',
     ));
 
     // ELO — отделённая метрика
     const eloMetric = document.createElement('div');
     eloMetric.className = 'pc-metric pc-metric--elo';
-    const eloRank = player.elo_rank !== null ? `#${player.elo_rank}` : '';
+    const eloRank = player.elo_rank != null ? `#${player.elo_rank}` : '';
     eloMetric.innerHTML = `
-  <div class="pc-metric-value">${player.elo}</div>
+  <div class="pc-metric-value">${elo}</div>
   <div class="pc-metric-label">
     ELO
     ${eloRank ? `<span class="pc-metric-rank">${eloRank}</span>` : ''}

@@ -130,6 +130,7 @@ export const en: Record<TranslationKey, string> = {
     'games.filter_format': 'Format',
     'games.filter_host': 'Host',
     'games.filter_map': 'Map',
+    'games.filter_player': 'Player',
     'games.filter_all': 'All',
     'games.filter_reset': 'Reset filters',
     'games.click_to_filter': 'Click to filter',

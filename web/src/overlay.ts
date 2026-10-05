@@ -1,4 +1,5 @@
 import './styles/base.css';
+import './styles/player-card.css';
 import './styles/card.css';
 import './styles/overlay.css';
 import { apiRequest } from './api';

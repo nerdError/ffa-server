@@ -147,6 +147,7 @@ export const ru: Record<TranslationKey, string> = {
     'games.filter_format': 'Формат',
     'games.filter_host': 'Проводящий',
     'games.filter_map': 'Карта',
+    'games.filter_player': 'Игрок',
     'games.filter_all': 'Все',
     'games.filter_reset': 'Сбросить фильтры',
     'games.click_to_filter': 'Нажмите, чтобы отфильтровать',

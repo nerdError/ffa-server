@@ -69,6 +69,7 @@ export type TranslationKey =
     | 'games.filter_format'
     | 'games.filter_host'
     | 'games.filter_map'
+    | 'games.filter_player'
     | 'games.filter_all'
     | 'games.filter_reset'
     | 'games.click_to_filter'

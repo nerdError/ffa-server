@@ -124,25 +124,37 @@ overlayRouter.get('/player/:id', async (req, res) => {
     return res.status(500).json({ error: 'DB error' });
   }
 
-  const avg = stats?.[0] ?? null;
+  // Полная карточка: стиль игры + метрики (elo, games, wins, winrate,
+  // activity, avg_place, game_days, ранги). В personal-режиме переопределяем
+  // только оценки стиля и расы, а метрики берём из общей статистики.
+  const base = stats?.[0] ?? {
+    id: player.id,
+    name: player.name,
+    aka: player.aka,
+    user_id: null,
+    races: [],
+    dominant_race: null,
+    vote_count: 0,
+    adaptiveness: null,
+    greed: null,
+    survival: null,
+    turtle: null,
+    aggression: null,
+    variety: null,
+    elo: 1500,
+    games_played: 0,
+    wins: 0,
+    winrate: 0,
+    activity_score: 0,
+    avg_place: null,
+    game_days: 0,
+    activity_rank: null,
+    elo_rank: null,
+  };
 
-  // Если режим average — отдаём как есть
+  // Если режим average — отдаём полную карточку как есть
   if (viewMode === 'average') {
-    return res.json({
-      player: {
-        id: player.id,
-        name: player.name,
-        aka: player.aka,
-        races: avg?.races ?? [],
-        vote_count: avg?.vote_count ?? 0,
-        adaptiveness: avg?.adaptiveness ?? null,
-        greed: avg?.greed ?? null,
-        survival: avg?.survival ?? null,
-        turtle: avg?.turtle ?? null,
-        aggression: avg?.aggression ?? null,
-        variety: avg?.variety ?? null,
-      },
-    });
+    return res.json({ player: base });
   }
 
   // Режим personal — берём оценку владельца токена
@@ -158,13 +170,19 @@ overlayRouter.get('/player/:id', async (req, res) => {
     return res.status(500).json({ error: 'DB error' });
   }
 
-  if (!myRating) {
-    // Стример не оценивал этого игрока — отдаём null-значения
-    return res.json({
-      player: {
-        id: player.id,
-        name: player.name,
-        aka: player.aka,
+  // Нет своей оценки — стиль пустой, но метрики сохраняем
+  const styleOverride = myRating
+    ? {
+        races: [myRating.race],
+        vote_count: 1,
+        adaptiveness: myRating.adaptiveness,
+        greed: myRating.greed,
+        survival: myRating.survival,
+        turtle: myRating.turtle,
+        aggression: myRating.aggression,
+        variety: myRating.variety,
+      }
+    : {
         races: [],
         vote_count: 0,
         adaptiveness: null,
@@ -173,23 +191,7 @@ overlayRouter.get('/player/:id', async (req, res) => {
         turtle: null,
         aggression: null,
         variety: null,
-      },
-    });
-  }
+      };
 
-  return res.json({
-    player: {
-      id: player.id,
-      name: player.name,
-      aka: player.aka,
-      races: [myRating.race],
-      vote_count: 1,
-      adaptiveness: myRating.adaptiveness,
-      greed: myRating.greed,
-      survival: myRating.survival,
-      turtle: myRating.turtle,
-      aggression: myRating.aggression,
-      variety: myRating.variety,
-    },
-  });
+  return res.json({ player: { ...base, ...styleOverride } });
 });
