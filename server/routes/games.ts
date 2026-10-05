@@ -1,4 +1,9 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
+import os from 'node:os';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { createRequire } from 'node:module';
 import { authenticate, anonClient } from '../../lib/auth.js';
 import { logAction } from '../../lib/action-log.js';
 
@@ -44,6 +49,164 @@ function validatePlayers(input: unknown): string | null {
     }
     return null;
 }
+
+// ============================================================
+// POST /api/games/parse-replay — разобрать .SC2Replay (модератор)
+// ============================================================
+interface ReplayPlayerSummary {
+    name: string | null;
+    race: string | null;
+    result: string | null;
+    teamId: number | null;
+    toon: string | null;
+    apm: number;
+}
+
+interface ReplaySummary {
+    replayId: string;
+    patchVersion: string;
+    build: number | null;
+    durationSeconds: number;
+    playedAt: string | null;
+    playedAtMs: number | null;
+    gameType: string | null;
+    mapTitle: string | null;
+    replayType: string | null;
+    players: ReplayPlayerSummary[];
+}
+
+interface EcoSample {
+    seconds: number;
+}
+
+interface EcoTimelineResult {
+    players?: Array<{ name?: string | null }>;
+    timeline?: EcoSample[][];
+}
+
+interface ReplayLib {
+    loadReplaySummary: (p: string) => Promise<ReplaySummary>;
+    loadEcoTimeline: (p: string) => Promise<EcoTimelineResult>;
+}
+
+/**
+ * Best-effort порядок выбывания: у выбывшего игрока tracker-статистика
+ * прекращается раньше, чем заканчивается матч. Игроки, чьи события
+ * продолжаются до самого конца, считаются дожившими (не выбывшими).
+ * Возвращает map «имя игрока → номер выбывания» (1 = выбыл первым).
+ */
+function computeEliminationOrder(eco: EcoTimelineResult): Map<string, number> {
+    const order = new Map<string, number>();
+    const players = eco.players ?? [];
+    const timelines = eco.timeline ?? [];
+    if (players.length === 0 || timelines.length === 0) return order;
+
+    const lasts = players.map((_, i) => {
+        const tl = timelines[i] ?? [];
+        return tl.length > 0 ? (tl[tl.length - 1]?.seconds ?? 0) : 0;
+    });
+    const endSeconds = Math.max(...lasts, 0);
+    if (endSeconds <= 0) return order;
+
+    // Погрешность дискретизации статистики + запас, чтобы «дожившие» не считались выбывшими
+    const THRESHOLD_SECONDS = 30;
+    const eliminated = players
+        .map((p, i) => ({ name: p.name ?? null, seconds: lasts[i] ?? 0 }))
+        .filter((x): x is { name: string; seconds: number } =>
+            Boolean(x.name) && endSeconds - x.seconds > THRESHOLD_SECONDS)
+        .sort((a, b) => a.seconds - b.seconds);
+
+    eliminated.forEach((x, i) => order.set(x.name, i + 1));
+    return order;
+}
+
+// SC2Replay начинается с user-data header "MPQ\x1B" (а "MPQ\x1A" — уже заголовок
+// MPQ-архива внутри файла, по смещению). Принимаем оба варианта для совместимости.
+const MPQ_MAGIC = Buffer.from([0x4d, 0x50, 0x51]); // "MPQ"
+const MPQ_USER_DATA = 0x1b;
+const MPQ_ARCHIVE = 0x1a;
+
+// CJS-пакет парсера грузим через require (ESM-совместимо)
+const nodeRequire = createRequire(import.meta.url);
+
+gamesRouter.post(
+    '/parse-replay',
+    express.raw({ type: 'application/octet-stream', limit: '25mb' }),
+    async (req, res) => {
+        const auth = await authenticate(req);
+        if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+
+        const { data: isMod } = await auth.client.rpc('is_moderator');
+        if (!isMod) {
+            return res.status(403).json({ error: 'Moderator access required' });
+        }
+
+        const buf = req.body as unknown;
+        if (!Buffer.isBuffer(buf) || buf.length < 4) {
+            return res.status(400).json({ error: 'Replay file is required' });
+        }
+        const signature = buf[3];
+        if (!buf.subarray(0, 3).equals(MPQ_MAGIC) || (signature !== MPQ_USER_DATA && signature !== MPQ_ARCHIVE)) {
+            return res.status(400).json({ error: 'Not a valid StarCraft II replay (MPQ) file' });
+        }
+
+        let rawName = String(req.headers['x-file-name'] ?? 'replay.SC2Replay');
+        try {
+            rawName = decodeURIComponent(rawName);
+        } catch {
+            // заголовок мог прийти не в percent-encoding — оставляем как есть
+        }
+        const safeName = rawName.replace(/[^\w.\-]+/g, '_').slice(-120) || 'replay.SC2Replay';
+        const tmpPath = path.join(os.tmpdir(), `sc2rep-${randomUUID()}-${safeName}`);
+
+        try {
+            await fs.writeFile(tmpPath, buf);
+
+            // CJS-пакет парсера — грузим лениво, чтобы не тянуть его без надобности
+            const lib = nodeRequire('@replaysremastered/sc2readerjs') as ReplayLib;
+
+            const summary = await lib.loadReplaySummary(tmpPath);
+
+            // Порядок выбывания — best-effort, не ломает разбор при ошибке
+            let eliminationOrder = new Map<string, number>();
+            try {
+                const eco = await lib.loadEcoTimeline(tmpPath);
+                eliminationOrder = computeEliminationOrder(eco);
+            } catch (e) {
+                console.warn('[games] eco timeline failed:', e);
+            }
+
+            res.json({
+                replay: {
+                    replayId: summary.replayId,
+                    patchVersion: summary.patchVersion,
+                    build: summary.build,
+                    durationSeconds: summary.durationSeconds,
+                    playedAt: summary.playedAt,
+                    playedAtMs: summary.playedAtMs,
+                    gameType: summary.gameType,
+                    mapTitle: summary.mapTitle,
+                    replayType: summary.replayType,
+                    players: summary.players.map((p) => ({
+                        name: p.name,
+                        race: p.race,
+                        result: p.result,
+                        teamId: p.teamId,
+                        toon: p.toon,
+                        eliminatedOrder: p.name ? (eliminationOrder.get(p.name) ?? null) : null,
+                    })),
+                },
+            });
+        } catch (err) {
+            console.error('[games] replay parse error:', err);
+            res.status(422).json({
+                error: 'Failed to parse replay: ' + (err instanceof Error ? err.message : String(err)),
+            });
+        } finally {
+            await fs.rm(tmpPath, { force: true }).catch(() => { });
+        }
+    }
+);
 
 // ============================================================
 // GET /api/games — список игр (публичный)

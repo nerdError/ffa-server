@@ -1,4 +1,4 @@
-import { apiRequest } from '../api';
+import { apiRequest, apiUpload } from '../api';
 import { state } from '../state';
 import { t, getLocale, onLocaleChange } from '../i18n';
 import {
@@ -44,6 +44,36 @@ interface GamePlayerDraft {
     team: number | null;
     is_winner: boolean;
     eliminated_at: number | null;
+    /** Имя из реплея — показывается в автокомплите, пока игрок не сопоставлен. */
+    raw_name?: string | null;
+    /** Черновик пришёл из реплея (для валидации перед сохранением). */
+    from_replay?: boolean;
+}
+
+// ============================================================
+// Данные, разобранные из реплея SC2
+// ============================================================
+interface ReplayPrefillPlayer {
+    name: string | null;
+    race: string | null;
+    result: string | null;
+    teamId: number | null;
+    toon: string | null;
+    /** Номер выбывания (1 = выбыл первым), null — дожил до конца. */
+    eliminatedOrder?: number | null;
+}
+
+interface ReplayPrefill {
+    replayId: string;
+    patchVersion: string;
+    build: number | null;
+    durationSeconds: number;
+    playedAt: string | null;
+    playedAtMs: number | null;
+    gameType: string | null;
+    mapTitle: string | null;
+    replayType: string | null;
+    players: ReplayPrefillPlayer[];
 }
 
 let drafts: GamePlayerDraft[] = [];
@@ -153,6 +183,15 @@ export function mountGames(params: URLSearchParams): void {
     } else if (createBtn) {
         createBtn.setAttribute('hidden', '');
     }
+
+    const replayBtn = document.getElementById('btn-add-from-replay');
+    const replayInput = document.getElementById('replay-file-input') as HTMLInputElement | null;
+    replayBtn?.addEventListener('click', () => replayInput?.click(), { signal });
+    replayInput?.addEventListener('change', () => {
+        const file = replayInput.files?.[0];
+        if (file) void openReplayGameModal(file);
+        replayInput.value = '';
+    }, { signal });
 
     const searchInput = document.getElementById('games-search') as HTMLInputElement | null;
     searchInput?.addEventListener('input', () => {
@@ -270,11 +309,15 @@ export function mountGames(params: URLSearchParams): void {
 
 function updateCreateButtonVisibility(): void {
     const createBtn = document.getElementById('btn-create-game');
-    if (!createBtn) return;
-    if (state.user?.is_moderator || state.user?.is_admin) {
-        createBtn.removeAttribute('hidden');
-    } else {
-        createBtn.setAttribute('hidden', '');
+    const replayBtn = document.getElementById('btn-add-from-replay');
+    const allowed = Boolean(state.user?.is_moderator || state.user?.is_admin);
+    if (createBtn) {
+        if (allowed) createBtn.removeAttribute('hidden');
+        else createBtn.setAttribute('hidden', '');
+    }
+    if (replayBtn) {
+        if (allowed) replayBtn.removeAttribute('hidden');
+        else replayBtn.setAttribute('hidden', '');
     }
 }
 
@@ -1527,6 +1570,12 @@ function buildPlayerRow(index: number, maxTeams: number, teamMode: boolean): HTM
         }
     );
 
+    // Игрок из реплея ещё не сопоставлен с базой — подсветить
+    if (!draft.player_id && draft.raw_name) {
+        autocompleteWrap.classList.add('is-unmatched');
+        autocompleteWrap.title = t('games.replay_player_unmatched');
+    }
+
     // --- Раса ---
     const raceSelect = document.createElement('select');
     raceSelect.className = 'race-select';
@@ -1655,7 +1704,7 @@ function createPlayerAutocomplete(
 
     function refresh(): void {
         const player = cachedPlayers.find((p) => p.id === selectedPlayerId);
-        input.value = player ? player.name : '';
+        input.value = player ? player.name : (draft.raw_name ?? '');
     }
 
     function showDropdown(query: string): void {
@@ -1696,6 +1745,7 @@ function createPlayerAutocomplete(
     function selectPlayer(p: PlayerWithStats): void {
         selectedPlayerId = p.id;
         draft.player_id = p.id;
+        draft.raw_name = p.name;
         input.value = p.name;
         dropdown.classList.add('hidden');
         highlightedIndex = -1;
@@ -1709,6 +1759,7 @@ function createPlayerAutocomplete(
             selectedPlayerId = null;
             draft.player_id = null;
         }
+        draft.raw_name = input.value;
         highlightedIndex = -1;
         showDropdown(input.value);
         onSelect();
@@ -1721,7 +1772,7 @@ function createPlayerAutocomplete(
     input.addEventListener('blur', () => {
         setTimeout(() => {
             dropdown.classList.add('hidden');
-            if (selectedPlayerId === null) input.value = '';
+            if (selectedPlayerId === null) input.value = draft.raw_name ?? '';
         }, 150);
     });
 
@@ -1753,7 +1804,153 @@ function createPlayerAutocomplete(
 // ============================================================
 // Модалки
 // ============================================================
-async function openCreateGameModal(): Promise<void> {
+
+// ------------------------------------------------------------
+// Импорт игры из реплея SC2
+// ------------------------------------------------------------
+function normalizeReplayRace(race: string | null | undefined): 'T' | 'Z' | 'P' | 'R' {
+    const s = (race ?? '').trim().toLowerCase();
+    if (!s) return 'T';
+    // Реплей отдаёт название расы на языке игры — понимаем и латиницу, и кириллицу
+    if (s.startsWith('z') || s.startsWith('зерг')) return 'Z';
+    if (s.startsWith('p') || s.startsWith('протосс')) return 'P';
+    if (s.startsWith('r') || s.startsWith('случайн') || s.startsWith('рандом')) return 'R';
+    if (s.startsWith('t') || s.startsWith('терр')) return 'T';
+    return 'T';
+}
+
+/**
+ * Убирает клан-тег из ника SC2: `<FFA> Name`, `[FFA] Name`, `{FFA} Name`, `|FFA| Name`.
+ * Если после снятия тега ничего не осталось — возвращает исходное имя.
+ */
+function stripClanTag(name: string): string {
+    let s = name.trim();
+    let prev = '';
+    while (s && prev !== s) {
+        prev = s;
+        s = s.replace(/^(<[^<>]{1,24}>|\[[^\[\]]{1,24}\]|\{[^{}]{1,24}\}|\|[^|]{1,24}\|)\s*/, '').trim();
+    }
+    return s || name.trim();
+}
+
+function matchCachedPlayer(name: string | null): PlayerWithStats | undefined {
+    if (!name) return undefined;
+    const full = name.trim();
+    if (!full) return undefined;
+    const clean = stripClanTag(full);
+    const candidates = new Set([full.toLowerCase(), clean.toLowerCase()]);
+
+    return cachedPlayers.find((p) => {
+        const pName = p.name.trim().toLowerCase();
+        const pAka = (p.aka ?? '').trim().toLowerCase();
+        return candidates.has(pName)
+            || (pAka !== '' && candidates.has(pAka))
+            || candidates.has(stripClanTag(p.name).toLowerCase())
+            || (pAka !== '' && candidates.has(stripClanTag(p.aka ?? '').toLowerCase()));
+    });
+}
+
+/**
+ * Заполняет открытую форму данными из реплея.
+ * Формат/ведущий/мод остаются из последних настроек — их в реплее нет.
+ */
+function applyReplayPrefill(prefill: ReplayPrefill): void {
+    if (playedAtInput) {
+        playedAtInput.value = prefill.playedAtMs
+            ? toDatetimeLocal(new Date(prefill.playedAtMs))
+            : toDatetimeLocal(new Date());
+    }
+    if (durationInput && prefill.durationSeconds > 0) {
+        durationInput.value = String(Math.max(1, Math.round(prefill.durationSeconds / 60)));
+    }
+
+    // Карта — сопоставляем по названию из реплея
+    if (mapSelect && prefill.mapTitle) {
+        const target = prefill.mapTitle.trim().toLowerCase();
+        const match = cachedMaps.find((m) => m.name.trim().toLowerCase() === target);
+        if (match) mapSelect.value = String(match.id);
+    }
+
+    // Командный режим — если в реплее есть >= 2 равных команд по >= 2 игрока
+    const teamIds = [...new Set(
+        prefill.players
+            .map((p) => p.teamId)
+            .filter((id): id is number => id !== null)
+    )];
+    let teamMode = false;
+    let teamSize = 2;
+    if (teamIds.length >= 2) {
+        const sizes = teamIds.map(
+            (id) => prefill.players.filter((p) => p.teamId === id).length
+        );
+        const firstSize = sizes[0] ?? 0;
+        if (firstSize >= 2 && sizes.every((s) => s === firstSize)) {
+            teamMode = true;
+            teamSize = firstSize;
+        }
+    }
+    if (isTeamCheckbox) isTeamCheckbox.checked = teamMode;
+    if (teamSizeSelect) teamSizeSelect.value = String(Math.min(4, Math.max(2, teamSize)));
+    updateTeamModeVisibility();
+
+    drafts = prefill.players.map((p) => {
+        const matched = matchCachedPlayer(p.name);
+        const cleanName = p.name ? stripClanTag(p.name) : null;
+        const elim = !teamMode && typeof p.eliminatedOrder === 'number' && p.eliminatedOrder > 0
+            ? p.eliminatedOrder
+            : null;
+        return {
+            player_id: matched?.id ?? null,
+            race: normalizeReplayRace(p.race),
+            team: teamMode && p.teamId !== null ? p.teamId : null,
+            is_winner: p.result === 'win',
+            eliminated_at: elim,
+            raw_name: cleanName ?? p.name ?? null,
+            from_replay: true,
+        };
+    });
+}
+
+async function openReplayGameModal(file: File): Promise<void> {
+    if (file.size > 25 * 1024 * 1024) {
+        alert(t('games.replay_too_large'));
+        return;
+    }
+
+    const btn = document.getElementById('btn-add-from-replay') as HTMLButtonElement | null;
+    const originalText = btn?.textContent ?? '';
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = t('games.replay_parsing');
+    }
+
+    try {
+        const res = await apiUpload<{ replay: ReplayPrefill }>(
+            '/api/games/parse-replay',
+            file,
+            file.name,
+            state.token,
+            abortController?.signal
+        );
+        await openCreateGameModal(res.replay);
+        alert(t('games.replay_prefilled'));
+    } catch (err) {
+        alert(t('games.replay_parse_error') + (err instanceof Error ? err.message : String(err)));
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText;
+            applyTranslationsToButton(btn);
+        }
+    }
+}
+
+/** Возвращает кнопке перевод после временного текста «Разбор реплея…». */
+function applyTranslationsToButton(btn: HTMLButtonElement): void {
+    if (btn.dataset.i18n === 'games.from_replay') btn.textContent = t('games.from_replay');
+}
+
+async function openCreateGameModal(prefill?: ReplayPrefill): Promise<void> {
     if (!modal) return;
     editingGameId = null;
     isDirty = false;
@@ -1768,7 +1965,7 @@ async function openCreateGameModal(): Promise<void> {
     fillSelect(modSelect, cachedMods, t('games.select_placeholder'));
 
     const useLastCheckbox = document.getElementById('field-use-last') as HTMLInputElement | null;
-    const useLast = useLastCheckbox?.checked ?? true;
+    const useLast = !prefill && (useLastCheckbox?.checked ?? true);
     const lastGame = useLast ? loadLastGameSettings() : null;
 
     if (lastGame) {
@@ -1824,6 +2021,8 @@ async function openCreateGameModal(): Promise<void> {
     }
 
     if (notesInput) notesInput.value = '';
+
+    if (prefill) applyReplayPrefill(prefill);
 
     normalizeEliminatedAt();
     renderPlayerDrafts();
@@ -1915,6 +2114,12 @@ async function submitGameForm(e: Event): Promise<void> {
         for (const d of drafts) {
             d.eliminated_at = null;
         }
+    }
+
+    const unresolved = drafts.filter((d) => d.from_replay && !d.player_id && d.raw_name);
+    if (unresolved.length > 0) {
+        alert(t('games.replay_unresolved', { names: unresolved.map((d) => d.raw_name).join(', ') }));
+        return;
     }
 
     const filledPlayers = drafts.filter((d) => d.player_id !== null);

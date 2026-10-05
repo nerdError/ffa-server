@@ -1044,6 +1044,12 @@
     width: 100%;
 }
 
+/* Игрок из реплея, ещё не сопоставленный с базой */
+.player-autocomplete.is-unmatched input {
+    border-color: rgba(241, 196, 15, 0.6);
+    box-shadow: 0 0 6px rgba(241, 196, 15, 0.2);
+}
+
 .player-autocomplete-dropdown {
     position: absolute;
     top: calc(100% + 2px);

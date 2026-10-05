@@ -84,6 +84,60 @@ export async function apiRequest<T>(
     return payload as T;
 }
 
+/**
+ * Загрузка бинарного файла (raw body) с авто-refresh при 401.
+ * Используется, например, для разбора реплеев SC2.
+ */
+export async function apiUpload<T>(
+    path: string,
+    file: Blob,
+    filename: string,
+    token?: string | null,
+    signal?: AbortSignal
+): Promise<T> {
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/octet-stream',
+        // HTTP-заголовки должны быть ISO-8859-1 → экранируем имя файла (кириллица и т.п.)
+        'X-File-Name': encodeURIComponent(filename),
+    };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const init: RequestInit = { method: 'POST', headers, body: file };
+    if (signal !== undefined) init.signal = signal;
+
+    let res = await fetch(path, init);
+
+    if (res.status === 401 && token && state.refreshToken) {
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+            res = await fetch(path, {
+                ...init,
+                headers: { ...headers, Authorization: `Bearer ${newToken}` },
+            });
+        }
+    }
+
+    let payload: unknown = null;
+    const text = await res.text();
+    if (text) {
+        try {
+            payload = JSON.parse(text);
+        } catch {
+            payload = { error: text };
+        }
+    }
+
+    if (!res.ok) {
+        const message =
+            payload && typeof payload === 'object' && 'error' in payload
+                ? String((payload as ApiError).error)
+                : `HTTP ${res.status}`;
+        throw new ApiRequestError(message, res.status);
+    }
+
+    return payload as T;
+}
+
 let isRefreshing = false;
 let refreshPromise: Promise<string | null> | null = null;
 
