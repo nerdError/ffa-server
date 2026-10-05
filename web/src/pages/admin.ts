@@ -14,7 +14,7 @@ import {
     type GameHost,
 } from '../api/game-refs';
 
-type Role = 'moderator' | 'admin';
+type Role = 'moderator' | 'admin' | 'ghost';
 
 interface AdminUser {
     id: string;
@@ -261,6 +261,12 @@ function renderUsers(users: AdminUser[]): void {
     }
 }
 
+function roleBadgeLabel(role: Role): string {
+    if (role === 'admin') return `★ ${t('topbar.role_admin')}`;
+    if (role === 'ghost') return `👻 ${t('topbar.role_ghost')}`;
+    return `◆ ${t('topbar.role_moderator')}`;
+}
+
 function buildUserCard(u: AdminUser): HTMLElement {
     const card = document.createElement('div');
     card.className = 'admin-user-card';
@@ -296,9 +302,7 @@ function buildUserCard(u: AdminUser): HTMLElement {
         for (const r of u.roles) {
             const badge = document.createElement('span');
             badge.className = `role-badge role-badge--${r}`;
-            badge.textContent = r === 'admin'
-                ? `★ ${t('topbar.role_admin')}`
-                : `◆ ${t('topbar.role_moderator')}`;
+            badge.textContent = roleBadgeLabel(r);
             rolesWrap.appendChild(badge);
         }
         info.appendChild(rolesWrap);
@@ -328,6 +332,16 @@ function buildUserCard(u: AdminUser): HTMLElement {
     adminBtn.addEventListener('click', () => void toggleRole(u, 'admin', isAdmin));
     actions.appendChild(adminBtn);
 
+    const isGhost = u.roles.includes('ghost');
+    const ghostBtn = document.createElement('button');
+    ghostBtn.type = 'button';
+    ghostBtn.className = isGhost
+        ? 'admin-role-btn admin-role-btn--ghost is-active'
+        : 'admin-role-btn admin-role-btn--ghost';
+    ghostBtn.textContent = isGhost ? `👻 ${t('admin.revoke_ghost')}` : `👻 ${t('admin.grant_ghost')}`;
+    ghostBtn.addEventListener('click', () => void toggleRole(u, 'ghost', isGhost));
+    actions.appendChild(ghostBtn);
+
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.className = 'admin-user-delete-btn';
@@ -342,7 +356,7 @@ function buildUserCard(u: AdminUser): HTMLElement {
 
 async function toggleRole(user: AdminUser, role: Role, currentlyHas: boolean): Promise<void> {
     const action = currentlyHas ? 'revoke' : 'grant';
-    const roleName = role === 'admin' ? 'ADMIN' : 'MOD';
+    const roleName = role === 'admin' ? 'ADMIN' : role === 'ghost' ? 'GHOST' : 'MOD';
 
     if (!confirm(t('admin.role_toggle_confirm', { role: roleName, email: user.email }))) return;
 

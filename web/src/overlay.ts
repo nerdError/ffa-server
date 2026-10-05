@@ -23,7 +23,7 @@ interface OverlaySettings {
     animation: AnimationType;
     autoHide: boolean;
     autoHideDelay: number;
-    viewMode: 'average' | 'personal';
+    viewMode: 'average' | 'personal' | 'ghost';
 }
 
 interface OverlayState {

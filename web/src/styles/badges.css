@@ -33,3 +33,11 @@
   color: #e74c3c;
   text-shadow: 0 0 6px rgba(231, 76, 60, 0.4);
 }
+
+/* GHOST — голубой */
+.role-badge.role-badge--ghost {
+  background: rgba(127, 219, 255, 0.12);
+  border-color: rgba(127, 219, 255, 0.6);
+  color: #7fdbff;
+  text-shadow: 0 0 6px rgba(127, 219, 255, 0.4);
+}

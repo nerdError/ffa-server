@@ -88,6 +88,73 @@
   gap: 6px;
 }
 
+/* Раскрывающийся список остальных игр */
+.player-games-details {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.player-games-toggle {
+  appearance: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  user-select: none;
+  padding: 6px 0;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  transition: color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+}
+
+.player-games-toggle::before {
+  content: '▸';
+  font-size: 0.9rem;
+  transition: transform 0.25s ease;
+  color: var(--gold);
+  display: inline-block;
+}
+
+.player-games-details.is-open .player-games-toggle::before {
+  transform: rotate(90deg);
+}
+
+.player-games-toggle:hover {
+  color: var(--text-primary);
+}
+
+.player-games-expandable {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease, opacity 0.25s ease;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.player-games-details.is-open .player-games-expandable {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.player-games-expandable > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.player-games-rest {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+}
+
 .game-row {
   display: grid;
   grid-template-columns: 80px 1fr auto auto;

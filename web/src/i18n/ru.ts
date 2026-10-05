@@ -37,6 +37,8 @@ export const ru: Record<TranslationKey, string> = {
     'player.games_favorite_format': 'Любимый формат',
     'player.games_result_win': 'Победа',
     'player.games_load_error': 'Не удалось загрузить игры',
+    'player.games_show_all': 'Показать все',
+    'player.games_hide_all': 'Скрыть',
 
     'games.title': 'Игры',
     'games.search_placeholder': 'Поиск по игроку, карте, хосту…',
@@ -88,6 +90,7 @@ export const ru: Record<TranslationKey, string> = {
     'topbar.guest': 'Вы не авторизованы',
     'topbar.role_admin': 'ADMIN',
     'topbar.role_moderator': 'MOD',
+    'topbar.role_ghost': 'GHOST',
 
     'nav.players': 'Игроки',
     'nav.games': 'Игры',
@@ -195,6 +198,11 @@ export const ru: Record<TranslationKey, string> = {
     'player.edit_save': 'Сохранить',
     'player.edit_cancel': 'Отмена',
     'player.next_player': 'Следующий',
+    'player.card_mode_average': 'Средняя',
+    'player.card_mode_mine': 'Моя',
+    'player.card_mode_ghost': 'По GHOSTу',
+    'player.card_mode_no_rating': 'У вас пока нет оценки этого игрока',
+    'player.card_mode_no_ghost': 'Пока нет оценок от пользователей с ролью GHOST',
 
     // Оценки
     'ratings.title': 'Оценки пользователей',
@@ -240,6 +248,7 @@ export const ru: Record<TranslationKey, string> = {
     'control.view_mode_label': 'Режим показа',
     'control.view_mode_average': 'Средние оценки',
     'control.view_mode_personal': 'Мои оценки',
+    'control.view_mode_ghost': 'Оценка по GHOSTу',
     'control.token_error': 'Ошибка загрузки токена',
     'control.show_error': 'Не удалось показать: ',
     'control.hide_error': 'Не удалось скрыть: ',
@@ -258,6 +267,8 @@ export const ru: Record<TranslationKey, string> = {
     'admin.revoke_mod': 'Забрать MOD',
     'admin.grant_admin': 'Выдать ADMIN',
     'admin.revoke_admin': 'Забрать ADMIN',
+    'admin.grant_ghost': 'Выдать GHOST',
+    'admin.revoke_ghost': 'Забрать GHOST',
     'admin.role_toggle_confirm': 'Роль {role} у {email}?',
     'admin.role_toggle_error': 'Не удалось изменить роль: ',
     'admin.user_no_username': '— без ника —',

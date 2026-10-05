@@ -7,11 +7,21 @@ import {
     renderRatingsList,
 } from './ratings';
 import { applyTranslations, getLocale, onLocaleChange, t } from '../i18n';
+import type { TranslationKey } from '../i18n/types';
+
+type CardViewMode = 'average' | 'personal' | 'ghost';
+
+const CARD_MODE_STORAGE = 'playerCardMode';
+
+function readCardViewMode(): CardViewMode {
+    const raw = localStorage.getItem(CARD_MODE_STORAGE);
+    return raw === 'personal' || raw === 'ghost' ? raw : 'average';
+}
 
 onLocaleChange(() => {
     applyTranslations();
-    // if (lastPlayerId) loadPlayerDetail(lastPlayerId);
-    if (lastPane && lastPlayer) renderCard(lastPane, lastPlayer)
+    if (lastPane && lastPlayer) renderCard(lastPane, lastPlayer);
+    buildCardModeToggle();
 });
 
 export async function openPlayerScreen(playerId: number): Promise<void> {
@@ -122,8 +132,13 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
             `/api/players/${playerId}`
         );
 
-        // Карточка
-        renderCard(pane, player);
+        // Данные для переключателя оценок над карточкой
+        lastPlayerId = playerId;
+        lastBasePlayer = player;
+        buildCardModeToggle();
+
+        // Карточка в выбранном режиме (средняя / моя / по GHOSTу)
+        await renderCardForMode(pane, playerId, cardViewMode);
 
         // Залогинен ли пользователь
         const isAuthed = Boolean(state.token && state.user);
@@ -367,6 +382,9 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
             // Открываем панель сразу
             editPane.classList.add('is-open');
 
+            // Пока идёт редактирование — прячем переключатель режимов
+            document.getElementById('player-mode-toggle')?.classList.add('hidden');
+
             // Загружаем начальные данные
             const initial = await fetchInitialRating(playerId, player.dominant_race ?? null);
 
@@ -440,6 +458,110 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
 
 let lastPane: HTMLElement | null = null;
 let lastPlayer: PlayerWithStats | null = null;
+let lastPlayerId: number | null = null;
+let lastBasePlayer: PlayerWithStats | null = null;
+let cardViewMode: CardViewMode = readCardViewMode();
+
+const CARD_MODES: { mode: CardViewMode; key: TranslationKey }[] = [
+    { mode: 'average', key: 'player.card_mode_average' },
+    { mode: 'personal', key: 'player.card_mode_mine' },
+    { mode: 'ghost', key: 'player.card_mode_ghost' },
+];
+
+function buildCardModeToggle(): void {
+    const container = document.getElementById('player-mode-toggle');
+    if (!container) return;
+    if (lastPlayerId === null) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.classList.remove('hidden');
+    container.innerHTML = '';
+
+    const isAuthed = Boolean(state.token && state.user);
+
+    for (const item of CARD_MODES) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `player-mode-btn${cardViewMode === item.mode ? ' is-active' : ''}`;
+        btn.textContent = t(item.key);
+
+        if (item.mode === 'personal' && !isAuthed) {
+            btn.disabled = true;
+            btn.title = t('player.login_to_rate');
+        }
+
+        btn.addEventListener('click', () => {
+            if (cardViewMode === item.mode) return;
+            cardViewMode = item.mode;
+            localStorage.setItem(CARD_MODE_STORAGE, item.mode);
+            buildCardModeToggle();
+            if (lastPane && lastPlayerId !== null) {
+                void renderCardForMode(lastPane, lastPlayerId, item.mode);
+            }
+        });
+
+        container.appendChild(btn);
+    }
+}
+
+function renderNoRatingHint(pane: HTMLElement, key: TranslationKey): void {
+    lastPlayer = null;
+    pane.innerHTML = '';
+    const hint = document.createElement('p');
+    hint.className = 'hint fade-in';
+    hint.textContent = t(key);
+    pane.appendChild(hint);
+}
+
+async function renderCardForMode(
+    pane: HTMLElement,
+    playerId: number,
+    mode: CardViewMode
+): Promise<void> {
+    // «Моя» недоступна без авторизации — показываем среднюю.
+    if (mode === 'personal' && !(state.token && state.user)) {
+        mode = 'average';
+    }
+
+    if (mode === 'average') {
+        if (lastBasePlayer) {
+            renderCard(pane, lastBasePlayer);
+            return;
+        }
+        try {
+            const { player } = await apiRequest<PlayerResponse>(`/api/players/${playerId}`);
+            lastBasePlayer = player;
+            renderCard(pane, player);
+        } catch {
+            /* оставляем как есть */
+        }
+        return;
+    }
+
+    try {
+        const { player } = await apiRequest<PlayerResponse>(
+            `/api/players/${playerId}/stats?mode=${mode}`,
+            { token: state.token }
+        );
+
+        if (mode === 'personal' && (!Array.isArray(player.races) || player.vote_count === 0)) {
+            renderNoRatingHint(pane, 'player.card_mode_no_rating');
+            return;
+        }
+
+        if (mode === 'ghost' && player.vote_count === 0) {
+            renderNoRatingHint(pane, 'player.card_mode_no_ghost');
+            return;
+        }
+
+        renderCard(pane, player);
+    } catch {
+        // При ошибке откатываемся к средней.
+        if (lastBasePlayer) renderCard(pane, lastBasePlayer);
+    }
+}
 
 function renderCard(pane: HTMLElement, player: PlayerWithStats): void {
     lastPane = pane;
@@ -580,15 +702,54 @@ function renderPlayerGamesContent(
 
     card.appendChild(summary);
 
-    // Список последних игр
+    // Список последних игр: показываем 3, остальные — раскрываются по кнопке
+    const VISIBLE_GAMES = 3;
+
+    const renderRow = (g: GameListItem): HTMLElement =>
+        buildGameRow(
+            g,
+            playerId,
+            g.participants.find((p) => p.player_id === playerId)?.player_name ?? ''
+        );
+
     const list = document.createElement('div');
     list.className = 'player-games-list';
 
-    for (const g of games) {
-        list.appendChild(buildGameRow(g, playerId, g.participants.find(p => p.player_id === playerId)?.player_name ?? ''));
+    for (const g of games.slice(0, VISIBLE_GAMES)) {
+        list.appendChild(renderRow(g));
+    }
+    card.appendChild(list);
+
+    if (games.length > VISIBLE_GAMES) {
+        const details = document.createElement('div');
+        details.className = 'player-games-details';
+
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'player-games-toggle';
+        toggle.textContent = t('player.games_show_all');
+
+        const expandable = document.createElement('div');
+        expandable.className = 'player-games-expandable';
+
+        const restList = document.createElement('div');
+        restList.className = 'player-games-rest';
+        for (const g of games.slice(VISIBLE_GAMES)) {
+            restList.appendChild(renderRow(g));
+        }
+
+        expandable.appendChild(restList);
+        details.append(toggle, expandable);
+        card.appendChild(details);
+
+        toggle.addEventListener('click', () => {
+            const open = details.classList.toggle('is-open');
+            toggle.textContent = open
+                ? t('player.games_hide_all')
+                : t('player.games_show_all');
+        });
     }
 
-    card.appendChild(list);
     container.appendChild(card);
 }
 

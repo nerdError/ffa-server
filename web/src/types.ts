@@ -74,6 +74,7 @@ export interface Rating {
     username: string;
     is_moderator: boolean;
     is_admin: boolean;
+    is_ghost: boolean;
     race: Race;
     adaptiveness: number;
     greed: number;
@@ -117,6 +118,7 @@ export interface AuthUser {
     username?: string | null;
     is_moderator?: boolean;
     is_admin?: boolean;
+    is_ghost?: boolean;
     player_id?: number | null;
     player_name?: string | null;
 }

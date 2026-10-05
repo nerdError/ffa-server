@@ -1,8 +1,13 @@
 import { Router } from 'express';
 import { anonClient, authenticate } from '../../lib/auth.js';
 import { logAction } from '../../lib/action-log.js';
+import { getPlayerWithStatsMode, type StatsMode } from '../player-stats.js';
 
 export const playersRouter = Router();
+
+function parseStatsMode(raw: unknown): StatsMode {
+  return raw === 'ghost' || raw === 'personal' ? raw : 'average';
+}
 
 // GET /api/players — список со средними (публичный)
 playersRouter.get('/', async (_req, res) => {
@@ -53,6 +58,33 @@ playersRouter.post('/', async (req, res) => {
 
   return res.status(201).json({ player: data });
 });
+// GET /api/players/:id/stats?mode=average|personal|ghost
+// Карточка игрока с выбранным источником оценок стиля.
+playersRouter.get('/:id/stats', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid id' });
+  }
+
+  const mode = parseStatsMode(req.query.mode);
+
+  let userId: string | null = null;
+  if (mode === 'personal') {
+    const auth = await authenticate(req);
+    if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+    userId = auth.user.id;
+  }
+
+  try {
+    const player = await getPlayerWithStatsMode(id, mode, userId);
+    if (!player) return res.status(404).json({ error: 'Player not found' });
+    return res.status(200).json({ player });
+  } catch (err) {
+    console.error('[players/stats] error:', err);
+    return res.status(500).json({ error: 'DB error' });
+  }
+});
+
 // GET /api/players/:id — один игрок со средними (публичный)
 playersRouter.get('/:id', async (req, res) => {
   const id = Number(req.params.id);

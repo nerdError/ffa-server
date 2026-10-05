@@ -35,6 +35,7 @@ export async function ensureRolesLoaded(): Promise<void> {
           username: string | null;
           is_moderator: boolean;
           is_admin: boolean;
+          is_ghost: boolean;
         };
       }>('/api/auth/me', { token: state.token });
 
@@ -45,6 +46,7 @@ export async function ensureRolesLoaded(): Promise<void> {
           username: me.user.username,
           is_moderator: me.user.is_moderator,
           is_admin: me.user.is_admin,
+          is_ghost: me.user.is_ghost,
         },
         state.token!,
       );
@@ -105,6 +107,11 @@ export function renderUserBox(): void {
             const badge = document.createElement('span');
             badge.className = 'role-badge role-badge--admin';
             badge.textContent = `★ ${t('topbar.role_admin')}`;
+            nameWrap.appendChild(badge);
+        } else if (state.user.is_ghost) {
+            const badge = document.createElement('span');
+            badge.className = 'role-badge role-badge--ghost';
+            badge.textContent = `👻 ${t('topbar.role_ghost')}`;
             nameWrap.appendChild(badge);
         } else if (state.user.is_moderator) {
             const badge = document.createElement('span');

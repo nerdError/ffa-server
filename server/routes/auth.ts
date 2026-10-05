@@ -173,6 +173,7 @@ authRouter.get('/me', async (req, res) => {
 
   const { data: isMod } = await auth.client.rpc('is_moderator');
   const { data: isAdmin } = await auth.client.rpc('is_admin');
+  const { data: isGhost } = await auth.client.rpc('is_ghost');
 
   return res.status(200).json({
     user: {
@@ -181,6 +182,7 @@ authRouter.get('/me', async (req, res) => {
       username: profile?.username ?? null,
       is_moderator: Boolean(isMod),
       is_admin: Boolean(isAdmin),
+      is_ghost: Boolean(isGhost),
       player_id: linkedPlayer?.id ?? null,
       player_name: linkedPlayer?.name ?? null,
     },

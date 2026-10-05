@@ -24,6 +24,7 @@ async function fetchAndSaveFullUser(
                 username: string | null;
                 is_moderator: boolean;
                 is_admin: boolean;
+                is_ghost: boolean;
                 player_id: number | null;
                 player_name: string | null;
             };
@@ -36,6 +37,7 @@ async function fetchAndSaveFullUser(
                 username: me.user.username,
                 is_moderator: me.user.is_moderator,
                 is_admin: me.user.is_admin,
+                is_ghost: me.user.is_ghost,
                 player_id: me.user.player_id,
                 player_name: me.user.player_name,
             },

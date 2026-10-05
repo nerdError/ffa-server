@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getState, addSubscriber, debugStats } from '../overlay-state.js';
+import { getPlayerWithStatsMode, type StatsMode } from '../player-stats.js';
 import { supabaseAdmin } from '../../lib/supabase-admin';
 
 export const overlayRouter = Router();
@@ -81,8 +82,9 @@ overlayRouter.get('/debug', (_req, res) => {
 // ============================================================
 // GET /api/overlay/player/:id?token=...
 // Возвращает игрока в зависимости от viewMode:
-//  - average: средние (то же, что /api/players/:id)
+//  - average:  средние (то же, что /api/players/:id)
 //  - personal: оценки владельца токена
+//  - ghost:    средняя только по пользователям с ролью GHOST
 // ============================================================
 overlayRouter.get('/player/:id', async (req, res) => {
   const token = String(req.query.token ?? '');
@@ -100,98 +102,16 @@ overlayRouter.get('/player/:id', async (req, res) => {
   const state = getState(userId);
   const viewMode = state.settings.viewMode ?? 'average';
 
-  // Загружаем базовые данные игрока (имя, aka)
-  const { data: player, error: playerErr } = await supabaseAdmin
-    .from('players')
-    .select('id, name, aka')
-    .eq('id', playerId)
-    .maybeSingle();
-
-  if (playerErr) {
-    console.error('[overlay/player] player error:', playerErr);
+  try {
+    const player = await getPlayerWithStatsMode(
+      playerId,
+      viewMode as StatsMode,
+      viewMode === 'personal' ? userId : null
+    );
+    if (!player) return res.status(404).json({ error: 'Player not found' });
+    return res.json({ player });
+  } catch (err) {
+    console.error('[overlay/player] stats error:', err);
     return res.status(500).json({ error: 'DB error' });
   }
-  if (!player) return res.status(404).json({ error: 'Player not found' });
-
-  // Получаем расы и средние для игрока
-  const { data: stats, error: statsErr } = await supabaseAdmin.rpc(
-    'get_player_with_stats',
-    { p_id: playerId }
-  );
-
-  if (statsErr) {
-    console.error('[overlay/player] stats error:', statsErr);
-    return res.status(500).json({ error: 'DB error' });
-  }
-
-  // Полная карточка: стиль игры + метрики (elo, games, wins, winrate,
-  // activity, avg_place, game_days, ранги). В personal-режиме переопределяем
-  // только оценки стиля и расы, а метрики берём из общей статистики.
-  const base = stats?.[0] ?? {
-    id: player.id,
-    name: player.name,
-    aka: player.aka,
-    user_id: null,
-    races: [],
-    dominant_race: null,
-    vote_count: 0,
-    adaptiveness: null,
-    greed: null,
-    survival: null,
-    turtle: null,
-    aggression: null,
-    variety: null,
-    elo: 1500,
-    games_played: 0,
-    wins: 0,
-    winrate: 0,
-    activity_score: 0,
-    avg_place: null,
-    game_days: 0,
-    activity_rank: null,
-    elo_rank: null,
-  };
-
-  // Если режим average — отдаём полную карточку как есть
-  if (viewMode === 'average') {
-    return res.json({ player: base });
-  }
-
-  // Режим personal — берём оценку владельца токена
-  const { data: myRating, error: myErr } = await supabaseAdmin
-    .from('ratings')
-    .select('race, adaptiveness, greed, survival, turtle, aggression, variety')
-    .eq('player_id', playerId)
-    .eq('user_id', userId)
-    .maybeSingle();
-
-  if (myErr) {
-    console.error('[overlay/player] rating error:', myErr);
-    return res.status(500).json({ error: 'DB error' });
-  }
-
-  // Нет своей оценки — стиль пустой, но метрики сохраняем
-  const styleOverride = myRating
-    ? {
-        races: [myRating.race],
-        vote_count: 1,
-        adaptiveness: myRating.adaptiveness,
-        greed: myRating.greed,
-        survival: myRating.survival,
-        turtle: myRating.turtle,
-        aggression: myRating.aggression,
-        variety: myRating.variety,
-      }
-    : {
-        races: [],
-        vote_count: 0,
-        adaptiveness: null,
-        greed: null,
-        survival: null,
-        turtle: null,
-        aggression: null,
-        variety: null,
-      };
-
-  return res.json({ player: { ...base, ...styleOverride } });
 });

@@ -234,6 +234,8 @@
         <section id="screen-player" class="screen hidden">
             <button id="btn-back" class="btn-secondary" data-i18n="player.back">← Назад</button>
 
+            <div id="player-mode-toggle" class="player-mode-toggle"></div>
+
             <div class="player-stage" id="player-stage">
                 <div class="player-card-pane" id="player-card-pane"></div>
                 <aside class="player-edit-pane" id="player-edit-pane">
@@ -355,6 +357,7 @@
                         <select id="setting-view-mode" class="control-select">
                             <option value="average" data-i18n="control.view_mode_average">Средние оценки</option>
                             <option value="personal" data-i18n="control.view_mode_personal">Мои оценки</option>
+                            <option value="ghost" data-i18n="control.view_mode_ghost">Оценки GHOST</option>
                         </select>
                     </label>
                     <label class="control-label">

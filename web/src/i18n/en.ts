@@ -70,6 +70,8 @@ export const en: Record<TranslationKey, string> = {
     'player.games_favorite_format': 'Favorite format',
     'player.games_result_win': 'Win',
     'player.games_load_error': 'Failed to load games',
+    'player.games_show_all': 'Show all',
+    'player.games_hide_all': 'Hide',
 
     'games.title': 'Games',
     'games.search_placeholder': 'Search by player, map, host…',
@@ -88,6 +90,7 @@ export const en: Record<TranslationKey, string> = {
     'topbar.guest': 'You are not logged in',
     'topbar.role_admin': 'ADMIN',
     'topbar.role_moderator': 'MOD',
+    'topbar.role_ghost': 'GHOST',
 
     'nav.players': 'Players',
     'nav.games': 'Games',
@@ -195,6 +198,11 @@ export const en: Record<TranslationKey, string> = {
     'player.edit_save': 'Save',
     'player.edit_cancel': 'Cancel',
     'player.next_player': 'Next',
+    'player.card_mode_average': 'Average',
+    'player.card_mode_mine': 'Mine',
+    'player.card_mode_ghost': 'By GHOST',
+    'player.card_mode_no_rating': 'You have not rated this player yet',
+    'player.card_mode_no_ghost': 'No ratings from GHOST users yet',
 
     // Ratings
     'ratings.title': 'User ratings',
@@ -240,6 +248,7 @@ export const en: Record<TranslationKey, string> = {
     'control.view_mode_label': 'View mode',
     'control.view_mode_average': 'Average ratings',
     'control.view_mode_personal': 'My ratings',
+    'control.view_mode_ghost': 'GHOST rating',
     'control.token_error': 'Failed to load token',
     'control.show_error': 'Failed to show: ',
     'control.hide_error': 'Failed to hide: ',
@@ -258,6 +267,8 @@ export const en: Record<TranslationKey, string> = {
     'admin.revoke_mod': 'Revoke MOD',
     'admin.grant_admin': 'Grant ADMIN',
     'admin.revoke_admin': 'Revoke ADMIN',
+    'admin.grant_ghost': 'Grant GHOST',
+    'admin.revoke_ghost': 'Revoke GHOST',
     'admin.role_toggle_confirm': 'Role {role} for {email}?',
     'admin.role_toggle_error': 'Failed to change role: ',
     'admin.user_no_username': '— no username —',

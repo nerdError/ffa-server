@@ -155,6 +155,17 @@
   color: #e74c3c;
 }
 
+.admin-role-btn--ghost:hover {
+  border-color: #7fdbff;
+  color: #7fdbff;
+}
+
+.admin-role-btn--ghost.is-active {
+  background: rgba(127, 219, 255, 0.12);
+  border-color: #7fdbff;
+  color: #7fdbff;
+}
+
 /* =========================================
    Таблица игроков
    ========================================= */

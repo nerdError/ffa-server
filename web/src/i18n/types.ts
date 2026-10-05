@@ -89,6 +89,8 @@ export type TranslationKey =
     | 'player.games_favorite_format'
     | 'player.games_result_win'
     | 'player.games_load_error'
+    | 'player.games_show_all'
+    | 'player.games_hide_all'
 
     | 'players.col.elo'
 
@@ -109,6 +111,7 @@ export type TranslationKey =
     | 'topbar.guest'
     | 'topbar.role_admin'
     | 'topbar.role_moderator'
+    | 'topbar.role_ghost'
 
     | 'nav.players'
     | 'nav.games'
@@ -194,6 +197,11 @@ export type TranslationKey =
     | 'player.edit_save'
     | 'player.edit_cancel'
     | 'player.next_player'
+    | 'player.card_mode_average'
+    | 'player.card_mode_mine'
+    | 'player.card_mode_ghost'
+    | 'player.card_mode_no_rating'
+    | 'player.card_mode_no_ghost'
 
     // Оценки
     | 'ratings.title'
@@ -239,6 +247,7 @@ export type TranslationKey =
     | 'control.view_mode_label'
     | 'control.view_mode_average'
     | 'control.view_mode_personal'
+    | 'control.view_mode_ghost'
     | 'control.token_error'
     | 'control.show_error'
     | 'control.hide_error'
@@ -257,6 +266,8 @@ export type TranslationKey =
     | 'admin.revoke_mod'
     | 'admin.grant_admin'
     | 'admin.revoke_admin'
+    | 'admin.grant_ghost'
+    | 'admin.revoke_ghost'
     | 'admin.role_toggle_confirm'
     | 'admin.role_toggle_error'
     | 'admin.user_no_username'

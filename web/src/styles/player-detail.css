@@ -299,3 +299,57 @@
   min-height: 100px;
   transition: opacity 0.3s ease;
 }
+
+/* =========================================
+   Переключатель режима карточки (над карточкой)
+   ========================================= */
+.player-mode-toggle {
+  display: flex;
+  justify-content: center;
+  margin: 12px auto 4px;
+  padding: 0 16px;
+  min-height: 40px;
+}
+
+.player-mode-btn {
+  padding: 8px 18px;
+  background: transparent;
+  border: 1.5px solid var(--border-glow);
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.player-mode-btn + .player-mode-btn {
+  margin-left: -1.5px;
+}
+
+.player-mode-btn:first-child {
+  border-radius: 3px 0 0 3px;
+}
+
+.player-mode-btn:last-child {
+  border-radius: 0 3px 3px 0;
+}
+
+.player-mode-btn:hover:not(:disabled) {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.player-mode-btn.is-active {
+  position: relative;
+  z-index: 1;
+  background: rgba(241, 196, 15, 0.12);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.player-mode-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

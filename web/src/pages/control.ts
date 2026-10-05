@@ -8,7 +8,7 @@ interface OverlaySettings {
   animation: 'fade' | 'slide-left' | 'slide-right' | 'slide-up' | 'slide-down' | 'none';
   autoHide: boolean;
   autoHideDelay: number;
-  viewMode: 'average' | 'personal';
+  viewMode: 'average' | 'personal' | 'ghost';
 }
 
 interface OverlayState {

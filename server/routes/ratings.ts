@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { anonClient, authenticate } from '../../lib/auth.js';
+import { supabaseAdmin } from '../../lib/supabase-admin.js';
 import { logAction } from '../../lib/action-log.js';
 
 export const ratingsRouter = Router({ mergeParams: true });
@@ -59,7 +60,23 @@ ratingsRouter.get('/:id/ratings', async (req, res) => {
   });
   if (error) return res.status(500).json({ error: error.message });
 
-  return res.status(200).json({ ratings: data ?? [] });
+  const ratings = (data ?? []) as Record<string, any>[];
+
+  // Проставляем признак роли GHOST для бейджей в списке оценок.
+  const userIds = [...new Set(ratings.map((r) => r.user_id).filter(Boolean))];
+  if (userIds.length > 0) {
+    const { data: ghostRows, error: ghostErr } = await supabaseAdmin
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'ghost')
+      .in('user_id', userIds);
+    if (!ghostErr) {
+      const ghostSet = new Set((ghostRows ?? []).map((r) => r.user_id));
+      for (const r of ratings) r.is_ghost = ghostSet.has(r.user_id);
+    }
+  }
+
+  return res.status(200).json({ ratings });
 });
 
 // POST /api/players/:id/ratings — upsert своей оценки

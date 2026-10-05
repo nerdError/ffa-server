@@ -101,10 +101,9 @@ controlRouter.post('/settings', (req, res) => {
     }
     patch.autoHideDelay = d;
   }
-  // ← НОВОЕ
   if (viewMode !== undefined) {
-    if (viewMode !== 'average' && viewMode !== 'personal') {
-      return res.status(400).json({ error: 'viewMode must be "average" or "personal"' });
+    if (viewMode !== 'average' && viewMode !== 'personal' && viewMode !== 'ghost') {
+      return res.status(400).json({ error: 'viewMode must be "average", "personal" or "ghost"' });
     }
     patch.viewMode = viewMode;
   }

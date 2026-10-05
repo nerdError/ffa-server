@@ -8,7 +8,7 @@ export type AnimationType =
     | 'slide-down'
     | 'none';
 
-export type ViewMode = 'average' | 'personal';
+export type ViewMode = 'average' | 'personal' | 'ghost';
 
 export interface OverlaySettings {
     animation: AnimationType;

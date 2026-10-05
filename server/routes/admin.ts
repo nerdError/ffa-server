@@ -5,7 +5,7 @@ import { logAction } from '../../lib/action-log.js';
 
 export const adminRouter = Router();
 
-const ALLOWED_ROLES = ['moderator', 'admin'] as const;
+const ALLOWED_ROLES = ['moderator', 'admin', 'ghost'] as const;
 type Role = (typeof ALLOWED_ROLES)[number];
 
 /**
