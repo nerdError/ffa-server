@@ -44,7 +44,7 @@ export function dominantRace(races: Race[]): Race | 'MIXED' {
  * Работает быстро: SVG радара — строка, иконки — обычные <img>.
  *
  * @param player — данные игрока
- * @param opts.compact — «компактный» режим для OBS (меньше отступы, крупнее радар)
+ * @param opts.compact — «компактный» режим для OBS (на весь экран, без фона)
  */
 export function buildPlayerCardElement(
     player: PlayerWithStats,
@@ -54,12 +54,13 @@ export function buildPlayerCardElement(
 
     const race = dominantRace(player.races);
     const color = pickRaceColor(player.races);
-
     const card = document.createElement('div');
     card.className = `player-card${compact ? ' player-card--compact' : ''}`;
     card.style.setProperty('--race-color', color);
 
-    // --- Шапка ---
+    // ============================================================
+    // Шапка: иконка + ник + aka + раса
+    // ============================================================
     const header = document.createElement('div');
     header.className = 'pc-header';
 
@@ -78,11 +79,10 @@ export function buildPlayerCardElement(
 
     const titleBlock = document.createElement('div');
     titleBlock.className = 'pc-title-block';
+
     const nameEl = document.createElement('div');
     nameEl.className = 'pc-name';
-    nameEl.textContent = getLocalePlayerName(player.name, true);
-
-    // aka — если есть
+    nameEl.textContent = player.name;
     if (player.aka) {
         const akaEl = document.createElement('span');
         akaEl.className = 'pc-aka';
@@ -92,125 +92,161 @@ export function buildPlayerCardElement(
 
     const raceEl = document.createElement('div');
     raceEl.className = 'pc-race';
-    raceEl.textContent = RACE_NAMES[race].toUpperCase() +
+    raceEl.textContent =
+        RACE_NAMES[race].toUpperCase() +
         (player.races.length > 1 ? ` · ${player.races.join(' / ')}` : '');
+
     titleBlock.append(nameEl, raceEl);
     header.appendChild(titleBlock);
 
-    const statsBlock = document.createElement('div');
-    statsBlock.className = 'pc-stats-block';
-
-    // --- Метрики ---
-    const metricsBlock = document.createElement('div');
-    metricsBlock.className = 'pc-metrics';
-
-    // Активность (главная метрика)
-    const activityMetric = document.createElement('div');
-    activityMetric.className = 'pc-metric pc-metric--primary';
-    const activityValue = player.games_played > 0
-        ? player.activity_score.toFixed(1)
-        : '—';
-    activityMetric.innerHTML = `
-  <div class="pc-metric-label">${t('leaderboard.activity')}</div>
-  <div class="pc-metric-value">${activityValue}</div>
-`;
-    metricsBlock.appendChild(activityMetric);
-
-    // Остальные — компактно в строку
-    const secondaryMetrics = document.createElement('div');
-    secondaryMetrics.className = 'pc-metrics-secondary';
-
-    secondaryMetrics.appendChild(buildMetric(t('leaderboard.games'), String(player.games_played)));
-    secondaryMetrics.appendChild(buildMetric(t('leaderboard.wins'), String(player.wins)));
-    secondaryMetrics.appendChild(buildMetric(t('leaderboard.winrate'), `${player.winrate}%`));
-    secondaryMetrics.appendChild(buildMetric(
-        t('leaderboard.avg_place'),
-        player.avg_place !== null ? player.avg_place.toFixed(2) : '—'
-    ));
-    secondaryMetrics.appendChild(buildMetric('ELO', String(player.elo)));
-
-    metricsBlock.appendChild(secondaryMetrics);
-    header.appendChild(metricsBlock);
-
     card.appendChild(header);
 
-    // --- Тело: радар слева, легенда справа ---
+    // ============================================================
+    // Тело: радар + легенда
+    // ============================================================
     const body = document.createElement('div');
     body.className = 'pc-body';
 
-    // --- Радар (левая колонка) ---
     const radarWrap = document.createElement('div');
     radarWrap.className = 'pc-radar';
-    radarWrap.innerHTML = buildRadarSVG({ stats: player, color, size: 500 });
+    radarWrap.innerHTML = buildRadarSVG({
+        stats: player,
+        color,
+        size: 500,
+        uniqueId: `player-${player.id}`,
+        showVertices: false,
+    });
     body.appendChild(radarWrap);
 
-    // --- Легенда (правая колонка) ---
     const legend = document.createElement('div');
     legend.className = 'pc-legend';
-
-    // Сортируем: сильные статы сверху, пустые — в конце
-    const legendItems = [...STAT_ORDER]
-        .map((axis) => ({
-            axis,
-            value: player[axis.key],
-        }))
-        .sort((a, b) => {
-            const av = typeof a.value === 'number' ? a.value : -1;
-            const bv = typeof b.value === 'number' ? b.value : -1;
-            return bv - av;
-        });
-
-    for (const { axis, value } of legendItems) {
+    for (const axis of STAT_ORDER) {
+        const value = player[axis.key];
         const row = document.createElement('div');
         row.className = 'pc-legend-row';
         row.style.setProperty('--stat-color', axis.color);
 
-        // Название
-        const nameEl = document.createElement('div');
-        nameEl.className = 'pc-legend-name';
-        nameEl.dataset.i18n = axis.langKey;
-        nameEl.textContent = axis.getStr();
+        const label = document.createElement('span');
+        label.className = 'pc-legend-label pc-legend-name';
+        label.textContent = t(axis.langKey);
 
-        // Полоска заполнения (как у слайдера)
-        const barWrap = document.createElement('div');
-        barWrap.className = 'pc-legend-bar';
-        const barFill = document.createElement('div');
-        barFill.className = 'pc-legend-bar-fill';
+        const bar = document.createElement('div');
+        bar.className = 'pc-legend-bar';
+        const fill = document.createElement('div');
+        fill.className = 'pc-legend-bar-fill';
         if (typeof value === 'number') {
             const pct = Math.max(0, Math.min(100, ((value - 1) / 4) * 80 + 20));
-            barFill.style.width = `${pct}%`;
+            fill.style.width = `${pct}%`;
         } else {
-            barFill.style.width = '0%';
+            fill.style.width = '0%';
         }
-        barWrap.appendChild(barFill);
+        bar.appendChild(fill);
 
-        // Буква рейтинга
-        const gradeEl = document.createElement('div');
-        gradeEl.className = 'pc-legend-grade';
+        const grade = document.createElement('span');
+        grade.className = 'pc-legend-grade';
         if (typeof value === 'number') {
-            const rounded = Math.round(value);
-            gradeEl.textContent = LEVEL_LETTERS[rounded] ?? '?';
+            grade.textContent = LEVEL_LETTERS[Math.round(value)] ?? '?';
         } else {
-            gradeEl.textContent = '—';
-            gradeEl.classList.add('pc-legend-grade--empty');
+            grade.textContent = '—';
+            grade.classList.add('pc-legend-grade--empty');
         }
 
-        row.append(nameEl, barWrap, gradeEl);
+        row.append(label, bar, grade);
         legend.appendChild(row);
     }
-
     body.appendChild(legend);
+
     card.appendChild(body);
+
+    // ============================================================
+    // Нижняя панель метрик
+    // ============================================================
+    const metricsBar = document.createElement('div');
+    metricsBar.className = 'pc-metrics-bar';
+
+    // Активность — главная метрика
+    const activityValue = player.games_played > 0
+        ? player.activity_score.toFixed(1)
+        : '—';
+    const activityMetric = document.createElement('div');
+    activityMetric.className = 'pc-metric pc-metric--activity';
+    const activityRank = player.activity_rank !== null
+        ? `#${player.activity_rank}`
+        : '';
+    activityMetric.innerHTML = `
+  <div class="pc-metric-value">${activityValue}</div>
+  <div class="pc-metric-label">
+    ${escapeHtml(t('leaderboard.activity'))}
+    ${activityRank ? `<span class="pc-metric-rank">${activityRank}</span>` : ''}
+  </div>
+`;
+    metricsBar.appendChild(activityMetric);
+
+    // Игр
+    metricsBar.appendChild(buildMetric(
+        t('leaderboard.games'),
+        String(player.games_played),
+        'games',
+    ));
+
+    // Побед
+    metricsBar.appendChild(buildMetric(
+        t('leaderboard.wins'),
+        String(player.wins),
+        player.wins > 0 ? 'win' : 'muted',
+    ));
+
+    // Winrate
+    const winrateLevel =
+        player.winrate >= 30 ? 'win' :
+            player.winrate >= 10 ? 'mid' :
+                'muted';
+    metricsBar.appendChild(buildMetric(
+        t('leaderboard.winrate'),
+        `${player.winrate}%`,
+        winrateLevel,
+    ));
+
+    // Среднее место
+    metricsBar.appendChild(buildMetric(
+        t('leaderboard.avg_place'),
+        player.avg_place !== null ? player.avg_place.toFixed(2) : '—',
+        player.avg_place !== null ? 'mid' : 'muted',
+    ));
+
+    // ELO — отделённая метрика
+    const eloMetric = document.createElement('div');
+    eloMetric.className = 'pc-metric pc-metric--elo';
+    const eloRank = player.elo_rank !== null ? `#${player.elo_rank}` : '';
+    eloMetric.innerHTML = `
+  <div class="pc-metric-value">${player.elo}</div>
+  <div class="pc-metric-label">
+    ELO
+    ${eloRank ? `<span class="pc-metric-rank">${eloRank}</span>` : ''}
+  </div>
+`;
+    metricsBar.appendChild(eloMetric);
+
+    card.appendChild(metricsBar);
 
     return card;
 }
 
-function buildMetric(label: string, value: string): HTMLElement {
+function buildMetric(label: string, value: string, modifier: string): HTMLElement {
     const el = document.createElement('div');
-    el.className = 'pc-metric-sm';
+    el.className = `pc-metric pc-metric--${modifier}`;
     el.innerHTML = `
-    <div class="pc-metric-sm-label">${label}</div>
-    <div class="pc-metric-sm-value">${value}</div>
+    <div class="pc-metric-value">${escapeHtml(value)}</div>
+    <div class="pc-metric-label">${escapeHtml(label)}</div>
   `;
     return el;
+}
+
+function escapeHtml(str: string): string {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }

@@ -58,11 +58,13 @@ export interface PlayerWithStats {
     variety: number | null;
     elo: number;
     games_played: number;
-    wins: number;                // ← НОВОЕ
-    winrate: number;             // ← НОВОЕ
-    activity_score: number;      // ← НОВОЕ
-    avg_place: number | null;    // ← НОВОЕ
-    game_days: number;           // ← НОВОЕ       
+    wins: number;
+    winrate: number;
+    activity_score: number;
+    avg_place: number | null;
+    game_days: number;
+    activity_rank: number | null;   // ← НОВОЕ
+    elo_rank: number | null;        // ← НОВОЕ
 }
 
 /** Оценка в публичном списке — теперь с username */

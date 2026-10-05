@@ -8,9 +8,9 @@ import protossIcon from '../../assets/race/protoss.svg';
 import type { Race, StatKey } from '../types';
 import { buildRadarSVG, pickRaceColor, STAT_ORDER } from '../radar';
 import randomIcon from '../../assets/race/random.svg';
-import { dominantRace } from '../card';
 import { applyTranslations, onLocaleChange, t } from '../i18n';
 import { getLocalePlayerName } from '../utils';
+import { dominantRace } from '../card';
 
 applyTranslations();
 

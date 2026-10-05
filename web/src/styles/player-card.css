@@ -1,107 +1,520 @@
 /* =========================================
-   Карточка игрока (SVG внутри)
+   Карточка игрока
    ========================================= */
-.player-card-svg {
-  display: flex;
-  justify-content: center;
-  margin: 24px 0;
+.player-card {
+    --race-color: #95a5a6;
+
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #141a22 0%, #0a0c10 100%);
+    border: 1px solid #2a3a4a;
+    border-radius: 4px;
+    font-family: var(--font-ui);
+    color: #e0e6ed;
+    width: 100%;
+    max-width: 960px;
+    aspect-ratio: 16 / 9;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
 }
 
-.player-card-svg svg {
-  max-width: 100%;
-  height: auto;
-  border-radius: 2px;
-  box-shadow:
-    0 0 0 1px var(--border-glow),
-    0 8px 40px rgba(0, 0, 0, 0.6);
+/* Сетка на фоне */
+.player-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
 }
 
-/* ... сюда переносите всё, что относится к .pc-* ... */
+.player-card>* {
+    position: relative;
+    z-index: 1;
+}
+
+/* Верхняя полоса в цвет расы */
+.player-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--race-color);
+    box-shadow: 0 0 12px var(--race-color);
+    z-index: 2;
+}
 
 /* =========================================
-   Метрики в карточке игрока
+   Шапка: иконка + ник + aka + раса
    ========================================= */
-.pc-metrics {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
-  flex-shrink: 0;
-  min-width: 0;
+.pc-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
 }
 
-/* Главная метрика — Активность */
-.pc-metric--primary {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+.pc-icon-box {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #11151c;
+    border: 2px solid var(--race-color);
+    border-radius: 4px;
+    box-shadow: 0 0 16px color-mix(in srgb, var(--race-color) 45%, transparent);
+    padding: 6px;
+    box-sizing: border-box;
 }
 
-.pc-metric--primary .pc-metric-label {
-  font-family: var(--font-ui);
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.pc-metric--primary .pc-metric-value {
-  font-family: var(--font-mono);
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--gold);
-  text-shadow: 0 0 10px rgba(241, 196, 15, 0.4);
-  line-height: 1;
-  margin-top: 2px;
-}
-
-/* Вторичные метрики — в строку */
-.pc-metrics-secondary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 14px;
-  justify-content: flex-end;
-}
-
-.pc-metric-sm {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  min-width: 0;
-}
-
-.pc-metric-sm-label {
-  font-family: var(--font-ui);
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.pc-metric-sm-value {
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.2;
-  margin-top: 1px;
-}
-
-/* На узких экранах — метрики переносятся под ник */
-@media (max-width: 700px) {
-  .pc-metrics {
-    align-items: flex-start;
+.pc-icon {
     width: 100%;
-  }
-  .pc-metric--primary {
-    align-items: flex-start;
-  }
-  .pc-metrics-secondary {
-    justify-content: flex-start;
-  }
-  .pc-metric-sm {
-    align-items: flex-start;
-  }
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.pc-icon-mixed {
+    font-size: 28px;
+    color: var(--race-color);
+    line-height: 1;
+}
+
+.pc-title-block {
+    flex: 1;
+    min-width: 0;
+}
+
+.pc-name {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--race-color);
+    line-height: 1.05;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-shadow: 0 0 12px color-mix(in srgb, var(--race-color) 50%, transparent);
+}
+
+.pc-aka {
+    font-size: 0.6em;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+    margin-left: 6px;
+    text-transform: none;
+    opacity: 0.85;
+}
+
+.pc-race {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    text-transform: uppercase;
+}
+
+/* =========================================
+   Тело: радар + легенда
+   ========================================= */
+.pc-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 64px;
+    align-items: center;
+    flex: 1;
+    min-height: 0;
+    padding: 8px 8px 0;
+}
+
+.pc-radar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 0;
+}
+
+.pc-radar svg {
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+    overflow: visible;
+}
+
+/* =========================================
+   Легенда
+   ========================================= */
+.pc-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    min-height: 0;
+    justify-content: center;
+    align-items: flex-end;
+}
+
+.pc-legend-row {
+    --stat-color: #8899aa;
+    display: grid;
+    grid-template-columns: 180px 110px 40px;
+    gap: 15px;
+    align-items: center;
+    padding: 2px 0;
+    width: max-content;
+}
+
+.pc-legend-name {
+    font-family: var(--font-ui);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0;
+    color: var(--stat-color);
+    text-transform: uppercase;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.1;
+}
+
+.pc-legend-bar {
+    position: relative;
+    height: 10px;
+    width: 100%;
+    background: #1a2029;
+    border-radius: 5px;
+    overflow: hidden;
+    box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.7);
+}
+
+.pc-legend-bar-fill {
+    height: 100%;
+    background: var(--stat-color);
+    border-radius: 5px;
+    box-shadow: 0 0 10px var(--stat-color);
+    transition: width 0.4s ease-out;
+}
+
+.pc-legend-grade {
+    font-family: var(--font-ui);
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1;
+    text-align: right;
+    color: var(--stat-color);
+    text-shadow: 0 0 12px color-mix(in srgb, var(--stat-color) 60%, transparent);
+}
+
+.pc-legend-grade--empty {
+    color: #556677;
+    text-shadow: none;
+}
+
+/* =========================================
+   Нижняя панель метрик
+   ========================================= */
+.pc-metrics-bar {
+    display: grid;
+    grid-template-columns: 1.5fr repeat(4, 1fr) 1fr;
+    gap: 0;
+    padding-top: 16px;
+    border-top: 1px solid #2a3a4a;
+    margin-top: auto;
+    flex-shrink: 0;
+}
+
+.pc-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    border-right: 1px solid #2a3a4a;
+    min-width: 0;
+}
+
+.pc-metric:last-child {
+    border-right: none;
+}
+
+.pc-metric-value {
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-primary);
+    transition: color 0.15s;
+}
+
+/* Игр — крупнее остальных */
+.pc-metric--games .pc-metric-value {
+    font-size: 1.9rem;
+}
+
+/* Побед — крупнее остальных */
+.pc-metric--win .pc-metric-value {
+    font-size: 1.9rem;
+}
+
+/* Активность — оставляем крупнее всех, но добавим контраст */
+.pc-metric--activity .pc-metric-value {
+    font-size: 2.4rem;
+}
+
+.pc-metric-label {
+    font-family: var(--font-ui);
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-top: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* Активность — главная метрика */
+.pc-metric--activity .pc-metric-value {
+    font-size: 2.4rem;
+    color: var(--gold);
+    text-shadow: 0 0 12px rgba(241, 196, 15, 0.5);
+}
+
+.pc-metric--activity .pc-metric-label {
+    color: var(--gold);
+    letter-spacing: 2px;
+}
+
+/* Побед / Winrate — зелёный */
+.pc-metric--win .pc-metric-value {
+    color: #2ecc71;
+    text-shadow: 0 0 8px rgba(46, 204, 113, 0.35);
+}
+
+/* Средние показатели — голубой */
+.pc-metric--mid .pc-metric-value {
+    color: #5dade2;
+}
+
+/* Приглушённые */
+.pc-metric--muted .pc-metric-value {
+    color: var(--text-muted);
+    font-size: 1.9rem;
+}
+
+/* Игр — нейтральный */
+.pc-metric--games .pc-metric-value {
+    color: var(--text-primary);
+}
+
+/* Elo — фиолетовый бонус */
+.pc-metric--elo {
+    border-left: 1px solid #2a3a4a;
+    padding-left: 12px;
+    margin-left: 4px;
+}
+
+.pc-metric--elo .pc-metric-value {
+    color: #bb8fce;
+    text-shadow: 0 0 8px rgba(155, 89, 182, 0.4);
+}
+
+.pc-metric--elo .pc-metric-label {
+    color: #9b59b6;
+}
+
+/* Игр всегда крупная */
+.pc-metric--games .pc-metric-value {
+    font-size: 1.9rem;
+}
+
+/* Побед — крупная в любом состоянии (win или muted) */
+.pc-metric--win .pc-metric-value,
+.pc-metric--muted .pc-metric-value {
+    font-size: 1.9rem;
+}
+
+/* =========================================
+   Компактный режим (для OBS-оверлея)
+   ========================================= */
+.player-card--compact {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    aspect-ratio: auto;
+    width: 100vw;
+    height: 100vh;
+    padding: 24px;
+    max-width: none;
+}
+
+.player-card--compact::before {
+    display: none;
+}
+
+.player-card--compact .pc-name {
+    font-size: 34px;
+}
+
+.player-card--compact .pc-icon-box {
+    width: 72px;
+    height: 72px;
+}
+
+.player-card--compact .pc-legend-name {
+    font-size: 20px;
+}
+
+.player-card--compact .pc-legend-grade {
+    font-size: 34px;
+}
+
+/* =========================================
+   Адаптив
+   ========================================= */
+@media (max-width: 900px) {
+    .pc-body {
+        gap: 32px;
+    }
+
+    .pc-legend-row {
+        grid-template-columns: 140px 90px 32px;
+        gap: 10px;
+    }
+
+    .pc-legend-name {
+        font-size: 15px;
+    }
+
+    .pc-legend-grade {
+        font-size: 24px;
+    }
+
+    .pc-legend-bar {
+        height: 8px;
+    }
+}
+
+@media (max-width: 700px) {
+    .player-card {
+        aspect-ratio: auto;
+        padding: 16px;
+    }
+
+    .pc-body {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .pc-radar svg {
+        max-width: 320px;
+        margin: 0 auto;
+    }
+
+    .pc-legend {
+        align-items: stretch;
+    }
+
+    .pc-legend-row {
+        grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 32px;
+        width: 100%;
+    }
+
+    .pc-name {
+        font-size: 22px;
+    }
+
+    .pc-icon-box {
+        width: 48px;
+        height: 48px;
+    }
+
+    .pc-metrics-bar {
+        grid-template-columns: 1.5fr 1fr 1fr;
+        grid-template-areas:
+            "activity games  wins"
+            "activity wr     avg"
+            "activity elo    elo";
+        gap: 0;
+    }
+
+    .pc-metric--activity {
+        grid-area: activity;
+        border-right: 1px solid #2a3a4a;
+    }
+
+    .pc-metric--games {
+        grid-area: games;
+    }
+
+    .pc-metric--win,
+    .pc-metric--muted[data-metric="wins"] {
+        grid-area: wins;
+    }
+
+    .pc-metric--elo {
+        grid-area: elo;
+        border-left: none;
+        padding-left: 8px;
+    }
+
+    .pc-metric {
+        padding: 4px 6px;
+    }
+
+    .pc-metric-value {
+        font-size: 1.2rem;
+    }
+
+    .pc-metric--activity .pc-metric-value {
+        font-size: 2rem;
+    }
+
+    .pc-metric-label {
+        font-size: 0.6rem;
+        letter-spacing: 1px;
+    }
+}
+
+/* Ранг рядом с подписью метрики */
+.pc-metric-rank {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  vertical-align: middle;
+}
+
+.pc-metric--activity .pc-metric-rank {
+  color: var(--gold);
+  background: rgba(241, 196, 15, 0.12);
+}
+
+.pc-metric--elo .pc-metric-rank {
+  color: #bb8fce;
+  background: rgba(155, 89, 182, 0.15);
 }

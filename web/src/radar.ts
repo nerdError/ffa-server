@@ -1,4 +1,5 @@
 import { applyTranslations, onLocaleChange, t } from './i18n';
+import { TranslationKey } from './i18n/types';
 import type { PlayerWithStats, Race, StatKey } from './types';
 
 applyTranslations();
@@ -9,7 +10,7 @@ onLocaleChange(() => {
 
 export interface StatAxis {
     key: StatKey;
-    langKey: string;
+    langKey: TranslationKey;
     getStr: () => string;
     color: string;
 }
@@ -53,7 +54,7 @@ export let lastRadarOptions: RadarOptions | null = null;
 export function buildRadarSVG(opts: RadarOptions): string {
     const { stats, color, size = 480, maxLevel = 5, uniqueId, showVertices } = opts;
     lastRadarOptions = opts;
-    
+
     // Уникальный суффикс для id внутри этого SVG
     const uid = uniqueId ?? `r${Math.random().toString(36).slice(2, 9)}`;
     const glowId = `glow-${uid}`;
