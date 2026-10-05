@@ -6,9 +6,59 @@ import {
     t,
     type Locale,
 } from './i18n';
-import { clearSession, state } from './state';
+import { clearSession, saveSession, state } from './state';
 import { apiRequest } from './api';
 import { navigateTo, updateTitle } from './router';
+
+let rolesLoadingPromise: Promise<void> | null = null;
+
+/**
+ * Гарантирует, что роли пользователя загружены в state.user.
+ * Если запрос уже идёт — ждёт его. Если роли уже есть — сразу возвращает.
+ */
+export async function ensureRolesLoaded(): Promise<void> {
+  // Нет токена — нечего грузить
+  if (!state.token || !state.user) return;
+
+  // Если роли уже есть — не тратим запрос
+  if (typeof state.user.is_moderator === 'boolean') return;
+
+  // Если запрос уже идёт — ждём его
+  if (rolesLoadingPromise) return rolesLoadingPromise;
+
+  rolesLoadingPromise = (async () => {
+    try {
+      const me = await apiRequest<{
+        user: {
+          id: string;
+          email: string;
+          username: string | null;
+          is_moderator: boolean;
+          is_admin: boolean;
+        };
+      }>('/api/auth/me', { token: state.token });
+
+      saveSession(
+        {
+          id: me.user.id,
+          email: me.user.email,
+          username: me.user.username,
+          is_moderator: me.user.is_moderator,
+          is_admin: me.user.is_admin,
+        },
+        state.token!,
+      );
+
+      renderUserBox();
+    } catch (err) {
+      console.warn('[app] failed to load roles:', err);
+    } finally {
+      rolesLoadingPromise = null;
+    }
+  })();
+
+  return rolesLoadingPromise;
+}
 
 /**
  * Инициализация общего UI: переключатель языка, renderUserBox, footer.

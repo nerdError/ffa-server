@@ -3,10 +3,17 @@ import { bindCreatePlayer, findPlayerByName, loadPlayers } from '../ui/players';
 import { openPlayerScreen } from '../ui/player-detail';
 import type { PlayersListResponse } from '../types';
 import { navigateTo } from '../router';
+import { ensureRolesLoaded } from '../app';
+import { state } from '../state';
 
 let mounted = false;
 
 export function mountPlayers(params: URLSearchParams): void {
+    void ensureRolesLoaded().then(() => {
+        // После загрузки ролей — обновляем UI (форма создания игрока)
+        setupCreatePlayerForm();
+    });
+
     const backBtn = document.getElementById('btn-back');
     if (backBtn) {
         // Клонируем кнопку, чтобы снять все старые обработчики (на случай
@@ -53,6 +60,18 @@ export function mountPlayers(params: URLSearchParams): void {
     });
 
     mounted = true;
+}
+
+function setupCreatePlayerForm(): void {
+    const form = document.getElementById('form-create-player') as HTMLFormElement | null;
+    if (!form) return;
+
+    // Скрываем/показываем форму по правам
+    if (!state.user?.is_moderator && !state.user?.is_admin) {
+        form.style.display = 'none';
+    } else {
+        form.style.display = '';
+    }
 }
 
 export function unmountPlayers(): void {

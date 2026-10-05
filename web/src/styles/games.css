@@ -1166,3 +1166,22 @@
       "winner winner winner";
   }
 }
+
+/* Инвертируем иконку календаря для тёмной темы */
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.form-add-btn--wide {
+  width: auto;
+  padding: 0 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}

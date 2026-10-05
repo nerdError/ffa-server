@@ -11,6 +11,7 @@ import {
 } from '../api/game-refs';
 import type { PlayerWithStats, PlayersListResponse } from '../types';
 import type { GameListItem, GamesListResponse, GameFull } from '../types-games';
+import { ensureRolesLoaded } from '../app';
 
 // ============================================================
 // Состояние модуля
@@ -73,6 +74,7 @@ interface LastGameSettings {
     is_team: boolean;
     team_size: number;
     track_elim: boolean;
+    played_at: string | null;   // ← НОВОЕ: время последней игры
     players: Array<{
         player_id: number | null;
         race: 'T' | 'Z' | 'P' | 'R';
@@ -118,6 +120,12 @@ export function mountGames(params: URLSearchParams): void {
     filters.formatId = params.get('format') ? Number(params.get('format')) : null;
     filters.hostId = params.get('host') ? Number(params.get('host')) : null;
     filters.mapId = params.get('map') ? Number(params.get('map')) : null;
+
+    // Проверяем роли, потом настраиваем кнопки
+    void ensureRolesLoaded().then(() => {
+        updateCreateButtonVisibility();
+    });
+    updateCreateButtonVisibility(); // первичный вызов (если роли уже есть)
 
     const urlQ = params.get('q');
     if (urlQ) {
@@ -190,6 +198,21 @@ export function mountGames(params: URLSearchParams): void {
         void openCreateGameModal();
     }, { signal });
 
+    document.getElementById('btn-add-5min')?.addEventListener('click', () => {
+        if (!playedAtInput?.value) {
+            playedAtInput!.value = toDatetimeLocal(new Date());
+        }
+        if (!playedAtInput) {
+            alert("playedAtInput is null");
+            return;
+        }
+
+        const current = new Date(playedAtInput!.value);
+        current.setMinutes(current.getMinutes() + 5);
+        playedAtInput!.value = toDatetimeLocal(current);
+        markDirty();
+    }, { signal });
+
     isTeamCheckbox?.addEventListener('change', () => {
         updateTeamModeVisibility();
         redistributeTeams();
@@ -227,6 +250,16 @@ export function mountGames(params: URLSearchParams): void {
         if (highlightId) highlightGame(Number(highlightId));
     });
     void setupFilterSelects();
+}
+
+function updateCreateButtonVisibility(): void {
+    const createBtn = document.getElementById('btn-create-game');
+    if (!createBtn) return;
+    if (state.user?.is_moderator || state.user?.is_admin) {
+        createBtn.removeAttribute('hidden');
+    } else {
+        createBtn.setAttribute('hidden', '');
+    }
 }
 
 export function unmountGames(): void {
@@ -868,6 +901,7 @@ function saveLastGameSettings(): void {
             is_team: isTeamMode(),
             team_size: Number(teamSizeSelect?.value ?? '2'),
             track_elim: isTrackElim(),
+            played_at: playedAtInput?.value ?? null,   // ← НОВОЕ
             players: drafts
                 .filter((d) => d.player_id !== null)
                 .map((d) => ({
@@ -1045,7 +1079,6 @@ function renderPlayerDrafts(): void {
 
     const teamMode = isTeamMode();
     const trackElim = isTrackElim();
-    const totalPlayers = drafts.length;
     const teamSize = teamMode ? getTeamSize() : 0;
     const maxTeams = teamMode ? getMaxTeams() : 0;
 
@@ -1117,17 +1150,32 @@ function renderPlayerDrafts(): void {
                 notOut.textContent = t('games.not_eliminated');
                 teamElimSelect.appendChild(notOut);
 
-                const N = totalPlayers;
                 const teamCount = sortedTeams.length;
                 const maxElim = Math.max(1, teamCount - 1);
+
+                // Собираем занятые eliminated_at другими командами
+                const usedElims = new Set<number>();
+                for (const [otherTeam, otherIndices] of teams.entries()) {
+                    if (otherTeam === teamNum) continue;
+                    for (const oi of otherIndices) {
+                        const d = drafts[oi];
+                        if (d && d.eliminated_at !== null) usedElims.add(d.eliminated_at);
+                    }
+                }
 
                 for (let elim = 1; elim <= maxElim; elim++) {
                     const opt = document.createElement('option');
                     opt.value = String(elim);
-                    opt.textContent = `${elim}${getEliminationSuffix(elim)}`;
-                    // Определяем текущее выбывание команды
                     const currentElim = indices.map((i) => drafts[i]?.eliminated_at).find((x) => x !== null);
-                    if (currentElim === elim) opt.selected = true;
+                    if (currentElim === elim) {
+                        opt.selected = true;
+                        opt.textContent = `${elim}${getEliminationSuffix(elim)}`;
+                    } else if (usedElims.has(elim)) {
+                        opt.disabled = true;
+                        opt.textContent = `${elim}${getEliminationSuffix(elim)} — ${t('games.used')}`;
+                    } else {
+                        opt.textContent = `${elim}${getEliminationSuffix(elim)}`;
+                    }
                     teamElimSelect.appendChild(opt);
                 }
 
@@ -1248,13 +1296,27 @@ function buildPlayerRow(index: number, maxTeams: number, teamMode: boolean): HTM
 
         if (!draft.is_winner) {
             const maxElim = Math.max(1, totalPlayers - 1);
+            const usedElims = new Set(
+                drafts
+                    .filter((d) => d !== draft && d.eliminated_at !== null)
+                    .map((d) => d.eliminated_at!)
+            );
+
             for (let elim = 1; elim <= maxElim; elim++) {
                 const opt = document.createElement('option');
                 opt.value = String(elim);
-                opt.textContent = `${elim}${getEliminationSuffix(elim)}`;
-                if (draft.eliminated_at === elim) opt.selected = true;
+                if (draft.eliminated_at === elim) {
+                    opt.selected = true;
+                    opt.textContent = `${elim}${getEliminationSuffix(elim)}`;
+                } else if (usedElims.has(elim)) {
+                    opt.disabled = true;
+                    opt.textContent = `${elim}${getEliminationSuffix(elim)} — ${t('games.used')}`;
+                } else {
+                    opt.textContent = `${elim}${getEliminationSuffix(elim)}`;
+                }
                 elimSelect.appendChild(opt);
             }
+
             if (draft.eliminated_at === null) elimSelect.value = '';
 
             const es = elimSelect;
@@ -1452,6 +1514,14 @@ async function openCreateGameModal(): Promise<void> {
         if (trackElimCheckbox) trackElimCheckbox.checked = lastGame.track_elim ?? true;
         updateTeamModeVisibility();
 
+        if (playedAtInput) {
+            if (lastGame.played_at) {
+                playedAtInput.value = lastGame.played_at;
+            } else {
+                playedAtInput.value = toDatetimeLocal(new Date());
+            }
+        }
+
         drafts = lastGame.players.map((p) => ({
             player_id: p.player_id,
             race: p.race,
@@ -1477,7 +1547,6 @@ async function openCreateGameModal(): Promise<void> {
         if (isTeamMode()) redistributeTeams();
     }
 
-    if (playedAtInput) playedAtInput.value = toDatetimeLocal(new Date());
     if (notesInput) notesInput.value = '';
 
     normalizeEliminatedAt();
@@ -1526,9 +1595,8 @@ async function openEditGameModal(gameId: number): Promise<void> {
     }
     updateTeamModeVisibility();
 
-    // Если у кого-то есть eliminated_at — включаем учёт
-    const hasElim = gameFull.players.some((p) => p.eliminated_at !== null);
-    if (trackElimCheckbox) trackElimCheckbox.checked = hasElim || true;
+    // Берём track_elim из сохранённой игры
+    if (trackElimCheckbox) trackElimCheckbox.checked = gameFull.track_elim ?? true;
 
     drafts = gameFull.players.map((p) => ({
         player_id: p.player_id,
@@ -1564,6 +1632,13 @@ async function submitGameForm(e: Event): Promise<void> {
     if (!formatSelect || !hostSelect || !mapSelect || !modSelect) return;
     if (!formatSelect.value || !hostSelect.value || !mapSelect.value || !modSelect.value) {
         alert(t('games.error_no_refs')); return;
+    }
+
+    // Если учёт выбывания отключён — обнуляем eliminated_at у всех
+    if (!isTrackElim()) {
+        for (const d of drafts) {
+            d.eliminated_at = null;
+        }
     }
 
     const filledPlayers = drafts.filter((d) => d.player_id !== null);
@@ -1622,6 +1697,7 @@ async function submitGameForm(e: Event): Promise<void> {
         mod_id: Number(modSelect.value),
         duration_min: durationInput?.value ? Number(durationInput.value) : null,
         notes: notesInput?.value?.trim() || null,
+        track_elim: isTrackElim(),   // ← НОВОЕ
         players: filledPlayers,
     };
 

@@ -335,6 +335,7 @@ export const ru: Record<TranslationKey, string> = {
     'games.new_player_prompt': 'Имя нового игрока:',
     'games.new_player_error': 'Не удалось создать игрока: ',
     'games.not_eliminated': 'Не выбыл',
+    'games.used': 'занято',
 
     // Загрузка
     'loading.text': 'ЗАГРУЗКА…',

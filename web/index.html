@@ -507,9 +507,12 @@
             <form id="game-form" class="game-form">
                 <label class="form-field">
                     <span data-i18n="games.field_date">Дата и время</span>
-                    <input type="datetime-local" name="played_at" id="field-played-at" required />
+                    <div class="form-field-with-button">
+                        <input type="datetime-local" name="played_at" id="field-played-at" required />
+                        <button type="button" id="btn-add-5min" class="form-add-btn form-add-btn--wide"
+                            title="+5 минут">+5</button>
+                    </div>
                 </label>
-
                 <div class="form-row">
                     <label class="form-field">
                         <span data-i18n="games.field_format">Формат</span>

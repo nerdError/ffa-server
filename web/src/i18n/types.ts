@@ -337,6 +337,7 @@ export type TranslationKey =
     | 'games.new_player_prompt'
     | 'games.new_player_error'
     | 'games.not_eliminated'
+    | 'games.used'
 
     // Экран загрузки
     | 'loading.text'

@@ -334,7 +334,8 @@ export const en: Record<TranslationKey, string> = {
     'games.new_player_prompt': 'New player name:',
     'games.new_player_error': 'Failed to create player: ',
     'games.not_eliminated': 'Not eliminated',
-
+    'games.used': 'used',
+    
     // Loading
     'loading.text': 'LOADING…',
 };

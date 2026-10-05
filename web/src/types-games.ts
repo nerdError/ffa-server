@@ -39,6 +39,7 @@ export interface GameFull {
   played_at: string;
   duration_min: number | null;
   notes: string | null;
+  track_elim: boolean;   // ← должно быть
   created_by: string | null;
   created_at: string;
   updated_at: string;
