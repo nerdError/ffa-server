@@ -248,27 +248,22 @@
   color: var(--text-primary);
 }
 
-/* Кликабельные заголовки */
-.leaderboard-table th.sortable {
-  cursor: pointer;
-  user-select: none;
-  transition: filter 0.15s, background 0.15s;
+
+/* Плавное появление после обновления */
+.leaderboard-table {
+  transition: opacity 0.2s ease;
 }
 
-.leaderboard-table th.sortable:hover {
-  background: #1a2029;
-  filter: brightness(1.3);
+.leaderboard-table.is-loading {
+  opacity: 0.4;
+  pointer-events: none;
 }
 
-.leaderboard-table th.is-sorted {
-  background: #1a2029;
-  color: #3498db;
+.leaderboard-table.just-updated {
+  animation: fade-in-table 0.3s ease-out;
 }
 
-.leaderboard-table th.is-sorted-asc {
-  color: #2ecc71;
-}
-
-.leaderboard-table th.is-sorted-desc {
-  color: #e74c3c;
+@keyframes fade-in-table {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
 }

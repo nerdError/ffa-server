@@ -358,6 +358,13 @@ export type TranslationKey =
     | 'leaderboard.help_days'
     | 'leaderboard.help_quality'
 
+    | 'games.now'
+    | 'games.show_all_players'
+    | 'games.no_winner'
+    | 'games.teams_short'
+    | 'games.hide_all_players'
+    | 'games.place_1'
+
     // Экран загрузки
     | 'loading.text'
     ;

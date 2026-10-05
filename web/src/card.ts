@@ -100,24 +100,38 @@ export function buildPlayerCardElement(
     const statsBlock = document.createElement('div');
     statsBlock.className = 'pc-stats-block';
 
-    // Elo
-    const eloBlock = document.createElement('div');
-    eloBlock.className = 'pc-votes';
-    eloBlock.innerHTML = `
-  <div class="pc-votes-label">ELO</div>
-  <div class="pc-votes-count pc-elo-value">${player.games_played > 0 ? player.elo : '—'}</div>
-`;
+    // --- Метрики ---
+    const metricsBlock = document.createElement('div');
+    metricsBlock.className = 'pc-metrics';
 
-    // Голоса
-    const votesBlock = document.createElement('div');
-    votesBlock.className = 'pc-votes';
-    votesBlock.innerHTML = `
-  <div class="pc-votes-label">ГОЛОСОВ</div>
-  <div class="pc-votes-count">${player.vote_count}</div>
+    // Активность (главная метрика)
+    const activityMetric = document.createElement('div');
+    activityMetric.className = 'pc-metric pc-metric--primary';
+    const activityValue = player.games_played > 0
+        ? player.activity_score.toFixed(1)
+        : '—';
+    activityMetric.innerHTML = `
+  <div class="pc-metric-label">${t('leaderboard.activity')}</div>
+  <div class="pc-metric-value">${activityValue}</div>
 `;
+    metricsBlock.appendChild(activityMetric);
 
-    statsBlock.append(eloBlock, votesBlock);
-    header.appendChild(statsBlock);
+    // Остальные — компактно в строку
+    const secondaryMetrics = document.createElement('div');
+    secondaryMetrics.className = 'pc-metrics-secondary';
+
+    secondaryMetrics.appendChild(buildMetric(t('leaderboard.games'), String(player.games_played)));
+    secondaryMetrics.appendChild(buildMetric(t('leaderboard.wins'), String(player.wins)));
+    secondaryMetrics.appendChild(buildMetric(t('leaderboard.winrate'), `${player.winrate}%`));
+    secondaryMetrics.appendChild(buildMetric(
+        t('leaderboard.avg_place'),
+        player.avg_place !== null ? player.avg_place.toFixed(2) : '—'
+    ));
+    secondaryMetrics.appendChild(buildMetric('ELO', String(player.elo)));
+
+    metricsBlock.appendChild(secondaryMetrics);
+    header.appendChild(metricsBlock);
+
     card.appendChild(header);
 
     // --- Тело: радар слева, легенда справа ---
@@ -189,4 +203,14 @@ export function buildPlayerCardElement(
     card.appendChild(body);
 
     return card;
+}
+
+function buildMetric(label: string, value: string): HTMLElement {
+    const el = document.createElement('div');
+    el.className = 'pc-metric-sm';
+    el.innerHTML = `
+    <div class="pc-metric-sm-label">${label}</div>
+    <div class="pc-metric-sm-value">${value}</div>
+  `;
+    return el;
 }

@@ -356,6 +356,14 @@ export const ru: Record<TranslationKey, string> = {
     'leaderboard.days': 'Дней',
     'leaderboard.quality': 'Качество',
 
+    'games.now': 'Сейчас',
+
+    'games.show_all_players': 'Показать всех',
+    'games.no_winner': 'Нет победителя',
+    'games.teams_short': 'команд',
+    'games.hide_all_players': 'Скрыть всех',
+    'games.place_1': '1-е место',
+
     // Загрузка
     'loading.text': 'ЗАГРУЗКА…',
 };

@@ -354,6 +354,16 @@ export const en: Record<TranslationKey, string> = {
     'leaderboard.days': 'Days',
     'leaderboard.quality': 'Quality',
 
+    "leaderboard.help_outro": "Losing is not scary. The main thing is to play.",
+
+    'games.now': 'Now',
+
+    'games.show_all_players': 'Show all',
+    'games.no_winner': 'No winner',
+    'games.teams_short': 'teams',
+    'games.hide_all_players': 'Hide all',
+    'games.place_1': '1st place',
+
     // Loading
     'loading.text': 'LOADING…',
 };

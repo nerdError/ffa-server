@@ -213,6 +213,12 @@ export function mountGames(params: URLSearchParams): void {
         markDirty();
     }, { signal });
 
+    document.getElementById('btn-now')?.addEventListener('click', () => {
+        if (!playedAtInput) return;
+        playedAtInput.value = toDatetimeLocal(new Date());
+        markDirty();
+    }, { signal });
+
     isTeamCheckbox?.addEventListener('change', () => {
         updateTeamModeVisibility();
         redistributeTeams();
@@ -329,10 +335,93 @@ function renderGames(): void {
         return;
     }
 
+    // Группируем по дню
+    const groups = groupGamesByDay(filtered);
+
     container.innerHTML = '';
-    for (const g of filtered) {
-        container.appendChild(buildGameCard(g));
+    for (const group of groups) {
+        container.appendChild(buildDayGroup(group));
     }
+}
+
+interface DayGroup {
+    dateKey: string;       // YYYY-MM-DD
+    dateObj: Date;
+    games: GameListItem[];
+    hosts: string[];       // уникальные проводящие
+}
+
+function groupGamesByDay(games: GameListItem[]): DayGroup[] {
+    const map = new Map<string, DayGroup>();
+
+    for (const g of games) {
+        const d = new Date(g.played_at);
+        // Ключ — локальная дата (не UTC), чтобы соответствовать тому, что видит пользователь
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const dateKey = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+        let group = map.get(dateKey);
+        if (!group) {
+            group = { dateKey, dateObj: d, games: [], hosts: [] };
+            map.set(dateKey, group);
+        }
+        group.games.push(g);
+        if (g.host_name && !group.hosts.includes(g.host_name)) {
+            group.hosts.push(g.host_name);
+        }
+    }
+
+    // Сортируем группы по дате (от новых к старым)
+    const groups = [...map.values()];
+    groups.sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime());
+
+    return groups;
+}
+
+function buildDayGroup(group: DayGroup): HTMLElement {
+    const wrap = document.createElement('div');
+    wrap.className = 'game-day-group';
+
+    // Заголовок
+    const header = document.createElement('div');
+    header.className = 'game-day-header';
+
+    const date = document.createElement('div');
+    date.className = 'game-day-date';
+    date.textContent = formatDayHeader(group.dateObj);
+
+    const hosts = document.createElement('div');
+    hosts.className = 'game-day-hosts';
+    if (group.hosts.length > 0) {
+        for (const hostName of group.hosts) {
+            const badge = document.createElement('span');
+            badge.className = 'game-day-host-badge';
+            badge.textContent = `🎤 ${hostName}`;
+            hosts.appendChild(badge);
+        }
+    }
+
+    header.append(date, hosts);
+    wrap.appendChild(header);
+
+    // Игры внутри дня
+    const list = document.createElement('div');
+    list.className = 'game-day-list';
+    for (const g of group.games) {
+        list.appendChild(buildGameCard(g));
+    }
+    wrap.appendChild(list);
+
+    return wrap;
+}
+
+function formatDayHeader(d: Date): string {
+    const locale = getLocale() === 'ru' ? 'ru-RU' : 'en-US';
+    return d.toLocaleDateString(locale, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    });
 }
 
 // ============================================================
@@ -419,16 +508,50 @@ function buildGameCard(g: GameListItem): HTMLElement {
 
     card.appendChild(meta);
 
-    const players = document.createElement('div');
-    players.className = 'game-card-players';
+    const playersSummary = document.createElement('div');
+    playersSummary.className = 'game-card-players-summary';
 
+    // --- Победители / сводка ---
     if (g.is_team) {
-        renderTeamPlayers(players, g);
+        buildTeamSummary(playersSummary, g);
     } else {
-        renderSoloPlayers(players, g);
+        buildSoloSummary(playersSummary, g);
     }
 
-    card.appendChild(players);
+    card.appendChild(playersSummary);
+
+    // --- Раскрывающийся список всех участников ---
+    const detailsWrap = document.createElement('div');
+    detailsWrap.className = 'game-card-players-details';
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'game-card-players-toggle';
+    toggle.textContent = `${t('games.show_all_players')} (${g.player_count})`;
+
+    const allListWrap = document.createElement('div');
+    allListWrap.className = 'game-card-players-expandable';
+
+    const allList = document.createElement('div');
+    allList.className = 'game-card-players-all';
+
+    if (g.is_team) {
+        renderTeamPlayers(allList, g);
+    } else {
+        renderSoloPlayers(allList, g);
+    }
+
+    allListWrap.appendChild(allList);
+
+    toggle.addEventListener('click', () => {
+        const open = detailsWrap.classList.toggle('is-open');
+        toggle.textContent = open
+            ? `${t('games.hide_all_players')} (${g.player_count})`
+            : `${t('games.show_all_players')} (${g.player_count})`;
+    });
+
+    detailsWrap.append(toggle, allListWrap);
+    card.appendChild(detailsWrap);
 
     const canEdit = Boolean(state.user?.is_moderator || state.user?.is_admin);
     if (canEdit) {
@@ -462,44 +585,27 @@ function buildGameCard(g: GameListItem): HTMLElement {
     return card;
 }
 
-function renderSoloPlayers(container: HTMLElement, g: GameListItem): void {
-    // Сортируем:
-    // 1) победители (по 1)
-    // 2) не выбывшие (eliminated_at = null)
-    // 3) выбывшие — от большего eliminated_at к меньшему (позже выбыл = выше)
-    const sorted = [...g.participants].sort((a, b) => {
-        if (a.is_winner !== b.is_winner) return a.is_winner ? -1 : 1;
-        const ae = a.eliminated_at ?? Number.MAX_SAFE_INTEGER;
-        const be = b.eliminated_at ?? Number.MAX_SAFE_INTEGER;
-        if (ae !== be) return be - ae;
-        return a.player_name.localeCompare(b.player_name);
-    });
+/**
+ * Сводка по одиночной игре: показывает только победителя (или «никто»).
+ */
+function buildSoloSummary(container: HTMLElement, g: GameListItem): void {
+    const winners = g.participants.filter((p) => p.is_winner);
+    if (winners.length === 0) {
+        const empty = document.createElement('span');
+        empty.className = 'game-player-summary-empty';
+        empty.textContent = t('games.no_winner');
+        container.appendChild(empty);
+        return;
+    }
 
-    sorted.forEach((p, index) => {
-        if (index > 0) {
-            const sep = document.createElement('span');
-            sep.className = 'game-player-sep';
-            sep.textContent = '·';
-            container.appendChild(sep);
-        }
-
+    for (const p of winners) {
         const el = document.createElement('span');
-        el.className = 'game-player';
-        if (p.is_winner) el.classList.add('is-winner');
-        if (p.eliminated_at !== null) el.classList.add('is-eliminated');
+        el.className = 'game-player is-winner';
         el.style.setProperty('--race-color', getRaceColor(p.race));
 
-        const placeLabel = document.createElement('span');
-        placeLabel.className = 'game-player-medal';
-        if (p.is_winner) {
-            placeLabel.textContent = '🥇';
-        } else if (p.eliminated_at !== null) {
-            const total = g.participants.length;
-            const place = total - p.eliminated_at + 1;
-            placeLabel.textContent = place === 2 ? '🥈' : place === 3 ? '🥉' : `#${place}`;
-        } else {
-            placeLabel.textContent = '·';
-        }
+        const medal = document.createElement('span');
+        medal.className = 'game-player-medal';
+        medal.textContent = '🥇';
 
         const race = document.createElement('span');
         race.className = 'game-player-race';
@@ -509,96 +615,215 @@ function renderSoloPlayers(container: HTMLElement, g: GameListItem): void {
         name.className = 'game-player-name';
         name.textContent = p.player_name;
 
-        el.append(placeLabel, race, name);
+        el.append(medal, race, name);
         container.appendChild(el);
+    }
+}
+
+/**
+ * Сводка по командной игре: показывает команду-победителя и её состав,
+ * а рядом — общее число команд.
+ */
+function buildTeamSummary(container: HTMLElement, g: GameListItem): void {
+    // Группируем по team
+    const teamMap = new Map<number, typeof g.participants>();
+    for (const p of g.participants) {
+        const tNum = p.team ?? 0;
+        const arr = teamMap.get(tNum) ?? [];
+        arr.push(p);
+        teamMap.set(tNum, arr);
+    }
+
+    // Ищем команду-победителя
+    const winnerEntry = [...teamMap.entries()].find(([_, players]) =>
+        players.some((p) => p.is_winner)
+    );
+
+    if (!winnerEntry) {
+        const empty = document.createElement('span');
+        empty.className = 'game-player-summary-empty';
+        empty.textContent = t('games.no_winner');
+        container.appendChild(empty);
+        return;
+    }
+
+    const [winnerTeam, winnerPlayers] = winnerEntry;
+
+    const teamEl = document.createElement('span');
+    teamEl.className = 'game-team is-winner';
+
+    const medal = document.createElement('span');
+    medal.className = 'game-player-medal';
+    medal.textContent = '🥇';
+    teamEl.appendChild(medal);
+
+    const members = document.createElement('span');
+    members.className = 'game-team-members';
+
+    winnerPlayers.forEach((p, i) => {
+        if (i > 0) {
+            const sep = document.createElement('span');
+            sep.className = 'game-player-sep';
+            sep.textContent = '+';
+            members.appendChild(sep);
+        }
+
+        const pEl = document.createElement('span');
+        pEl.className = 'game-player';
+        pEl.style.setProperty('--race-color', getRaceColor(p.race));
+
+        const race = document.createElement('span');
+        race.className = 'game-player-race';
+        race.textContent = p.race;
+
+        const name = document.createElement('span');
+        name.className = 'game-player-name';
+        name.textContent = p.player_name;
+
+        pEl.append(race, name);
+        members.appendChild(pEl);
     });
+
+    teamEl.appendChild(members);
+    container.appendChild(teamEl);
+
+    // Доп. инфо: сколько всего команд
+    const teamsCount = document.createElement('span');
+    teamsCount.className = 'game-team-count';
+    teamsCount.textContent = `${teamMap.size} ${t('games.teams_short')}`;
+    container.appendChild(teamsCount);
+}
+
+function renderSoloPlayers(container: HTMLElement, g: GameListItem): void {
+  // Сортируем: победители (1), не выбывшие (2), выбывшие по убыванию eliminated_at
+  const sorted = [...g.participants].sort((a, b) => {
+    if (a.is_winner !== b.is_winner) return a.is_winner ? -1 : 1;
+    const ae = a.eliminated_at ?? Number.MAX_SAFE_INTEGER;
+    const be = b.eliminated_at ?? Number.MAX_SAFE_INTEGER;
+    if (ae !== be) return be - ae;
+    return a.player_name.localeCompare(b.player_name);
+  });
+
+  const total = g.participants.length;
+
+  for (const p of sorted) {
+    const row = document.createElement('div');
+    row.className = 'player-line';
+    if (p.is_winner) row.classList.add('is-winner');
+    if (p.eliminated_at !== null) row.classList.add('is-eliminated');
+    row.style.setProperty('--race-color', getRaceColor(p.race));
+
+    // Место
+    const placeEl = document.createElement('span');
+    placeEl.className = 'player-line-place';
+    if (p.is_winner) {
+      placeEl.textContent = '🥇';
+      placeEl.title = t('games.place_1');
+    } else if (p.eliminated_at !== null) {
+      const place = total - p.eliminated_at + 1;
+      placeEl.textContent = place === 2 ? '🥈' : place === 3 ? '🥉' : `#${place}`;
+      placeEl.title = `${place}${getPlaceSuffix(place)}`;
+    } else {
+      placeEl.textContent = '—';
+      placeEl.title = t('games.not_eliminated');
+    }
+    row.appendChild(placeEl);
+
+    // Раса
+    const raceEl = document.createElement('span');
+    raceEl.className = 'player-line-race';
+    raceEl.textContent = p.race;
+    row.appendChild(raceEl);
+
+    // Имя
+    const nameEl = document.createElement('span');
+    nameEl.className = 'player-line-name';
+    nameEl.textContent = p.player_name;
+    if (p.player_aka) nameEl.title = `aka ${p.player_aka}`;
+    row.appendChild(nameEl);
+
+    container.appendChild(row);
+  }
 }
 
 function renderTeamPlayers(container: HTMLElement, g: GameListItem): void {
-    const teamMap = new Map<number, typeof g.participants>();
-    for (const p of g.participants) {
-        const teamNum = p.team ?? 0;
-        const arr = teamMap.get(teamNum) ?? [];
-        arr.push(p);
-        teamMap.set(teamNum, arr);
+  const teamMap = new Map<number, typeof g.participants>();
+  for (const p of g.participants) {
+    const teamNum = p.team ?? 0;
+    const arr = teamMap.get(teamNum) ?? [];
+    arr.push(p);
+    teamMap.set(teamNum, arr);
+  }
+
+  const totalTeams = teamMap.size;
+
+  // Формируем команды с их местом
+  const teams: { teamNum: number; players: typeof g.participants; place: number; isWinner: boolean }[] = [];
+  for (const [teamNum, players] of teamMap.entries()) {
+    const isWinner = players.some((p) => p.is_winner);
+    const elimAt = players.map((p) => p.eliminated_at).find((x) => x !== null) ?? null;
+    let place: number;
+    if (isWinner) place = 1;
+    else if (elimAt === null) place = 2;
+    else place = totalTeams - elimAt + 1;
+    teams.push({ teamNum, players, place, isWinner });
+  }
+
+  // Сортируем: победители (1), не выбывшие (2), выбывшие по убыванию места
+  teams.sort((a, b) => {
+    if (a.place !== b.place) return a.place - b.place;
+    return a.teamNum - b.teamNum;
+  });
+
+  for (const team of teams) {
+    const teamRow = document.createElement('div');
+    teamRow.className = 'player-team-line';
+    if (team.isWinner) teamRow.classList.add('is-winner');
+    if (team.players.some((p) => p.eliminated_at !== null)) {
+      teamRow.classList.add('is-eliminated');
     }
 
-    const teams: { teamNum: number; players: typeof g.participants; place: number; isWinner: boolean }[] = [];
-    const totalTeams = teamMap.size;
+    // Место команды
+    const placeEl = document.createElement('span');
+    placeEl.className = 'player-line-place';
+    if (team.place === 1) placeEl.textContent = '🥇';
+    else if (team.place === 2) placeEl.textContent = '🥈';
+    else if (team.place === 3) placeEl.textContent = '🥉';
+    else placeEl.textContent = `#${team.place}`;
+    teamRow.appendChild(placeEl);
 
-    for (const [teamNum, players] of teamMap.entries()) {
-        const isWinner = players.some((p) => p.is_winner);
-        const elimAt = players.map((p) => p.eliminated_at).find((x) => x !== null) ?? null;
-        let place: number;
-        if (isWinner) place = 1;
-        else if (elimAt === null) place = 2; // все дожили до конца
-        else place = totalTeams - elimAt + 1;
-        teams.push({ teamNum, players, place, isWinner });
-    }
+    // Состав команды
+    const membersEl = document.createElement('span');
+    membersEl.className = 'player-team-members';
 
-    teams.sort((a, b) => {
-        if (a.place !== b.place) return a.place - b.place;
-        return a.teamNum - b.teamNum;
+    team.players.forEach((p, i) => {
+      if (i > 0) {
+        const sep = document.createElement('span');
+        sep.className = 'player-line-sep';
+        sep.textContent = '+';
+        membersEl.appendChild(sep);
+      }
+
+      const m = document.createElement('span');
+      m.className = 'player-line-member';
+      m.style.setProperty('--race-color', getRaceColor(p.race));
+
+      const raceEl = document.createElement('span');
+      raceEl.className = 'player-line-race';
+      raceEl.textContent = p.race;
+      m.appendChild(raceEl);
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'player-line-name';
+      nameEl.textContent = p.player_name;
+      m.appendChild(nameEl);
+
+      membersEl.appendChild(m);
     });
 
-    teams.forEach((team, index) => {
-        if (index > 0) {
-            const sep = document.createElement('span');
-            sep.className = 'game-player-sep';
-            sep.textContent = '·';
-            container.appendChild(sep);
-        }
-
-        const teamEl = document.createElement('span');
-        teamEl.className = 'game-team';
-        if (team.isWinner) teamEl.classList.add('is-winner');
-        if (team.players.some((p) => p.eliminated_at !== null)) {
-            teamEl.classList.add('is-eliminated');
-        }
-
-        const placeLabel = document.createElement('span');
-        placeLabel.className = 'game-player-medal';
-        placeLabel.textContent =
-            team.place === 1 ? '🥇' :
-                team.place === 2 ? '🥈' :
-                    team.place === 3 ? '🥉' : `#${team.place}`;
-        teamEl.appendChild(placeLabel);
-
-        const teamLabel = document.createElement('span');
-        teamLabel.className = 'game-team-label';
-        teamLabel.textContent = `${t('games.team_label')} ${team.teamNum}`;
-        teamEl.appendChild(teamLabel);
-
-        const members = document.createElement('span');
-        members.className = 'game-team-members';
-
-        team.players.forEach((p, i) => {
-            if (i > 0) {
-                const sep = document.createElement('span');
-                sep.className = 'game-player-sep';
-                sep.textContent = '+';
-                members.appendChild(sep);
-            }
-
-            const pEl = document.createElement('span');
-            pEl.className = 'game-player';
-            pEl.style.setProperty('--race-color', getRaceColor(p.race));
-
-            const race = document.createElement('span');
-            race.className = 'game-player-race';
-            race.textContent = p.race;
-
-            const name = document.createElement('span');
-            name.className = 'game-player-name';
-            name.textContent = p.player_name;
-
-            pEl.append(race, name);
-            members.appendChild(pEl);
-        });
-
-        teamEl.appendChild(members);
-        container.appendChild(teamEl);
-    });
+    teamRow.appendChild(membersEl);
+    container.appendChild(teamRow);
+  }
 }
 
 function getRaceColor(race: string): string {

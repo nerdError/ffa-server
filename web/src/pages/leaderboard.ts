@@ -152,40 +152,55 @@ export function unmountLeaderboard(): void {
 }
 
 async function loadLeaderboard(mode: 'all' | 'solo' | 'team' = 'all'): Promise<void> {
-    const container = document.getElementById('leaderboard-container');
-    if (!container) return;
-    container.innerHTML = '<div class="skeleton skeleton-block"></div>';
+  const container = document.getElementById('leaderboard-container');
+  if (!container) return;
 
-    const modeChanged = currentMode !== mode;
-    currentMode = mode;
+  const modeChanged = currentMode !== mode;
+  currentMode = mode;
 
-    // При смене режима — сбрасываем сортировку на дефолтную
-    if (modeChanged) {
-        sortKey = 'activity';
-        sortDirection = 'desc';
-    }
+  if (modeChanged) {
+    sortKey = 'activity';
+    sortDirection = 'desc';
+  }
 
-    try {
-        const res = await apiRequest<{ players: LeaderboardEntry[] }>(
-            `/api/ratings/leaderboard?mode=${mode}`
-        );
-        cachedLeaderboard = res.players;
-        renderLeaderboard(applySort(cachedLeaderboard), container);
-        renderModeSwitch();
-    } catch {
-        container.innerHTML = `<p class="error">${t('common.error')}</p>`;
-    }
+  // Если таблицы ещё нет — рисуем скелетон
+  let table = container.querySelector<HTMLTableElement>('.leaderboard-table');
+  if (!table) {
+    container.innerHTML = '';
+    const skeleton = document.createElement('div');
+    skeleton.className = 'skeleton skeleton-block';
+    skeleton.style.height = '400px';
+    container.appendChild(skeleton);
+  } else {
+    // Плавно затемняем текущую таблицу
+    table.classList.add('is-loading');
+  }
+
+  try {
+    const res = await apiRequest<{ players: LeaderboardEntry[] }>(
+      `/api/ratings/leaderboard?mode=${mode}`
+    );
+    cachedLeaderboard = res.players;
+    renderLeaderboard(applySort(cachedLeaderboard), container);
+    renderModeSwitch();
+  } catch {
+    container.innerHTML = `<p class="error">${t('common.error')}</p>`;
+  }
 }
 
 function renderLeaderboard(players: LeaderboardEntry[], container: HTMLElement): void {
-    if (players.length === 0) {
-        container.innerHTML = `<p class="hint">${t('leaderboard.empty')}</p>`;
-        return;
-    }
+  if (players.length === 0) {
+    container.innerHTML = `<p class="hint">${t('leaderboard.empty')}</p>`;
+    return;
+  }
 
-    // Сохраняем переключатель, если он есть
-    const existingSwitch = document.getElementById('leaderboard-mode-switch');
+  // Проверяем, есть ли уже таблица
+  let table = container.querySelector<HTMLTableElement>('.leaderboard-table');
+  let tbody = table?.querySelector<HTMLTableSectionElement>('tbody');
+  let thead = table?.querySelector<HTMLTableSectionElement>('thead');
 
+  // Если таблицы нет — создаём всю структуру (как раньше)
+  if (!table || !tbody || !thead) {
     container.innerHTML = '';
 
     const wrap = document.createElement('div');
@@ -194,145 +209,147 @@ function renderLeaderboard(players: LeaderboardEntry[], container: HTMLElement):
     const tableWrap = document.createElement('div');
     tableWrap.className = 'leaderboard-table-wrap';
 
-    const table = document.createElement('table');
+    table = document.createElement('table');
     table.className = 'leaderboard-table';
-
-    const thead = document.createElement('thead');
-    const headRow = document.createElement('tr');
-
-    // Заголовок "#" — не кликабельный
-    const thRank = document.createElement('th');
-    thRank.textContent = '#';
-    headRow.appendChild(thRank);
-
-    // Определяем колонки: label, sortKey
-    const columns: Array<{ label: string; key: SortKey }> = [
-        { label: t('players.col.name'), key: 'name' },
-        { label: t('leaderboard.activity'), key: 'activity' },
-        { label: t('leaderboard.games'), key: 'games' },
-        { label: t('leaderboard.days'), key: 'days' },
-        { label: t('leaderboard.wins'), key: 'wins' },
-        { label: t('leaderboard.winrate'), key: 'winrate' },
-        { label: t('leaderboard.quality'), key: 'quality' },
-        { label: t('leaderboard.avg_place'), key: 'avg_place' },
-    ];
-
-    for (const col of columns) {
-        const th = document.createElement('th');
-        th.textContent = col.label;
-        th.dataset.sortKey = col.key;
-        th.classList.add('sortable');
-
-        if (sortKey === col.key) {
-            th.classList.add('is-sorted');
-            th.classList.toggle('is-sorted-asc', sortDirection === 'asc');
-            th.classList.toggle('is-sorted-desc', sortDirection === 'desc');
-            th.textContent = col.label + (sortDirection === 'asc' ? ' ▲' : ' ▼');
-        }
-
-        th.addEventListener('click', () => {
-            handleSortClick(col.key);
-        });
-
-        headRow.appendChild(th);
-    }
-
-    thead.appendChild(headRow);
-    table.appendChild(thead);
-
-    // Тело таблицы — как было (без изменений), только нумерация rank
-    // теперь должна соответствовать сортировке, а не «сырому» rank из API.
-    const tbody = document.createElement('tbody');
-    players.forEach((p, index) => {
-        const tr = document.createElement('tr');
-        if (index === 0) tr.classList.add('rank-gold');
-        else if (index === 1) tr.classList.add('rank-silver');
-        else if (index === 2) tr.classList.add('rank-bronze');
-
-        if (state.user?.player_id && p.player_id === state.user.player_id) {
-            tr.classList.add('is-me');
-        }
-
-        const tdRank = document.createElement('td');
-        tdRank.textContent = String(index + 1);   // ← index в массиве после сортировки
-        tr.appendChild(tdRank);
-
-        const tdName = document.createElement('td');
-        const link = document.createElement('a');
-        link.href = `/?player=${encodeURIComponent(p.name)}`;
-        link.className = 'player-name-link';
-        link.textContent = p.name;
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            navigateTo(`/?player=${encodeURIComponent(p.name)}`);
-        });
-        tdName.appendChild(link);
-        if (p.aka) {
-            const aka = document.createElement('span');
-            aka.className = 'player-aka';
-            aka.textContent = ` aka ${p.aka}`;
-            tdName.appendChild(aka);
-        }
-        tr.appendChild(tdName);
-
-        const tdActivity = document.createElement('td');
-        tdActivity.className = 'activity-cell';
-        tdActivity.textContent = p.activity_score.toFixed(1);
-        tr.appendChild(tdActivity);
-
-        const tdGames = document.createElement('td');
-        tdGames.textContent = String(p.games_played);
-        tr.appendChild(tdGames);
-
-        const tdDays = document.createElement('td');
-        tdDays.textContent = String(p.game_days);
-        tr.appendChild(tdDays);
-
-        const tdWins = document.createElement('td');
-        tdWins.textContent = String(p.wins);
-        tr.appendChild(tdWins);
-
-        const tdWinrate = document.createElement('td');
-        tdWinrate.textContent = `${p.winrate}%`;
-        tr.appendChild(tdWinrate);
-
-        const tdQuality = document.createElement('td');
-        tdQuality.className = 'quality-cell';
-        tdQuality.textContent = p.quality.toFixed(2);
-        tr.appendChild(tdQuality);
-
-        const tdAvg = document.createElement('td');
-        tdAvg.textContent = p.avg_place !== null ? p.avg_place.toFixed(2) : '—';
-        tr.appendChild(tdAvg);
-
-        tbody.appendChild(tr);
-    });
-    table.appendChild(tbody);
+    thead = document.createElement('thead');
+    tbody = document.createElement('tbody');
+    table.append(thead, tbody);
     tableWrap.appendChild(table);
 
-    // Справка
     const helpBox = document.createElement('aside');
     helpBox.className = 'leaderboard-help';
-    helpBox.innerHTML = `
-  <h3>${t('leaderboard.help_title')}</h3>
-  <p>${t('leaderboard.help_intro')}</p>
-  <ul>
-    <li>${t('leaderboard.help_activity')}</li>
-    <li>${t('leaderboard.help_place')}</li>
-    <li>${t('leaderboard.help_not_elim')}</li>
-    <li>${t('leaderboard.help_winner')}</li>
-    <li>${t('leaderboard.help_early')}</li>
-    <li>${t('leaderboard.help_days')}</li>
-    <li>${t('leaderboard.help_quality')}</li>
-  </ul>
-  <p class="hint">${t('leaderboard.help_outro')}</p>
-`;
+    helpBox.innerHTML = buildHelpHtml();
 
     wrap.append(tableWrap, helpBox);
     container.appendChild(wrap);
 
-    // Возвращаем переключатель режима наверх
-    if (existingSwitch) {
-        container.prepend(existingSwitch);
+    // Переключатель режимов сверху
+    renderModeSwitch();
+  }
+
+  // --- Обновляем THEAD (заголовки со стрелками) ---
+  thead.innerHTML = '';
+  const headRow = document.createElement('tr');
+  const thRank = document.createElement('th');
+  thRank.textContent = '#';
+  headRow.appendChild(thRank);
+
+  const columns: Array<{ label: string; key: SortKey }> = [
+    { label: t('players.col.name'),      key: 'name' },
+    { label: t('leaderboard.activity'),  key: 'activity' },
+    { label: t('leaderboard.games'),     key: 'games' },
+    { label: t('leaderboard.days'),      key: 'days' },
+    { label: t('leaderboard.wins'),      key: 'wins' },
+    { label: t('leaderboard.winrate'),   key: 'winrate' },
+    { label: t('leaderboard.quality'),   key: 'quality' },
+    { label: t('leaderboard.avg_place'), key: 'avg_place' },
+  ];
+
+  for (const col of columns) {
+    const th = document.createElement('th');
+    th.textContent = col.label;
+    th.dataset.sortKey = col.key;
+    th.classList.add('sortable');
+
+    if (sortKey === col.key) {
+      th.classList.add('is-sorted');
+      th.classList.toggle('is-sorted-asc', sortDirection === 'asc');
+      th.classList.toggle('is-sorted-desc', sortDirection === 'desc');
+      th.textContent = col.label + (sortDirection === 'asc' ? ' ▲' : ' ▼');
     }
+
+    th.addEventListener('click', () => handleSortClick(col.key));
+    headRow.appendChild(th);
+  }
+  thead.appendChild(headRow);
+
+  // --- Обновляем TBODY (данные) ---
+  tbody.innerHTML = '';
+  players.forEach((p, index) => {
+    const tr = document.createElement('tr');
+    if (index === 0) tr.classList.add('rank-gold');
+    else if (index === 1) tr.classList.add('rank-silver');
+    else if (index === 2) tr.classList.add('rank-bronze');
+
+    if (state.user?.player_id && p.player_id === state.user.player_id) {
+      tr.classList.add('is-me');
+    }
+
+    // ... остальные ячейки как раньше
+    const tdRank = document.createElement('td');
+    tdRank.textContent = String(index + 1);
+    tr.appendChild(tdRank);
+
+    const tdName = document.createElement('td');
+    const link = document.createElement('a');
+    link.href = `/?player=${encodeURIComponent(p.name)}`;
+    link.className = 'player-name-link';
+    link.textContent = p.name;
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      navigateTo(`/?player=${encodeURIComponent(p.name)}`);
+    });
+    tdName.appendChild(link);
+    if (p.aka) {
+      const aka = document.createElement('span');
+      aka.className = 'player-aka';
+      aka.textContent = ` aka ${p.aka}`;
+      tdName.appendChild(aka);
+    }
+    tr.appendChild(tdName);
+
+    const tdActivity = document.createElement('td');
+    tdActivity.className = 'activity-cell';
+    tdActivity.textContent = p.activity_score.toFixed(1);
+    tr.appendChild(tdActivity);
+
+    const tdGames = document.createElement('td');
+    tdGames.textContent = String(p.games_played);
+    tr.appendChild(tdGames);
+
+    const tdDays = document.createElement('td');
+    tdDays.textContent = String(p.game_days);
+    tr.appendChild(tdDays);
+
+    const tdWins = document.createElement('td');
+    tdWins.textContent = String(p.wins);
+    tr.appendChild(tdWins);
+
+    const tdWinrate = document.createElement('td');
+    tdWinrate.textContent = `${p.winrate}%`;
+    tr.appendChild(tdWinrate);
+
+    const tdQuality = document.createElement('td');
+    tdQuality.className = 'quality-cell';
+    tdQuality.textContent = p.quality.toFixed(2);
+    tr.appendChild(tdQuality);
+
+    const tdAvg = document.createElement('td');
+    tdAvg.textContent = p.avg_place !== null ? p.avg_place.toFixed(2) : '—';
+    tr.appendChild(tdAvg);
+
+    tbody.appendChild(tr);
+  });
+
+  // Плавное появление
+  table.classList.remove('is-loading');
+  table.classList.add('just-updated');
+  setTimeout(() => table.classList.remove('just-updated'), 300);
+}
+
+function buildHelpHtml(): string {
+  return `
+    <h3>${t('leaderboard.help_title')}</h3>
+    <p>${t('leaderboard.help_intro')}</p>
+    <ul>
+      <li>${t('leaderboard.help_activity')}</li>
+      <li>${t('leaderboard.help_place')}</li>
+      <li>${t('leaderboard.help_not_elim')}</li>
+      <li>${t('leaderboard.help_winner')}</li>
+      <li>${t('leaderboard.help_early')}</li>
+      <li>${t('leaderboard.help_days')}</li>
+      <li>${t('leaderboard.help_quality')}</li>
+    </ul>
+    <p class="hint">${t('leaderboard.help_outro')}</p>
+  `;
 }
