@@ -43,7 +43,8 @@ interface GamePlayerDraft {
     race: 'T' | 'Z' | 'P' | 'R';
     team: number | null;
     is_winner: boolean;
-    eliminated_at: number | null;
+    /** Итоговое место: 1 — победитель, 2..N — остальные. null — не выбрано. */
+    place: number | null;
     /** Имя из реплея — показывается в автокомплите, пока игрок не сопоставлен. */
     raw_name?: string | null;
     /** Черновик пришёл из реплея (для валидации перед сохранением). */
@@ -94,7 +95,6 @@ let notesInput: HTMLTextAreaElement | null = null;
 let isTeamCheckbox: HTMLInputElement | null = null;
 let teamSizeSelect: HTMLSelectElement | null = null;
 let teamModeOptions: HTMLElement | null = null;
-let trackElimCheckbox: HTMLInputElement | null = null;
 
 const LAST_GAME_KEY = 'games:lastGameSettings';
 
@@ -148,7 +148,6 @@ export function mountGames(params: URLSearchParams): void {
     isTeamCheckbox = document.getElementById('field-is-team') as HTMLInputElement | null;
     teamSizeSelect = document.getElementById('field-team-size') as HTMLSelectElement | null;
     teamModeOptions = document.getElementById('team-mode-options');
-    trackElimCheckbox = document.getElementById('field-track-elim') as HTMLInputElement | null;
 
     filters.formatId = params.get('format') ? Number(params.get('format')) : null;
     filters.hostId = params.get('host') ? Number(params.get('host')) : null;
@@ -277,12 +276,6 @@ export function mountGames(params: URLSearchParams): void {
 
     teamSizeSelect?.addEventListener('change', () => {
         redistributeTeams();
-        renderPlayerDrafts();
-        markDirty();
-    }, { signal });
-
-    trackElimCheckbox?.addEventListener('change', () => {
-        normalizeEliminatedAt();
         renderPlayerDrafts();
         markDirty();
     }, { signal });
@@ -634,6 +627,16 @@ function buildGameCard(g: GameListItem): HTMLElement {
             void openEditGameModal(g.id);
         });
 
+        const dupBtn = document.createElement('button');
+        dupBtn.type = 'button';
+        dupBtn.className = 'game-action-btn game-action-btn--duplicate';
+        dupBtn.title = t('games.duplicate_settings');
+        dupBtn.textContent = '➕';
+        dupBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            void openCreateFromGame(g.id);
+        });
+
         const delBtn = document.createElement('button');
         delBtn.type = 'button';
         delBtn.className = 'game-action-btn game-action-btn--delete';
@@ -644,7 +647,7 @@ function buildGameCard(g: GameListItem): HTMLElement {
             void deleteGame(g);
         });
 
-        actions.append(editBtn, delBtn);
+        actions.append(editBtn, dupBtn, delBtn);
         card.appendChild(actions);
     }
 
@@ -761,34 +764,33 @@ function buildTeamSummary(container: HTMLElement, g: GameListItem): void {
 }
 
 function renderSoloPlayers(container: HTMLElement, g: GameListItem): void {
-  // Сортируем: победители (1), не выбывшие (2), выбывшие по убыванию eliminated_at
+  const total = g.participants.length;
+
+  // Сортируем по месту (победитель — 1), затем по имени
   const sorted = [...g.participants].sort((a, b) => {
-    if (a.is_winner !== b.is_winner) return a.is_winner ? -1 : 1;
-    const ae = a.eliminated_at ?? Number.MAX_SAFE_INTEGER;
-    const be = b.eliminated_at ?? Number.MAX_SAFE_INTEGER;
-    if (ae !== be) return be - ae;
+    const pa = entryPlace(a, total) ?? Number.MAX_SAFE_INTEGER;
+    const pb = entryPlace(b, total) ?? Number.MAX_SAFE_INTEGER;
+    if (pa !== pb) return pa - pb;
     return a.player_name.localeCompare(b.player_name);
   });
 
-  const total = g.participants.length;
-
   for (const p of sorted) {
+    const place = entryPlace(p, total);
     const row = document.createElement('div');
     row.className = 'player-line';
     if (p.is_winner) row.classList.add('is-winner');
-    if (p.eliminated_at !== null) row.classList.add('is-eliminated');
+    if (!p.is_winner && place !== null) row.classList.add('is-eliminated');
     row.style.setProperty('--race-color', getRaceColor(p.race));
 
     // Место
     const placeEl = document.createElement('span');
     placeEl.className = 'player-line-place';
-    if (p.is_winner) {
+    if (place === 1) {
       placeEl.textContent = '🥇';
       placeEl.title = t('games.place_1');
-    } else if (p.eliminated_at !== null) {
-      const place = total - p.eliminated_at + 1;
+    } else if (place !== null) {
       placeEl.textContent = place === 2 ? '🥈' : place === 3 ? '🥉' : `#${place}`;
-      placeEl.title = `${place}${getPlaceSuffix(place)}`;
+      placeEl.title = formatPlace(place);
     } else {
       placeEl.textContent = '—';
       placeEl.title = t('games.not_eliminated');
@@ -827,11 +829,10 @@ function renderTeamPlayers(container: HTMLElement, g: GameListItem): void {
   const teams: { teamNum: number; players: typeof g.participants; place: number; isWinner: boolean }[] = [];
   for (const [teamNum, players] of teamMap.entries()) {
     const isWinner = players.some((p) => p.is_winner);
-    const elimAt = players.map((p) => p.eliminated_at).find((x) => x !== null) ?? null;
+    const ref = players.find((p) => p.eliminated_at !== null) ?? null;
     let place: number;
     if (isWinner) place = 1;
-    else if (elimAt === null) place = 2;
-    else place = totalTeams - elimAt + 1;
+    else place = ref ? totalTeams - ref.eliminated_at! + 1 : 2;
     teams.push({ teamNum, players, place, isWinner });
   }
 
@@ -1177,13 +1178,27 @@ function getPlaceSuffix(place: number): string {
     return 'th place';
 }
 
-function getEliminationSuffix(elim: number): string {
-    // «1-й выбыл», «2-й выбыл», ...
-    if (getLocale() === 'ru') return `-й выбыл`;
-    if (elim === 1) return 'st out';
-    if (elim === 2) return 'nd out';
-    if (elim === 3) return 'rd out';
-    return 'th out';
+function formatPlace(place: number): string {
+    return `${place}${getPlaceSuffix(place)}`;
+}
+
+/**
+ * Место из записи участника. `eliminated_at` в БД хранит порядок выбывания
+ * (1 — выбыл первым), поэтому место = scale - eliminated_at + 1.
+ */
+function entryPlace(
+    p: { is_winner: boolean; eliminated_at: number | null },
+    scale: number
+): number | null {
+    if (p.is_winner) return 1;
+    if (p.eliminated_at === null) return null;
+    return scale - p.eliminated_at + 1;
+}
+
+/** Обратное преобразование: место → порядок выбывания (для записи в БД). */
+function placeToElim(place: number | null, scale: number): number | null {
+    if (place === null || place <= 1) return null;
+    return scale - place + 1;
 }
 
 function markDirty(): void { isDirty = true; }
@@ -1198,7 +1213,9 @@ function isTeamMode(): boolean {
 }
 
 function isTrackElim(): boolean {
-    return Boolean(trackElimCheckbox?.checked);
+    // Места теперь обязательны для всех, кроме победителя, поэтому учёт
+    // выбывания всегда включён.
+    return true;
 }
 
 function updateTeamModeVisibility(): void {
@@ -1359,7 +1376,7 @@ function addPlayerDraft(): void {
         race: 'T',
         team: null,
         is_winner: false,
-        eliminated_at: null,
+        place: null,
     };
     drafts.push(newDraft);
     if (isTeamMode()) {
@@ -1372,20 +1389,30 @@ function addPlayerDraft(): void {
 }
 
 // ============================================================
-// Нормализация eliminated_at
+// Нормализация мест
 // ============================================================
-function normalizeEliminatedAt(): void {
-    if (!isTrackElim()) {
-        // Учёт выбывания отключён: у всех, кроме победителя, eliminated_at = null
-        for (const d of drafts) {
-            if (d.is_winner) d.eliminated_at = null;
-            else d.eliminated_at = null;
-        }
-        return;
-    }
-    // Включён — не трогаем то, что установил пользователь
+function normalizePlaces(): void {
     for (const d of drafts) {
-        if (d.is_winner) d.eliminated_at = null;
+        if (d.is_winner) d.place = 1;
+    }
+
+    // В командном режиме победитель помечает всю команду, место — общее.
+    if (isTeamMode()) {
+        const byTeam = new Map<number, GamePlayerDraft[]>();
+        for (const d of drafts) {
+            const tn = d.team ?? 0;
+            const arr = byTeam.get(tn) ?? [];
+            arr.push(d);
+            byTeam.set(tn, arr);
+        }
+        for (const team of byTeam.values()) {
+            if (team.some((p) => p.is_winner)) {
+                for (const p of team) {
+                    p.is_winner = true;
+                    p.place = 1;
+                }
+            }
+        }
     }
 }
 
@@ -1397,7 +1424,6 @@ function renderPlayerDrafts(): void {
     playersListBox.innerHTML = '';
 
     const teamMode = isTeamMode();
-    const trackElim = isTrackElim();
     const teamSize = teamMode ? getTeamSize() : 0;
     const maxTeams = teamMode ? getMaxTeams() : 0;
 
@@ -1433,7 +1459,6 @@ function renderPlayerDrafts(): void {
             const group = document.createElement('div');
             group.className = 'team-group';
             if (allWinners) group.classList.add('is-winner');
-            if (indices.some((i) => drafts[i]?.eliminated_at !== null)) group.classList.add('is-eliminated');
             group.style.setProperty('--team-color', color);
 
             // --- Заголовок группы ---
@@ -1459,63 +1484,56 @@ function renderPlayerDrafts(): void {
                 header.appendChild(warn);
             }
 
-            // Селект выбывания для команды (только если не победители и включён учёт)
-            if (trackElim && !allWinners) {
-                const teamElimSelect = document.createElement('select');
-                teamElimSelect.className = 'team-elim-select';
+            // Селект места для команды (кроме команды-победителя)
+            if (!allWinners) {
+                const teamPlaceSelect = document.createElement('select');
+                teamPlaceSelect.className = 'team-elim-select';
 
-                const notOut = document.createElement('option');
-                notOut.value = '';
-                notOut.textContent = t('games.not_eliminated');
-                teamElimSelect.appendChild(notOut);
+                const noPlace = document.createElement('option');
+                noPlace.value = '';
+                noPlace.textContent = '—';
+                teamPlaceSelect.appendChild(noPlace);
 
                 const teamCount = sortedTeams.length;
-                const maxElim = Math.max(1, teamCount - 1);
+                const currentPlace =
+                    indices.map((i) => drafts[i]?.place).find((x) => x !== null && x > 1) ?? null;
 
-                // Собираем занятые eliminated_at другими командами
-                const usedElims = new Set<number>();
+                // Занятые другими командами места
+                const usedPlaces = new Set<number>();
                 for (const [otherTeam, otherIndices] of teams.entries()) {
                     if (otherTeam === teamNum) continue;
                     for (const oi of otherIndices) {
                         const d = drafts[oi];
-                        if (d && d.eliminated_at !== null) usedElims.add(d.eliminated_at);
+                        if (d && d.place !== null && d.place > 1) usedPlaces.add(d.place);
                     }
                 }
 
-                for (let elim = 1; elim <= maxElim; elim++) {
+                for (let place = 2; place <= teamCount; place++) {
                     const opt = document.createElement('option');
-                    opt.value = String(elim);
-                    const currentElim = indices.map((i) => drafts[i]?.eliminated_at).find((x) => x !== null);
-                    if (currentElim === elim) {
+                    opt.value = String(place);
+                    if (currentPlace === place) {
                         opt.selected = true;
-                        opt.textContent = `${elim}${getEliminationSuffix(elim)}`;
-                    } else if (usedElims.has(elim)) {
+                        opt.textContent = formatPlace(place);
+                    } else if (usedPlaces.has(place)) {
                         opt.disabled = true;
-                        opt.textContent = `${elim}${getEliminationSuffix(elim)} — ${t('games.used')}`;
+                        opt.textContent = `${formatPlace(place)} — ${t('games.used')}`;
                     } else {
-                        opt.textContent = `${elim}${getEliminationSuffix(elim)}`;
+                        opt.textContent = formatPlace(place);
                     }
-                    teamElimSelect.appendChild(opt);
+                    teamPlaceSelect.appendChild(opt);
                 }
 
-                const currentElim = indices.map((i) => drafts[i]?.eliminated_at).find((x) => x !== null);
-                if (currentElim === null || currentElim === undefined) {
-                    teamElimSelect.value = '';
-                }
-
-                teamElimSelect.addEventListener('change', () => {
-                    const v = teamElimSelect.value;
-                    const elim = v === '' ? null : Number(v);
+                teamPlaceSelect.addEventListener('change', () => {
+                    const v = teamPlaceSelect.value;
+                    const place = v === '' ? null : Number(v);
                     for (const i of indices) {
                         const d = drafts[i];
-                        if (d && !d.is_winner) {
-                            d.eliminated_at = elim;
-                        }
+                        if (d && !d.is_winner) d.place = place;
                     }
                     markDirty();
                 });
 
-                header.appendChild(teamElimSelect);
+                header.appendChild(teamPlaceSelect);
             }
 
             group.appendChild(header);
@@ -1549,13 +1567,11 @@ function buildPlayerRow(index: number, maxTeams: number, teamMode: boolean): HTM
     if (!draft) return document.createElement('div');
 
     const totalPlayers = drafts.length;
-    const trackElim = isTrackElim();
 
     const row = document.createElement('div');
     row.className = 'player-entry';
     if (teamMode) row.classList.add('is-team-mode');
     if (draft.is_winner) row.classList.add('is-winner');
-    if (draft.eliminated_at !== null) row.classList.add('is-eliminated');
 
     // --- Автокомплит игрока ---
     const { wrapper: autocompleteWrap } = createPlayerAutocomplete(
@@ -1599,7 +1615,7 @@ function buildPlayerRow(index: number, maxTeams: number, teamMode: boolean): HTM
     winnerCheck.checked = draft.is_winner;
     winnerCheck.addEventListener('change', () => {
         draft.is_winner = winnerCheck.checked;
-        if (winnerCheck.checked) draft.eliminated_at = null;
+        draft.place = winnerCheck.checked ? 1 : null;
         renderPlayerDrafts();
         markDirty();
     });
@@ -1608,51 +1624,51 @@ function buildPlayerRow(index: number, maxTeams: number, teamMode: boolean): HTM
     winnerText.textContent = t('games.winner_label');
     winnerWrap.appendChild(winnerText);
 
-    // --- Выбывание (только для одиночного режима) ---
-    let elimSelect: HTMLSelectElement | null = null;
-    if (!teamMode && trackElim) {
-        elimSelect = document.createElement('select');
-        elimSelect.className = 'elim-select';
+    // --- Место (только для одиночного режима) ---
+    let placeSelect: HTMLSelectElement | null = null;
+    if (!teamMode) {
+        placeSelect = document.createElement('select');
+        placeSelect.className = 'elim-select';
 
-        const notOut = document.createElement('option');
-        notOut.value = '';
-        notOut.textContent = t('games.not_eliminated');
-        elimSelect.appendChild(notOut);
+        const noPlace = document.createElement('option');
+        noPlace.value = '';
+        noPlace.textContent = '—';
+        placeSelect.appendChild(noPlace);
 
         if (!draft.is_winner) {
-            const maxElim = Math.max(1, totalPlayers - 1);
-            const usedElims = new Set(
+            const maxPlace = Math.max(2, totalPlayers);
+            const usedPlaces = new Set(
                 drafts
-                    .filter((d) => d !== draft && d.eliminated_at !== null)
-                    .map((d) => d.eliminated_at!)
+                    .filter((d) => d !== draft && !d.is_winner && d.place !== null)
+                    .map((d) => d.place!)
             );
 
-            for (let elim = 1; elim <= maxElim; elim++) {
+            for (let place = 2; place <= maxPlace; place++) {
                 const opt = document.createElement('option');
-                opt.value = String(elim);
-                if (draft.eliminated_at === elim) {
+                opt.value = String(place);
+                if (draft.place === place) {
                     opt.selected = true;
-                    opt.textContent = `${elim}${getEliminationSuffix(elim)}`;
-                } else if (usedElims.has(elim)) {
+                    opt.textContent = formatPlace(place);
+                } else if (usedPlaces.has(place)) {
                     opt.disabled = true;
-                    opt.textContent = `${elim}${getEliminationSuffix(elim)} — ${t('games.used')}`;
+                    opt.textContent = `${formatPlace(place)} — ${t('games.used')}`;
                 } else {
-                    opt.textContent = `${elim}${getEliminationSuffix(elim)}`;
+                    opt.textContent = formatPlace(place);
                 }
-                elimSelect.appendChild(opt);
+                placeSelect.appendChild(opt);
             }
 
-            if (draft.eliminated_at === null) elimSelect.value = '';
+            if (draft.place === null || draft.place <= 1) placeSelect.value = '';
 
-            const es = elimSelect;
-            es.addEventListener('change', () => {
-                const v = es.value;
-                draft.eliminated_at = v === '' ? null : Number(v);
+            const ps = placeSelect;
+            ps.addEventListener('change', () => {
+                const v = ps.value;
+                draft.place = v === '' ? null : Number(v);
                 markDirty();
             });
         } else {
-            elimSelect.style.visibility = 'hidden';
-            elimSelect.disabled = true;
+            placeSelect.style.visibility = 'hidden';
+            placeSelect.disabled = true;
         }
     }
 
@@ -1670,7 +1686,7 @@ function buildPlayerRow(index: number, maxTeams: number, teamMode: boolean): HTM
     });
 
     row.append(autocompleteWrap, raceSelect, winnerWrap);
-    if (elimSelect) row.appendChild(elimSelect);
+    if (placeSelect) row.appendChild(placeSelect);
     row.appendChild(removeBtn);
 
     return row;
@@ -1907,18 +1923,22 @@ function applyReplayPrefill(prefill: ReplayPrefill): void {
         ? (eligibleSurvivors[0]?.name ?? null)
         : null;
 
+    const totalReplayPlayers = prefill.players.length;
+
     drafts = prefill.players.map((p) => {
         const matched = matchCachedPlayer(p.name);
         const cleanName = p.name ? stripClanTag(p.name) : null;
-        const elim = !teamMode && typeof p.eliminatedOrder === 'number' && p.eliminatedOrder > 0
+        const order = !teamMode && typeof p.eliminatedOrder === 'number' && p.eliminatedOrder > 0
             ? p.eliminatedOrder
             : null;
+        const isWinner =
+            p.result === 'win' || (soleSurvivorName !== null && p.name === soleSurvivorName);
         return {
             player_id: matched?.id ?? null,
             race: normalizeReplayRace(p.race),
             team: teamMode && p.teamId !== null ? p.teamId : null,
-            is_winner: p.result === 'win' || (soleSurvivorName !== null && p.name === soleSurvivorName),
-            eliminated_at: elim,
+            is_winner: isWinner,
+            place: isWinner ? 1 : (order !== null ? totalReplayPlayers - order + 1 : null),
             raw_name: cleanName ?? p.name ?? null,
             from_replay: true,
         };
@@ -1964,7 +1984,7 @@ function applyTranslationsToButton(btn: HTMLButtonElement): void {
     if (btn.dataset.i18n === 'games.from_replay') btn.textContent = t('games.from_replay');
 }
 
-async function openCreateGameModal(prefill?: ReplayPrefill): Promise<void> {
+async function openCreateGameModal(prefill?: ReplayPrefill, fromGame?: GameFull): Promise<void> {
     if (!modal) return;
     editingGameId = null;
     isDirty = false;
@@ -1979,7 +1999,7 @@ async function openCreateGameModal(prefill?: ReplayPrefill): Promise<void> {
     fillSelect(modSelect, cachedMods, t('games.select_placeholder'));
 
     const useLastCheckbox = document.getElementById('field-use-last') as HTMLInputElement | null;
-    const useLast = !prefill && (useLastCheckbox?.checked ?? true);
+    const useLast = !prefill && !fromGame && (useLastCheckbox?.checked ?? true);
     const lastGame = useLast ? loadLastGameSettings() : null;
 
     if (lastGame) {
@@ -1998,7 +2018,6 @@ async function openCreateGameModal(prefill?: ReplayPrefill): Promise<void> {
         if (durationInput) durationInput.value = lastGame.duration_min ? String(lastGame.duration_min) : '';
         if (isTeamCheckbox) isTeamCheckbox.checked = lastGame.is_team;
         if (teamSizeSelect) teamSizeSelect.value = String(lastGame.team_size ?? 2);
-        if (trackElimCheckbox) trackElimCheckbox.checked = lastGame.track_elim ?? true;
         updateTeamModeVisibility();
 
         if (playedAtInput) {
@@ -2014,14 +2033,13 @@ async function openCreateGameModal(prefill?: ReplayPrefill): Promise<void> {
             race: p.race,
             team: p.team,
             is_winner: false,
-            eliminated_at: null,
+            place: null,
         }));
     } else {
         if (playedAtInput) playedAtInput.value = toDatetimeLocal(new Date());
         if (durationInput) durationInput.value = '';
         if (isTeamCheckbox) isTeamCheckbox.checked = false;
         if (teamSizeSelect) teamSizeSelect.value = '2';
-        if (trackElimCheckbox) trackElimCheckbox.checked = true;
         updateTeamModeVisibility();
         if (formatSelect) {
             const fanFfa = cachedFormats.find((f) => f.slug === 'fan-ffa');
@@ -2029,7 +2047,7 @@ async function openCreateGameModal(prefill?: ReplayPrefill): Promise<void> {
         }
         drafts = [];
         for (let i = 0; i < 4; i++) {
-            drafts.push({ player_id: null, race: 'T', team: null, is_winner: false, eliminated_at: null });
+            drafts.push({ player_id: null, race: 'T', team: null, is_winner: false, place: null });
         }
         if (isTeamMode()) redistributeTeams();
     }
@@ -2037,10 +2055,62 @@ async function openCreateGameModal(prefill?: ReplayPrefill): Promise<void> {
     if (notesInput) notesInput.value = '';
 
     if (prefill) applyReplayPrefill(prefill);
+    else if (fromGame) applyGameSettingsFromGame(fromGame);
 
-    normalizeEliminatedAt();
+    normalizePlaces();
     renderPlayerDrafts();
     modal.classList.remove('hidden');
+}
+
+/**
+ * Переносит настройки существующей игры в форму новой:
+ * формат/ведущий/карту/мод/длительность и состав участников (раса, команда).
+ * Победитель и места НЕ переносятся — их нужно проставить заново.
+ */
+function applyGameSettingsFromGame(gameFull: GameFull): void {
+    if (formatSelect && gameFull.format && cachedFormats.some((f) => f.id === gameFull.format!.id)) {
+        formatSelect.value = String(gameFull.format.id);
+    }
+    if (hostSelect && gameFull.host && cachedHosts.some((h) => h.id === gameFull.host!.id)) {
+        hostSelect.value = String(gameFull.host.id);
+    }
+    if (mapSelect && gameFull.map && cachedMaps.some((m) => m.id === gameFull.map!.id)) {
+        mapSelect.value = String(gameFull.map.id);
+    }
+    if (modSelect && gameFull.mod && cachedMods.some((m) => m.id === gameFull.mod!.id)) {
+        modSelect.value = String(gameFull.mod.id);
+    }
+
+    if (durationInput) {
+        durationInput.value = gameFull.duration_min ? String(gameFull.duration_min) : '';
+    }
+
+    const hasTeams = gameFull.players.some((p) => p.team !== null);
+    if (isTeamCheckbox) isTeamCheckbox.checked = hasTeams;
+    if (hasTeams && teamSizeSelect) {
+        const firstTeam = gameFull.players[0]?.team ?? 1;
+        const size = gameFull.players.filter((p) => p.team === firstTeam).length;
+        teamSizeSelect.value = String(size);
+    }
+    updateTeamModeVisibility();
+
+    drafts = gameFull.players.map((p) => ({
+        player_id: p.player_id,
+        race: p.race,
+        team: p.team,
+        is_winner: false,
+        place: null,
+    }));
+}
+
+/** Открывает форму новой игры с настройками указанной игры. */
+async function openCreateFromGame(gameId: number): Promise<void> {
+    try {
+        const res = await apiRequest<{ game: GameFull }>(`/api/games/${gameId}`);
+        await openCreateGameModal(undefined, res.game);
+    } catch (err) {
+        alert(t('games.load_one_error') + (err instanceof Error ? err.message : String(err)));
+    }
 }
 
 async function openEditGameModal(gameId: number): Promise<void> {
@@ -2084,17 +2154,22 @@ async function openEditGameModal(gameId: number): Promise<void> {
     }
     updateTeamModeVisibility();
 
-    // Берём track_elim из сохранённой игры
-    if (trackElimCheckbox) trackElimCheckbox.checked = gameFull.track_elim ?? true;
+    // Преобразуем сохранённый порядок выбывания в места.
+    const totalPlayers = gameFull.players.length;
+    const teamNums = new Set(gameFull.players.map((p) => p.team ?? 0));
+    const scale = hasTeams ? teamNums.size : totalPlayers;
 
     drafts = gameFull.players.map((p) => ({
         player_id: p.player_id,
         race: p.race,
         team: p.team,
         is_winner: p.is_winner,
-        eliminated_at: p.eliminated_at,
+        place: p.is_winner
+            ? 1
+            : (p.eliminated_at !== null ? scale - p.eliminated_at + 1 : null),
     }));
 
+    normalizePlaces();
     renderPlayerDrafts();
     editingGameId = gameId;
     isDirty = false;
@@ -2123,13 +2198,6 @@ async function submitGameForm(e: Event): Promise<void> {
         alert(t('games.error_no_refs')); return;
     }
 
-    // Если учёт выбывания отключён — обнуляем eliminated_at у всех
-    if (!isTrackElim()) {
-        for (const d of drafts) {
-            d.eliminated_at = null;
-        }
-    }
-
     const unresolved = drafts.filter((d) => d.from_replay && !d.player_id && d.raw_name);
     if (unresolved.length > 0) {
         alert(t('games.replay_unresolved', { names: unresolved.map((d) => d.raw_name).join(', ') }));
@@ -2146,7 +2214,6 @@ async function submitGameForm(e: Event): Promise<void> {
     if (!hasWinner) { alert(t('games.error_no_winner')); return; }
 
     const teamMode = isTeamMode();
-    const trackElim = isTrackElim();
 
     if (teamMode) {
         const teamSize = Number(teamSizeSelect?.value ?? '2');
@@ -2173,15 +2240,42 @@ async function submitGameForm(e: Event): Promise<void> {
             }
         }
         if (winnerTeams.length !== 1) { alert(t('games.error_multiple_winner_teams')); return; }
+
+        // Места команд: у всех, кроме победителя, должны быть уникальные места.
+        const nonWinnerPlaces: number[] = [];
+        for (const [, players] of teamsMap) {
+            if (players.some((p) => p.is_winner)) continue;
+            const place = players.find((p) => p.place !== null && p.place > 1)?.place ?? null;
+            if (place === null) { alert(t('games.error_missing_places')); return; }
+            nonWinnerPlaces.push(place);
+        }
+        if (new Set(nonWinnerPlaces).size !== nonWinnerPlaces.length) {
+            alert(t('games.error_duplicate_place')); return;
+        }
     } else {
-        if (trackElim) {
-            const nonWinners = filledPlayers.filter((d) => !d.is_winner);
-            const eliminations = nonWinners.map((d) => d.eliminated_at).filter((x) => x !== null);
-            if (new Set(eliminations).size !== eliminations.length) {
-                alert(t('games.error_duplicate_place')); return;
-            }
+        // Места: у всех, кроме победителя, должны быть уникальные места 2..N.
+        const nonWinners = filledPlayers.filter((d) => !d.is_winner);
+        if (nonWinners.some((d) => d.place === null || d.place <= 1)) {
+            alert(t('games.error_missing_places')); return;
+        }
+        const places = nonWinners.map((d) => d.place!);
+        if (new Set(places).size !== places.length) {
+            alert(t('games.error_duplicate_place')); return;
         }
     }
+
+    // Место хранится в БД как порядок выбывания (обратное преобразование).
+    const scale = teamMode
+        ? new Set(filledPlayers.map((d) => d.team ?? 0)).size
+        : filledPlayers.length;
+
+    const playersPayload = filledPlayers.map((d) => ({
+        player_id: d.player_id,
+        race: d.race,
+        team: d.team,
+        is_winner: d.is_winner,
+        eliminated_at: d.is_winner ? null : placeToElim(d.place, scale),
+    }));
 
     const playedAtDate = new Date(playedAtInput.value);
     const payload = {
@@ -2192,8 +2286,8 @@ async function submitGameForm(e: Event): Promise<void> {
         mod_id: Number(modSelect.value),
         duration_min: durationInput?.value ? Number(durationInput.value) : null,
         notes: notesInput?.value?.trim() || null,
-        track_elim: isTrackElim(),   // ← НОВОЕ
-        players: filledPlayers,
+        track_elim: true,
+        players: playersPayload,
     };
 
     const saveBtn = document.getElementById('btn-save-game') as HTMLButtonElement | null;

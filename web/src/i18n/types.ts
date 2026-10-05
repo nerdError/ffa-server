@@ -50,6 +50,7 @@ export type TranslationKey =
     | 'games.form_title_edit'
     | 'games.edit_game'
     | 'games.delete_game'
+    | 'games.duplicate_settings'
     | 'games.delete_confirm'
     | 'games.delete_error'
     | 'games.load_one_error'

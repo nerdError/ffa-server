@@ -74,13 +74,14 @@ export const ru: Record<TranslationKey, string> = {
     'games.form_title_edit': 'Редактирование игры',
     'games.edit_game': 'Редактировать',
     'games.delete_game': 'Удалить',
+    'games.duplicate_settings': 'Добавить с настройками',
     'games.delete_confirm': 'Удалить игру от {date} (победители: {winners})?',
     'games.delete_error': 'Не удалось удалить: ',
     'games.load_one_error': 'Не удалось загрузить игру: ',
     'games.field_place': 'Место',
     'games.error_duplicate_place': 'У двух игроков одинаковое место',
     'games.error_missing_places': 'Не у всех игроков указано место',
-    'games.players_hint': 'Отметьте победителя галочкой. Для остальных укажите место — последний выбывший занимает 2-е место.',
+    'games.players_hint': 'Отметьте победителя галочкой. Остальным укажите место (2-е, 3-е, …) — места не должны повторяться.',
 
     // Шапка
     'topbar.league': 'SC2 FFA ЛИГА',
