@@ -333,6 +333,81 @@
     width: 100%;
 }
 
+/* =========================================
+   Сортировка вида «карточки»
+   ========================================= */
+.wall-sort {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.wall-sort-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.wall-sort-select {
+    appearance: none;
+    padding: 8px 14px;
+    background: var(--bg-panel-light);
+    border: 1px solid var(--border-glow);
+    border-radius: 3px;
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-sizing: border-box;
+}
+
+.wall-sort-select:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 8px rgba(241, 196, 15, 0.3);
+}
+
+.wall-sort-dir {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    background: var(--bg-panel-light);
+    border: 1px solid var(--border-glow);
+    border-radius: 3px;
+    color: var(--gold);
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.wall-sort-dir:hover {
+    border-color: var(--gold);
+    box-shadow: 0 0 8px rgba(241, 196, 15, 0.3);
+}
+
+@media (max-width: 900px) {
+    .wall-sort {
+        width: 100%;
+    }
+
+    .wall-sort-select {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
 /* @media (max-width: 1200px) {
   .players-wall { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 } */

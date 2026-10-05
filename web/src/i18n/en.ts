@@ -149,6 +149,9 @@ export const en: Record<TranslationKey, string> = {
     'players.load_error': 'Failed to load players: ',
     'players.delete_confirm': 'Delete player "{name}"?\n\nAll their ratings ({count}) will be permanently deleted.',
     'players.delete_error': 'Failed to delete: ',
+    'players.sort_by': 'Sort by',
+    'players.sort_asc': 'Ascending',
+    'players.sort_desc': 'Descending',
 
     'players.col.elo': 'Elo',
 

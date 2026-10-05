@@ -150,6 +150,9 @@ export type TranslationKey =
     | 'players.load_error'
     | 'players.delete_confirm'
     | 'players.delete_error'
+    | 'players.sort_by'
+    | 'players.sort_asc'
+    | 'players.sort_desc'
 
     // Колонки таблицы
     | 'players.col.name'

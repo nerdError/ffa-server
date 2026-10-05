@@ -9,6 +9,7 @@ import type { Race, StatKey } from '../types';
 import { buildRadarSVG, pickRaceColor, STAT_ORDER } from '../radar';
 import randomIcon from '../../assets/race/random.svg';
 import { applyTranslations, onLocaleChange, t } from '../i18n';
+import type { TranslationKey } from '../i18n/types';
 import { getLocalePlayerName } from '../utils';
 import { dominantRace } from '../card';
 
@@ -42,6 +43,29 @@ type SortKey = 'name' | 'total' | 'races' | 'elo' | StatKey;
 
 let sortKey: SortKey = 'name';
 let sortDirection: SortDirection = 'asc';
+
+/**
+ * Ключи сортировки, доступные в режиме «карточки» — те же, что и колонки
+ * таблицы (совпадают с th[data-sort-key]).
+ */
+const WALL_SORT_KEYS: SortKey[] = [
+    'name',
+    'races',
+    'adaptiveness',
+    'aggression',
+    'turtle',
+    'variety',
+    'survival',
+    'greed',
+];
+
+function sortKeyLabel(key: SortKey): string {
+    if (key === 'name') return t('players.col.name');
+    if (key === 'races') return t('players.col.races');
+    if (key === 'total') return t('players.col.total');
+    if (key === 'elo') return t('players.col.elo');
+    return t(`stat.${key}` as TranslationKey);
+}
 
 /**
  * Хранилище последнего загруженного списка — чтобы пересортировывать
@@ -108,6 +132,7 @@ export async function loadPlayers(cb: PlayersCallbacks): Promise<void> {
         // 1. Навешиваем обработчики ОДИН РАЗ
         bindViewToggle(cb);
         bindSorting(cb);
+        bindWallSort(cb);
 
         // 2. Определяем сохранённый вид (если ещё не задан)
         if (!viewInitialized) {
@@ -536,6 +561,74 @@ function updateSortIndicators(): void {
 }
 
 // ============================================================
+// Контролы сортировки для вида «карточки»
+// ============================================================
+
+/**
+ * Заполняет выпадающий список ключей сортировки и синхронизирует
+ * индикатор направления с текущим состоянием.
+ */
+function refreshWallSortUI(): void {
+    const select = document.getElementById('players-sort-key') as HTMLSelectElement | null;
+    const dirBtn = document.getElementById('players-sort-dir') as HTMLButtonElement | null;
+
+    if (select) {
+        select.innerHTML = '';
+        for (const key of WALL_SORT_KEYS) {
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = sortKeyLabel(key);
+            select.appendChild(opt);
+        }
+        select.value = sortKey;
+    }
+
+    if (dirBtn) {
+        dirBtn.textContent = sortDirection === 'asc' ? '▲' : '▼';
+        const label = sortDirection === 'asc' ? t('players.sort_asc') : t('players.sort_desc');
+        dirBtn.title = label;
+        dirBtn.setAttribute('aria-label', label);
+    }
+}
+
+/**
+ * Навешивает обработчики на контролы сортировки вида «карточки».
+ * Идемпотентна — повторный вызов не создаёт дублей.
+ */
+let wallSortBound = false;
+function bindWallSort(cb: PlayersCallbacks): void {
+    if (wallSortBound) return;
+
+    const select = document.getElementById('players-sort-key') as HTMLSelectElement | null;
+    const dirBtn = document.getElementById('players-sort-dir') as HTMLButtonElement | null;
+    if (!select || !dirBtn) return;
+
+    wallSortBound = true;
+    refreshWallSortUI();
+
+    const applySort = (): void => {
+        updateSortIndicators();
+        refreshWallSortUI();
+        if (currentView === 'wall') {
+            renderWall(cachedPlayers);
+        } else {
+            renderPlayersTable(sortPlayers(cachedPlayers, sortKey, sortDirection), cb);
+        }
+    };
+
+    select.addEventListener('change', () => {
+        sortKey = (select.value as SortKey) || 'name';
+        sortDirection = 'desc';
+        applySort();
+    });
+
+    dirBtn.addEventListener('click', () => {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+        applySort();
+    });
+}
+
+// ============================================================
 // Вид «Стили игры» (стена)
 // ============================================================
 
@@ -625,19 +718,16 @@ function renderWall(_players: PlayerWithStats[]): void {
 
     wall.innerHTML = '';
 
+    refreshWallSortUI();
+
     if (filtered.length === 0) {
         wall.innerHTML = searchQuery
             ? `<p class="hint">${t('players.nothing_found')}</p>`
             : `<p class="hint">${t('players.no_players')}</p>`;
         return;
     }
-    // Сортируем по «Итого» по убыванию
-    // const sorted = [...filtered].sort((a, b) => {
-    //     const at = calcTotal(a) ?? -1;
-    //     const bt = calcTotal(b) ?? -1;
-    //     return bt - at;
-    // });
-    const sorted = sortPlayers(filtered, "name", "asc")
+    // Сортируем по текущему выбранному ключу и направлению
+    const sorted = sortPlayers(filtered, sortKey, sortDirection);
 
     for (const p of sorted) {
         wall.appendChild(buildTile(p));
@@ -667,6 +757,7 @@ function setView(view: ViewMode, cb: PlayersCallbacks): void {
             sortPlayers(cachedPlayers, sortKey, sortDirection),
             cb
         );
+        updateSortIndicators();
     } else {
         tableView.classList.add('hidden');
         wallView.classList.remove('hidden');

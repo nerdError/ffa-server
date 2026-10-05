@@ -129,6 +129,9 @@ export const ru: Record<TranslationKey, string> = {
     'players.load_error': 'Не удалось загрузить игроков: ',
     'players.delete_confirm': 'Удалить игрока "{name}"?\n\nВсе его оценки ({count}) будут удалены безвозвратно.',
     'players.delete_error': 'Не удалось удалить: ',
+    'players.sort_by': 'Сортировка',
+    'players.sort_asc': 'По возрастанию',
+    'players.sort_desc': 'По убыванию',
 
     'players.col.elo': 'Elo',
 
