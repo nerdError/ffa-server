@@ -25,6 +25,7 @@
 - Команды: `npm run dev` (server :3000 + vite :5173), `npm run dev:server`, `npm run dev:web`, `npm run build`, `pm2 restart server`.
 - ENV (.env): `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GITHUB_WEBHOOK_SECRET`, `PORT`.
 - Стиль: тёмная SC2-тема, шрифт Zekton, цвета рас T=синий Z=фиолетовый P=жёлтый R=серый, золотой акцент `--gold`.
+- Парсер реплеев: `@replaysremastered/sc2readerjs` (CJS, ~34 МБ, ставится через `npm install`).
 
 ## Структура
 
@@ -72,6 +73,7 @@ RLS: публичное чтение players/ratings/profiles/games/game_players
 - Карточка игрока 16:9: иконка расы, ник цветом расы, радар 6 осей, легенда (справа), метрики снизу (activity, games, wins, winrate, avg_place, elo + ранги). Используется на сайте и в оверлее.
 - Оверлей OBS: токен из `/control`, ссылка `/overlay?token=...`, SSE `/api/overlay/stream`, состояние in-memory (`overlay-state.ts`), настройки анимации/автоскрытия/viewMode (average|personal).
 - Игры: одиночные (FFA) и командные; участники с расой, командой, победителем, порядком выбывания; `track_elim`. После create/update/delete → `recalculate_all_ratings()`.
+- Импорт игры из реплея (модератор): кнопка «Из реплея» → `apiUpload` → `parse-replay` → форма автозаполняется (дата, длительность, карта по имени, игроки: раса/команда/выбывание). Клан-тег снимается (`stripClanTag`), матчинг игроков по `name`/`aka` (`matchCachedPlayer`); ненайденные подсвечиваются и блокируют сохранение.
 - Лидерборд: режимы all/solo/team, сортировка по колонкам.
 - Роли: moderator (игры, игроки, карты/моды), admin (форматы, ведущие, пользователи, роли).
 - Мультиязычность: RU (дефолт) / EN, `data-i18n`, тип `TranslationKey`, транслитерация ников.
@@ -80,7 +82,7 @@ RLS: публичное чтение players/ratings/profiles/games/game_players
 
 - `/api/auth` signup|login|logout|me|refresh
 - `/api/players` (GET list, POST, GET/:id, DELETE/:id, PATCH/:id/name, PATCH/:id/aka, GET/:id/game-stats) + вложенные `/api/players/:id/ratings`, `/my-rating`
-- `/api/games` (GET list?player_id, GET/:id, POST, PATCH/:id, DELETE/:id)
+- `/api/games` (GET list?player_id, GET/:id, POST, PATCH/:id, DELETE/:id) + `POST /api/games/parse-replay` (модератор; raw `application/octet-stream` ≤25 МБ → разбор `.SC2Replay`)
 - `/api/game-refs/:type` (formats|hosts|maps|mods) CRUD
 - `/api/ratings/leaderboard?mode=`
 - `/api/control` state|show|hide|settings|token|token/regenerate
@@ -103,7 +105,9 @@ RLS: публичное чтение players/ratings/profiles/games/game_players
 - Техдолг в `server/index.ts`: дублируются `app.use(...)` для части роутов; есть отладочный `console.log("hello there %%%%")`.
 - В `web/index.html` id кнопок `btn-add-format` / `btn-add-host`, а `admin.ts` ждёт `btn-add-formats` / `btn-add-hosts` — кнопки «+ Добавить» не срабатывают (известный баг).
 - `package.json`: `"type": "commonjs"` при ES-модулях. Legacy: таблица `moderators`, папки `api/`, `vercel.json`.
-
-## Текущий todo (из todo.txt, не приоритет)
-
-Баланс рейтинга (награждать активность, уменьшить разрыв), уведомления об оценках, статистика для ведущих, страница логов/новостей, титулы, несколько рас в оценке, читаемые URL, транслитерация.
+- Реплей SC2 начинается с `MPQ\x1B` (user-data header), а `MPQ\x1A` — заголовок архива внутри файла; проверять `\x1B`, иначе валидный реплей отбивается как «not MPQ».
+- HTTP-заголовок `X-File-Name` только ISO-8859-1 → клиент шлёт `encodeURIComponent(file.name)`, сервер `decodeURIComponent`.
+- `sc2readerjs` отдаёт `race` локализованной («Протоссы/Терраны/Зерги») → маппить и латиницу, и кириллицу (`normalizeReplayRace`).
+- Для нового build у `sc2readerjs` нет протокола → warning и fallback; summary/eco обычно ок, но `loadChat`/часть game events может падать.
+- Победитель авто: `m_result = Win` либо единственный доживший при выбывших (last man standing). Кастомные FFA часто не пишут результат → победитель вручную.
+- Выбывание — эвристика по прекращению tracker-статистики (`loadEcoTimeline`, порог 30 с); только solo-режим, не гарантия.

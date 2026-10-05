@@ -1893,6 +1893,20 @@ function applyReplayPrefill(prefill: ReplayPrefill): void {
     if (teamSizeSelect) teamSizeSelect.value = String(Math.min(4, Math.max(2, teamSize)));
     updateTeamModeVisibility();
 
+    // Победитель: явный (result === 'win') либо единственный доживший до конца
+    // при условии, что кто-то выбыл (last man standing). Иначе — вручную.
+    const survivors = prefill.players.filter(
+        (p) => !(typeof p.eliminatedOrder === 'number' && p.eliminatedOrder > 0)
+    );
+    const eliminatedCount = prefill.players.length - survivors.length;
+    const hasExplicitWin = prefill.players.some((p) => p.result === 'win');
+    const eligibleSurvivors = (!teamMode && !hasExplicitWin && eliminatedCount >= 1)
+        ? survivors.filter((p) => p.result !== 'loss')
+        : [];
+    const soleSurvivorName = eligibleSurvivors.length === 1
+        ? (eligibleSurvivors[0]?.name ?? null)
+        : null;
+
     drafts = prefill.players.map((p) => {
         const matched = matchCachedPlayer(p.name);
         const cleanName = p.name ? stripClanTag(p.name) : null;
@@ -1903,7 +1917,7 @@ function applyReplayPrefill(prefill: ReplayPrefill): void {
             player_id: matched?.id ?? null,
             race: normalizeReplayRace(p.race),
             team: teamMode && p.teamId !== null ? p.teamId : null,
-            is_winner: p.result === 'win',
+            is_winner: p.result === 'win' || (soleSurvivorName !== null && p.name === soleSurvivorName),
             eliminated_at: elim,
             raw_name: cleanName ?? p.name ?? null,
             from_replay: true,
