@@ -339,6 +339,25 @@ export type TranslationKey =
     | 'games.not_eliminated'
     | 'games.used'
 
+    | 'leaderboard.activity'
+    | 'leaderboard.avg_place'
+    | 'leaderboard.help_title'
+    | 'leaderboard.help_intro'
+    | 'leaderboard.help_activity'
+    | 'leaderboard.help_place'
+    | 'leaderboard.help_not_elim'
+    | 'leaderboard.help_winner'
+    | 'leaderboard.help_early'
+    | 'leaderboard.help_outro'
+
+    | 'leaderboard.mode_all'
+    | 'leaderboard.mode_solo'
+    | 'leaderboard.mode_team'
+    | 'leaderboard.days'
+    | 'leaderboard.quality'
+    | 'leaderboard.help_days'
+    | 'leaderboard.help_quality'
+
     // Экран загрузки
     | 'loading.text'
     ;

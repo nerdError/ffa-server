@@ -203,13 +203,13 @@ function renderPlayersTable(
         tr.appendChild(tdName);
 
         // Elo
-        const tdElo = document.createElement('td');
-        tdElo.className = 'elo-cell';
-        tdElo.textContent = p.elo > 0 ? String(p.elo) : '—';
-        // Подсветим топ-3
-        if (p.elo >= 1600) tdElo.classList.add('elo-cell--high');
-        else if (p.elo >= 1550) tdElo.classList.add('elo-cell--mid');
-        tr.appendChild(tdElo);
+        // const tdElo = document.createElement('td');
+        // tdElo.className = 'elo-cell';
+        // tdElo.textContent = p.elo > 0 ? String(p.elo) : '—';
+        // // Подсветим топ-3
+        // if (p.elo >= 1600) tdElo.classList.add('elo-cell--high');
+        // else if (p.elo >= 1550) tdElo.classList.add('elo-cell--mid');
+        // tr.appendChild(tdElo);
 
         // Расы
         // Расы (скрывается на мобиле)
@@ -493,10 +493,8 @@ function bindSorting(cb: PlayersCallbacks): void {
             if (!key) return;
 
             if (sortKey === key) {
-                // тот же столбец — меняем направление
                 sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
             } else {
-                // новый столбец — начинаем с убывания
                 sortKey = key;
                 sortDirection = 'desc';
             }

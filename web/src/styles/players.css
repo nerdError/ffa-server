@@ -155,63 +155,32 @@
     border-bottom-color: #3498db;
 }
 
-/* Цвета заголовков по колонкам
-   Порядок: 1.Игрок, 2.Elo, 3.Расы, 4.Адаптивность, 5.Агрессия,
-            6.Черепашность, 7.Разнообразие, 8.Выживание, 9.Халява,
-            10.Итого, 11.Действия */
-.players-table th:nth-child(1) {
-    color: var(--text-secondary);
-}
+/* =========================================
+   Цвета заголовков таблицы игроков
+   =========================================
+   Порядок колонок:
+   1. Игрок
+   2. Расы
+   3. Адаптивность — #e67e22
+   4. Агрессия    — #e74c3c
+   5. Черепашность — #2ecc71
+   6. Разнообразие — #9b59b6
+   7. Выживание   — #3498db
+   8. Халява      — #f1c40f
+   9. Итого       — нейтральный
+   10. Действия
+*/
 
-/* Игрок */
-.players-table th:nth-child(2) {
-    color: var(--gold);
-}
-
-/* Elo */
-.players-table th:nth-child(3) {
-    color: var(--text-secondary);
-}
-
-/* Расы */
-.players-table th:nth-child(4) {
-    color: #e67e22;
-}
-
-/* Адаптивность */
-.players-table th:nth-child(5) {
-    color: #e74c3c;
-}
-
-/* Агрессия */
-.players-table th:nth-child(6) {
-    color: #2ecc71;
-}
-
-/* Черепашность */
-.players-table th:nth-child(7) {
-    color: #9b59b6;
-}
-
-/* Разнообразие */
-.players-table th:nth-child(8) {
-    color: #3498db;
-}
-
-/* Выживание */
-.players-table th:nth-child(9) {
-    color: #f1c40f;
-}
-
-/* Халява */
-.players-table th:nth-child(10) {
-    color: var(--text-primary);
-}
-
-/* Итого */
-.players-table th:nth-child(11) {
-    color: var(--text-primary);
-}
+.players-table th:nth-child(1) { color: var(--text-secondary); }
+.players-table th:nth-child(2) { color: var(--text-secondary); }
+.players-table th:nth-child(3) { color: #e67e22; }
+.players-table th:nth-child(4) { color: #e74c3c; }
+.players-table th:nth-child(5) { color: #2ecc71; }
+.players-table th:nth-child(6) { color: #9b59b6; }
+.players-table th:nth-child(7) { color: #3498db; }
+.players-table th:nth-child(8) { color: #f1c40f; }
+.players-table th:nth-child(9) { color: var(--text-primary); }
+.players-table th:nth-child(10) { color: var(--text-primary); }
 
 /* Действия */
 

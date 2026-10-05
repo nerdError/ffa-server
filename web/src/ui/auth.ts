@@ -1,10 +1,53 @@
 import { apiRequest } from '../api';
 import { saveSession } from '../state';
+import { t } from '../i18n';
 import type { LoginResponse, SignupResponse } from '../types';
 
 interface AuthCallbacks {
     onLoginSuccess: () => void;
     renderUserBox: () => void;
+}
+
+/**
+ * Догружает роли, username, привязанного игрока через /api/auth/me
+ * и сохраняет всё в session. Возвращает обновлённого user или null.
+ */
+async function fetchAndSaveFullUser(
+    accessToken: string,
+    refreshToken?: string
+): Promise<{ id: string; email: string } | null> {
+    try {
+        const me = await apiRequest<{
+            user: {
+                id: string;
+                email: string;
+                username: string | null;
+                is_moderator: boolean;
+                is_admin: boolean;
+                player_id: number | null;
+                player_name: string | null;
+            };
+        }>('/api/auth/me', { token: accessToken });
+
+        saveSession(
+            {
+                id: me.user.id,
+                email: me.user.email,
+                username: me.user.username,
+                is_moderator: me.user.is_moderator,
+                is_admin: me.user.is_admin,
+                player_id: me.user.player_id,
+                player_name: me.user.player_name,
+            },
+            accessToken,
+            refreshToken
+        );
+
+        return { id: me.user.id, email: me.user.email };
+    } catch (err) {
+        console.warn('[auth] failed to fetch /me after login:', err);
+        return null;
+    }
 }
 
 export function bindAuth(cb: AuthCallbacks): void {
@@ -14,12 +57,10 @@ export function bindAuth(cb: AuthCallbacks): void {
     const screenAuth = document.getElementById('screen-auth');
     if (!formLogin || !formSignup || !cardSignup || !screenAuth) return;
 
-    if (formLogin.dataset.bound === 'true') return;
-    formLogin.dataset.bound = 'true';
-
     const loginCard = screenAuth.querySelector('.card');
     if (!loginCard) return;
 
+    // Ссылки переключения форм
     document.getElementById('link-to-signup')?.addEventListener('click', (e) => {
         e.preventDefault();
         loginCard.classList.add('hidden');
@@ -32,6 +73,9 @@ export function bindAuth(cb: AuthCallbacks): void {
         loginCard.classList.remove('hidden');
     });
 
+    // ============================================================
+    // Логин
+    // ============================================================
     formLogin.addEventListener('submit', async (e) => {
         e.preventDefault();
         const fd = new FormData(formLogin);
@@ -39,11 +83,11 @@ export function bindAuth(cb: AuthCallbacks): void {
         const password = String(fd.get('password') ?? '');
 
         if (!identifier) {
-            alert('Введите email или никнейм');
+            alert(t('auth.error_identifier_required'));
             return;
         }
         if (!password) {
-            alert('Введите пароль');
+            alert(t('auth.error_password_required'));
             return;
         }
 
@@ -53,41 +97,23 @@ export function bindAuth(cb: AuthCallbacks): void {
                 body: { identifier, password },
             });
 
+            // Сохраняем базовые данные с токенами
             saveSession(res.user, res.access_token, res.refresh_token);
 
-            try {
-                console.log("apiRequest('/api/auth/me')");
+            // Догружаем роли, username, player_id
+            await fetchAndSaveFullUser(res.access_token, res.refresh_token);
 
-                const me = await apiRequest<{
-                    user: {
-                        id: string;
-                        email: string;
-                        username: string | null;
-                        is_moderator: boolean;
-                        is_admin: boolean;
-                    };
-                }>('/api/auth/me', { token: res.access_token });
-
-                saveSession(
-                    {
-                        id: me.user.id,
-                        email: me.user.email,
-                        username: me.user.username,
-                        is_moderator: me.user.is_moderator,
-                        is_admin: me.user.is_admin,
-                    },
-                    res.access_token,
-                    res.refresh_token
-                );
-            } catch { }
-
+            // Только после этого обновляем UI и переходим
             cb.renderUserBox();
             cb.onLoginSuccess();
         } catch (err) {
-            alert('Ошибка входа: ' + (err instanceof Error ? err.message : String(err)));
+            alert(t('auth.error_login') + (err instanceof Error ? err.message : String(err)));
         }
     });
 
+    // ============================================================
+    // Регистрация
+    // ============================================================
     formSignup.addEventListener('submit', async (e) => {
         e.preventDefault();
         const fd = new FormData(formSignup);
@@ -96,17 +122,17 @@ export function bindAuth(cb: AuthCallbacks): void {
         const email = String(fd.get('email') ?? '').trim();
         const password = String(fd.get('password') ?? '');
 
-        // Простая клиентская валидация, чтобы не гонять заведомо неверное
+        // Клиентская валидация
         if (username.length < 3) {
-            alert('Никнейм должен быть не короче 3 символов');
+            alert(t('auth.error_username_short'));
             return;
         }
         if (!email.includes('@')) {
-            alert('Введите корректный email');
+            alert(t('auth.error_email_invalid'));
             return;
         }
         if (password.length < 6) {
-            alert('Пароль должен быть не короче 6 символов');
+            alert(t('auth.error_password_short'));
             return;
         }
 
@@ -118,19 +144,20 @@ export function bindAuth(cb: AuthCallbacks): void {
 
             if (res.session && res.user) {
                 // Confirm email выключен — сразу логиним
-                saveSession(res.user, res.session.access_token);
+                saveSession(res.user, res.session.access_token, res.session.refresh_token);
+
+                await fetchAndSaveFullUser(res.session.access_token, res.session.refresh_token);
+
                 cb.renderUserBox();
                 cb.onLoginSuccess();
             } else {
-                // Confirm email включён — сообщаем и переключаем на логин
-                alert(
-                    'Аккаунт создан. Проверьте почту, чтобы подтвердить email, затем войдите.'
-                );
+                // Confirm email включён
+                alert(t('auth.account_created_confirm'));
                 cardSignup.classList.add('hidden');
                 loginCard.classList.remove('hidden');
             }
         } catch (err) {
-            alert('Ошибка регистрации: ' + (err instanceof Error ? err.message : String(err)));
+            alert(t('auth.error_signup') + (err instanceof Error ? err.message : String(err)));
         }
     });
 }

@@ -335,7 +335,25 @@ export const en: Record<TranslationKey, string> = {
     'games.new_player_error': 'Failed to create player: ',
     'games.not_eliminated': 'Not eliminated',
     'games.used': 'used',
-    
+
+    'leaderboard.activity': 'Activity',
+    'leaderboard.avg_place': 'Avg. place',
+    'leaderboard.help_title': 'How the rating works',
+    'leaderboard.help_intro': 'We reward active players and those who try to survive in the game as long as possible. Losing is fine. Playing matters.',
+    'leaderboard.help_activity': 'Activity points are earned for every game. The more you play, the higher your rating.',
+    'leaderboard.help_place': 'Better placement gives more points, worse — fewer.',
+    'leaderboard.help_not_elim': 'If you survived to the end but didn\'t win — you get almost the maximum points.',
+    'leaderboard.help_winner': 'Winning gives the highest points.',
+    'leaderboard.help_early': 'A very early elimination gives minimum points, but still counts as a base — your rating never drops below zero.',
+    'leaderboard.help_days': 'Playing on different days is additionally rewarded',
+    'leaderboard.help_quality': '"Quality" is the average activity points per game. It shows how effective each individual game is for you.',
+
+    'leaderboard.mode_all': 'All',
+    'leaderboard.mode_solo': 'FFA',
+    'leaderboard.mode_team': 'Team FFA',
+    'leaderboard.days': 'Days',
+    'leaderboard.quality': 'Quality',
+
     // Loading
     'loading.text': 'LOADING…',
 };

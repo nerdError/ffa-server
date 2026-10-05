@@ -337,6 +337,25 @@ export const ru: Record<TranslationKey, string> = {
     'games.not_eliminated': 'Не выбыл',
     'games.used': 'занято',
 
+    'leaderboard.activity': 'Активность',
+    'leaderboard.avg_place': 'Ср. место',
+    'leaderboard.help_title': 'Как считается рейтинг',
+    'leaderboard.help_intro': 'Мы поощряем активных игроков и тех, кто старается продержаться в игре как можно дольше. Проигрывать — не страшно. Главное — играть.',
+    'leaderboard.help_activity': 'Очки активности начисляются за каждую игру. Чем больше вы играете, тем выше ваш рейтинг.',
+    'leaderboard.help_place': 'За хорошее место в игре дают больше очков, за плохое — меньше.',
+    'leaderboard.help_not_elim': 'Если вы дожили до конца, но не победили — вы получаете почти максимум очков.',
+    'leaderboard.help_winner': 'Победа приносит самые высокие очки.',
+    'leaderboard.help_early': 'Очень ранний вылет даёт минимум очков, но всё равно начисляет базу — рейтинг не уходит в минус.',
+    'leaderboard.help_days': 'Игра в разные дни дополнительно поощряется',
+    'leaderboard.help_quality': '«Качество» — это среднее число очков активности за одну игру. Он показывает, насколько результативно вы проводите каждую отдельную игру.',
+    'leaderboard.help_outro': 'Проигрывать — не страшно. Главное — играть.',
+
+    'leaderboard.mode_all': 'Все',
+    'leaderboard.mode_solo': 'FFA',
+    'leaderboard.mode_team': 'Командные FFA',
+    'leaderboard.days': 'Дней',
+    'leaderboard.quality': 'Качество',
+
     // Загрузка
     'loading.text': 'ЗАГРУЗКА…',
 };
