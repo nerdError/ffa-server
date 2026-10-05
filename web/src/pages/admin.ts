@@ -263,7 +263,7 @@ function renderUsers(users: AdminUser[]): void {
 
 function roleBadgeLabel(role: Role): string {
     if (role === 'admin') return `★ ${t('topbar.role_admin')}`;
-    if (role === 'ghost') return `👻 ${t('topbar.role_ghost')}`;
+    if (role === 'ghost') return `💠 ${t('topbar.role_ghost')}`;
     return `◆ ${t('topbar.role_moderator')}`;
 }
 
@@ -338,7 +338,7 @@ function buildUserCard(u: AdminUser): HTMLElement {
     ghostBtn.className = isGhost
         ? 'admin-role-btn admin-role-btn--ghost is-active'
         : 'admin-role-btn admin-role-btn--ghost';
-    ghostBtn.textContent = isGhost ? `👻 ${t('admin.revoke_ghost')}` : `👻 ${t('admin.grant_ghost')}`;
+    ghostBtn.textContent = isGhost ? `💠 ${t('admin.revoke_ghost')}` : `💠 ${t('admin.grant_ghost')}`;
     ghostBtn.addEventListener('click', () => void toggleRole(u, 'ghost', isGhost));
     actions.appendChild(ghostBtn);
 

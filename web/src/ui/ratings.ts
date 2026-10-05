@@ -386,7 +386,7 @@ export async function renderRatingsList(playerId: number): Promise<void> {
             } else if (r.is_ghost) {
                 const badge = document.createElement('span');
                 badge.className = 'role-badge role-badge--ghost';
-                badge.textContent = `👻 ${t('topbar.role_ghost')}`;
+                badge.textContent = `💠 ${t('topbar.role_ghost')}`;
                 userWrap.appendChild(badge);
             } else if (r.is_moderator) {
                 const badge = document.createElement('span');

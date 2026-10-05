@@ -73,6 +73,8 @@ interface ReplayPrefill {
     playedAtMs: number | null;
     gameType: string | null;
     mapTitle: string | null;
+    /** Карта, найденная/созданная сервером по названию из реплея. */
+    map?: { id: number; name: string } | null;
     replayType: string | null;
     players: ReplayPrefillPlayer[];
 }
@@ -1142,15 +1144,21 @@ async function refreshPlayersCache(): Promise<void> {
 function fillSelect(
     select: HTMLSelectElement | null,
     items: { id: number; name: string }[],
-    placeholder: string
+    placeholder: string,
+    /** Если задано — пустой вариант становится выбираемым с этим текстом. */
+    emptyLabel?: string
 ): void {
     if (!select) return;
     select.innerHTML = '';
     const empty = document.createElement('option');
     empty.value = '';
-    empty.disabled = true;
-    empty.selected = true;
-    empty.textContent = placeholder;
+    if (emptyLabel !== undefined) {
+        empty.textContent = emptyLabel;
+    } else {
+        empty.disabled = true;
+        empty.selected = true;
+        empty.textContent = placeholder;
+    }
     select.appendChild(empty);
     for (const item of items) {
         const opt = document.createElement('option');
@@ -1276,28 +1284,6 @@ function normalizeRefName(name: string): string {
     return name.trim().toLowerCase().replace(/\.sc2map$/i, '');
 }
 
-/**
- * Ищет карту по названию в кэше справочника. Если не найдена — создаёт
- * новую через API и добавляет в кэш. Возвращает карту или null при ошибке.
- */
-async function findOrCreateMapByName(name: string): Promise<GameMap | null> {
-    const target = normalizeRefName(name);
-    if (!target) return null;
-
-    const existing = cachedMaps.find((m) => normalizeRefName(m.name) === target);
-    if (existing) return existing;
-
-    try {
-        const created = await createRef<GameMap>('maps', { name: name.trim() }, state.token);
-        cachedMaps = [...cachedMaps, created].sort((a, b) => a.name.localeCompare(b.name));
-        fillSelect(mapSelect, cachedMaps, t('games.select_placeholder'));
-        return created;
-    } catch (err) {
-        console.warn('[games] auto-create map failed:', err);
-        return null;
-    }
-}
-
 async function createMapInline(): Promise<void> {
     const name = prompt(t('games.new_map_prompt'));
     if (name === null) return;
@@ -1324,7 +1310,7 @@ async function createModInline(): Promise<void> {
         const newMod = await createRef<GameMod>('mods', { name: trimmed }, state.token);
         cachedMods = [...cachedMods, newMod];
         cachedMods.sort((a, b) => a.name.localeCompare(b.name));
-        fillSelect(modSelect, cachedMods, t('games.select_placeholder'));
+        fillSelect(modSelect, cachedMods, t('games.select_placeholder'), t('games.no_mod'));
         if (modSelect) modSelect.value = String(newMod.id);
         markDirty();
     } catch (err) {
@@ -1854,7 +1840,8 @@ function createPlayerAutocomplete(
 function normalizeReplayRace(race: string | null | undefined): 'T' | 'Z' | 'P' | 'R' {
     const s = (race ?? '').trim().toLowerCase();
     if (!s) return 'T';
-    // Реплей отдаёт название расы на языке игры — понимаем и латиницу, и кириллицу
+    // Реплей отдаёт название расы на языке игры — понимаем и латиницу, и
+    // кириллицу, и полные названия, и одиночные буквы T/Z/P/R.
     if (s.startsWith('z') || s.startsWith('зерг')) return 'Z';
     if (s.startsWith('p') || s.startsWith('протосс')) return 'P';
     if (s.startsWith('r') || s.startsWith('случайн') || s.startsWith('рандом')) return 'R';
@@ -1908,10 +1895,21 @@ async function applyReplayPrefill(prefill: ReplayPrefill): Promise<void> {
         durationInput.value = String(Math.max(1, Math.round(prefill.durationSeconds / 60)));
     }
 
-    // Карта — сопоставляем по названию из реплея; если нет в базе, создаём
-    if (mapSelect && prefill.mapTitle) {
-        const map = await findOrCreateMapByName(prefill.mapTitle);
-        if (map) mapSelect.value = String(map.id);
+    // Карта — сервер уже нашёл/создал её при разборе реплея. Если по какой-то
+    // причине карты нет, пробуем сопоставить по названию в загруженном кэше.
+    if (mapSelect) {
+        const prefillMap = prefill.map
+            ?? (prefill.mapTitle
+                ? cachedMaps.find((m) => normalizeRefName(m.name) === normalizeRefName(prefill.mapTitle!))
+                : undefined);
+        if (prefillMap) {
+            if (!cachedMaps.some((m) => m.id === prefillMap.id)) {
+                cachedMaps = [...cachedMaps, prefillMap as GameMap]
+                    .sort((a, b) => a.name.localeCompare(b.name));
+                fillSelect(mapSelect, cachedMaps, t('games.select_placeholder'));
+            }
+            mapSelect.value = String(prefillMap.id);
+        }
     }
 
     // Командный режим — если в реплее есть >= 2 равных команд по >= 2 игрока
@@ -1942,9 +1940,11 @@ async function applyReplayPrefill(prefill: ReplayPrefill): Promise<void> {
         (p) => !(typeof p.eliminatedOrder === 'number' && p.eliminatedOrder > 0)
     );
     const eliminatedCount = prefill.players.length - survivors.length;
-    const hasExplicitWin = prefill.players.some((p) => p.result === 'win');
+    const isWin = (p: ReplayPrefillPlayer) => String(p.result ?? '').toLowerCase() === 'win';
+    const isLoss = (p: ReplayPrefillPlayer) => String(p.result ?? '').toLowerCase() === 'loss';
+    const hasExplicitWin = prefill.players.some(isWin);
     const eligibleSurvivors = (!teamMode && !hasExplicitWin && eliminatedCount >= 1)
-        ? survivors.filter((p) => p.result !== 'loss')
+        ? survivors.filter((p) => !isLoss(p))
         : [];
     const soleSurvivorName = eligibleSurvivors.length === 1
         ? (eligibleSurvivors[0]?.name ?? null)
@@ -1954,7 +1954,7 @@ async function applyReplayPrefill(prefill: ReplayPrefill): Promise<void> {
         const matched = matchCachedPlayer(p.name);
         const cleanName = p.name ? stripClanTag(p.name) : null;
         const isWinner =
-            p.result === 'win' || (soleSurvivorName !== null && p.name === soleSurvivorName);
+            isWin(p) || (soleSurvivorName !== null && p.name === soleSurvivorName);
         return {
             player_id: matched?.id ?? null,
             race: normalizeReplayRace(p.race),
@@ -2014,13 +2014,12 @@ async function openCreateGameModal(prefill?: ReplayPrefill, fromGame?: GameFull)
     isDirty = false;
     if (modalTitle) modalTitle.textContent = t('games.form_title');
 
-    await refreshPlayersCache();
-    await ensureAllRefsLoaded();
+    await Promise.all([refreshPlayersCache(), ensureAllRefsLoaded()]);
 
     fillSelect(formatSelect, cachedFormats, t('games.select_placeholder'));
     fillSelect(hostSelect, cachedHosts, t('games.select_placeholder'));
     fillSelect(mapSelect, cachedMaps, t('games.select_placeholder'));
-    fillSelect(modSelect, cachedMods, t('games.select_placeholder'));
+    fillSelect(modSelect, cachedMods, t('games.select_placeholder'), t('games.no_mod'));
 
     const useLastCheckbox = document.getElementById('field-use-last') as HTMLInputElement | null;
     const useLast = !prefill && !fromGame && (useLastCheckbox?.checked ?? true);
@@ -2103,6 +2102,8 @@ function applyGameSettingsFromGame(gameFull: GameFull): void {
     }
     if (modSelect && gameFull.mod && cachedMods.some((m) => m.id === gameFull.mod!.id)) {
         modSelect.value = String(gameFull.mod.id);
+    } else if (modSelect) {
+        modSelect.value = '';
     }
 
     if (durationInput) {
@@ -2149,20 +2150,20 @@ async function openEditGameModal(gameId: number): Promise<void> {
         return;
     }
 
-    await refreshPlayersCache();
-    await ensureAllRefsLoaded();
+    await Promise.all([refreshPlayersCache(), ensureAllRefsLoaded()]);
 
     if (modalTitle) modalTitle.textContent = t('games.form_title_edit');
 
     fillSelect(formatSelect, cachedFormats, t('games.select_placeholder'));
     fillSelect(hostSelect, cachedHosts, t('games.select_placeholder'));
     fillSelect(mapSelect, cachedMaps, t('games.select_placeholder'));
-    fillSelect(modSelect, cachedMods, t('games.select_placeholder'));
+    fillSelect(modSelect, cachedMods, t('games.select_placeholder'), t('games.no_mod'));
 
     if (formatSelect && gameFull.format) formatSelect.value = String(gameFull.format.id);
     if (hostSelect && gameFull.host) hostSelect.value = String(gameFull.host.id);
     if (mapSelect && gameFull.map) mapSelect.value = String(gameFull.map.id);
     if (modSelect && gameFull.mod) modSelect.value = String(gameFull.mod.id);
+    else if (modSelect) modSelect.value = '';
 
     if (playedAtInput) playedAtInput.value = toDatetimeLocal(new Date(gameFull.played_at));
     if (durationInput) durationInput.value = gameFull.duration_min ? String(gameFull.duration_min) : '';
@@ -2218,7 +2219,7 @@ async function submitGameForm(e: Event): Promise<void> {
 
     if (!playedAtInput?.value) { alert(t('games.error_no_date')); return; }
     if (!formatSelect || !hostSelect || !mapSelect || !modSelect) return;
-    if (!formatSelect.value || !hostSelect.value || !mapSelect.value || !modSelect.value) {
+    if (!formatSelect.value || !hostSelect.value || !mapSelect.value) {
         alert(t('games.error_no_refs')); return;
     }
 
@@ -2307,7 +2308,7 @@ async function submitGameForm(e: Event): Promise<void> {
         format_id: Number(formatSelect.value),
         host_id: Number(hostSelect.value),
         map_id: Number(mapSelect.value),
-        mod_id: Number(modSelect.value),
+        mod_id: modSelect.value ? Number(modSelect.value) : null,
         duration_min: durationInput?.value ? Number(durationInput.value) : null,
         notes: notesInput?.value?.trim() || null,
         track_elim: true,

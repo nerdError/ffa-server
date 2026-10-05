@@ -111,7 +111,7 @@ export function renderUserBox(): void {
         } else if (state.user.is_ghost) {
             const badge = document.createElement('span');
             badge.className = 'role-badge role-badge--ghost';
-            badge.textContent = `👻 ${t('topbar.role_ghost')}`;
+            badge.textContent = `💠 ${t('topbar.role_ghost')}`;
             nameWrap.appendChild(badge);
         } else if (state.user.is_moderator) {
             const badge = document.createElement('span');

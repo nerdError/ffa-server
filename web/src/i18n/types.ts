@@ -38,6 +38,7 @@ export type TranslationKey =
     | 'games.remove_player'
     | 'games.winner_label'
     | 'games.select_placeholder'
+    | 'games.no_mod'
     | 'games.player_placeholder'
     | 'games.error_no_date'
     | 'games.error_no_refs'

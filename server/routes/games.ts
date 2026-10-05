@@ -129,6 +129,59 @@ const MPQ_ARCHIVE = 0x1a;
 // CJS-пакет парсера грузим через require (ESM-совместимо)
 const nodeRequire = createRequire(import.meta.url);
 
+/**
+ * Нормализует название карты для сопоставления (trim, нижний регистр,
+ * без расширения .sc2map).
+ */
+function normalizeMapName(name: string): string {
+    return name.trim().toLowerCase().replace(/\.sc2map$/i, '');
+}
+
+/**
+ * Ищет карту по названию или создаёт новую. Использует клиент уже
+ * аутентифицированного модератора (проверка прав выполнена выше в этом же
+ * запросе), поэтому отдельный привилегированный запрос с клиента не нужен.
+ */
+async function findOrCreateMap(
+    client: any,
+    name: string
+): Promise<{ id: number; name: string } | null> {
+    const trimmed = name.trim();
+    if (!trimmed) return null;
+    const target = normalizeMapName(trimmed);
+
+    const { data: maps, error: listError } = await client
+        .from('game_maps')
+        .select('id, name');
+    if (listError) {
+        console.warn('[games] map lookup failed:', listError.message);
+        return null;
+    }
+    const existing = (maps ?? []).find(
+        (m: { id: number; name: string }) => normalizeMapName(m.name) === target
+    );
+    if (existing) return existing;
+
+    const { data: created, error: createError } = await client
+        .from('game_maps')
+        .insert({ name: trimmed })
+        .select('id, name')
+        .single();
+    if (createError) {
+        // Возможная гонка: карту создали параллельно — пробуем найти ещё раз
+        if (createError.code === '23505') {
+            const { data: again } = await client.from('game_maps').select('id, name');
+            const found = (again ?? []).find(
+                (m: { id: number; name: string }) => normalizeMapName(m.name) === target
+            );
+            if (found) return found;
+        }
+        console.warn('[games] map create failed:', createError.message);
+        return null;
+    }
+    return created;
+}
+
 gamesRouter.post(
     '/parse-replay',
     express.raw({ type: 'application/octet-stream', limit: '25mb' }),
@@ -167,14 +220,27 @@ gamesRouter.post(
 
             const summary = await lib.loadReplaySummary(tmpPath);
 
-            // Порядок выбывания — best-effort, не ломает разбор при ошибке
-            let eliminationOrder = new Map<string, number>();
-            try {
-                const eco = await lib.loadEcoTimeline(tmpPath);
-                eliminationOrder = computeEliminationOrder(eco);
-            } catch (e) {
-                console.warn('[games] eco timeline failed:', e);
-            }
+            // Если в реплее уже есть явный победитель (m_result = Win), порядок
+            // выбывания не нужен, а eco-таймлайн — самая дорогая часть разбора.
+            // Поэтому грузим его только как запасной вариант (last man standing),
+            // когда явного результата нет. Параллельно ищем/создаём карту.
+            const hasExplicitWin = summary.players.some(
+                (p) => String(p.result ?? '').toLowerCase() === 'win'
+            );
+            const [eliminationOrder, map] = await Promise.all([
+                hasExplicitWin
+                    ? Promise.resolve(new Map<string, number>())
+                    : lib
+                        .loadEcoTimeline(tmpPath)
+                        .then((eco) => computeEliminationOrder(eco))
+                        .catch((e) => {
+                            console.warn('[games] eco timeline failed:', e);
+                            return new Map<string, number>();
+                        }),
+                summary.mapTitle
+                    ? findOrCreateMap(auth.client, summary.mapTitle)
+                    : Promise.resolve(null),
+            ]);
 
             res.json({
                 replay: {
@@ -186,6 +252,7 @@ gamesRouter.post(
                     playedAtMs: summary.playedAtMs,
                     gameType: summary.gameType,
                     mapTitle: summary.mapTitle,
+                    map,
                     replayType: summary.replayType,
                     players: summary.players.map((p) => ({
                         name: p.name,
