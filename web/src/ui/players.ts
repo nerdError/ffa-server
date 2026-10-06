@@ -208,24 +208,24 @@ function renderPlayersTable(
             tr.classList.add('is-me');
         }
 
-        // Имя (ссылка) — в цвет расы
+        // Имя (текст, не ссылка — кликабельна вся строка)
         const tdName = document.createElement('td');
-        const link = document.createElement('a');
-        link.className = 'player-name-link';
+        const nameEl = document.createElement('span');
+        nameEl.className = 'player-name-link';
 
-        link.textContent = getLocalePlayerName(p.name);
+        nameEl.textContent = getLocalePlayerName(p.name);
 
-        link.href = '#';
-        link.style.color = pickRaceColor(p.races);           // ← цвет расы
-        link.style.setProperty('--race-color', pickRaceColor(p.races)); // ← для hover
-        link.href = `/?player=${encodeURIComponent(p.name)}`;
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
+        nameEl.style.color = pickRaceColor(p.races);           // ← цвет расы
+        nameEl.style.setProperty('--race-color', pickRaceColor(p.races)); // ← для hover
+        tdName.appendChild(nameEl);
+        tr.appendChild(tdName);
+
+        // Вся строка открывает страницу игрока
+        tr.style.cursor = 'pointer';
+        tr.addEventListener('click', () => {
             window.history.pushState({}, '', `/?player=${encodeURIComponent(p.name)}`);
             cb.onOpenPlayer(p.id, p.name);
         });
-        tdName.appendChild(link);
-        tr.appendChild(tdName);
 
         // Elo
         // const tdElo = document.createElement('td');

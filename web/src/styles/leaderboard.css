@@ -255,6 +255,106 @@
     color: var(--text-primary);
 }
 
+/* =========================================
+   Мобильная подпись к значению стата
+   (видна только на телефоне, где шапка скрыта)
+   ========================================= */
+.lb-mobile-label {
+    display: none;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+}
+
+/* =========================================
+   Лидерборд на телефоне: строки — карточки
+   со всеми параметрами (без горизонтального скролла)
+   ========================================= */
+@media (max-width: 700px) {
+    .leaderboard-table-wrap {
+        overflow-x: hidden;
+    }
+
+    .leaderboard-table thead {
+        display: none;
+    }
+
+    /* Строка — flex: ранг+имя на первой строке, статы ниже по 2 в ряд */
+    .leaderboard-table tbody tr {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 4px 8px;
+        padding: 10px;
+        margin-bottom: 10px;
+        background: var(--bg-panel);
+        border: 1px solid var(--border-glow);
+        border-radius: 4px;
+    }
+
+    .leaderboard-table tbody td {
+        display: block;
+        border-bottom: none;
+        padding: 0;
+    }
+
+    /* Ранг — маленький бейдж слева от имени */
+    .leaderboard-table tbody td.lb-rank {
+        flex: 0 0 auto;
+        font-size: 1.05rem;
+        text-align: center;
+        line-height: 1.4;
+    }
+
+    /* Имя — заполняет первую строку рядом с рангом */
+    .leaderboard-table tbody td.lb-name {
+        flex: 1 1 auto;
+        min-width: 0;
+        line-height: 1.4;
+    }
+
+    .leaderboard-table tbody td.lb-name .player-name-link {
+        font-size: 1.1rem;
+    }
+
+    /* Статы — 2 в ряд по всей ширине, с подписями */
+    .leaderboard-table tbody td.lb-stat {
+        flex: 1 1 calc(50% - 8px);
+        min-width: 0;
+        text-align: left;
+        padding: 2px 0;
+    }
+
+    .leaderboard-table tbody td.lb-stat .lb-mobile-label {
+        display: block;
+        font-size: 0.62rem;
+    }
+
+    .leaderboard-table tbody td.lb-stat .lb-value {
+        font-family: var(--font-mono);
+        font-weight: 700;
+        font-size: 1.15rem;
+        line-height: 1.2;
+    }
+
+    /* Переключатель режимов — крупнее, на всю ширину */
+    .leaderboard-mode-switch {
+        display: flex;
+        flex-wrap: wrap;
+        width: 100%;
+        gap: 2px;
+    }
+
+    .leaderboard-mode-switch .view-toggle-btn {
+        flex: 1 1 auto;
+        padding: 12px 10px;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+}
 
 /* Плавное появление после обновления */
 .leaderboard-table {

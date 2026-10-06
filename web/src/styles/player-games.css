@@ -81,6 +81,77 @@
 .stat-value--race-P { color: var(--race-protoss); }
 .stat-value--race-R { color: var(--race-random); }
 
+/* Статистика по расам */
+.player-games-races-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-glow);
+}
+
+.player-games-races-title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.player-games-races {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.race-stat-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-left: 3px solid var(--border-glow);
+  border-radius: 2px;
+}
+
+.race-stat-race {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.race-stat-race-T { color: var(--race-terran); }
+.race-stat-race-Z { color: var(--race-zerg); }
+.race-stat-race-P { color: var(--race-protoss); }
+.race-stat-race-R { color: var(--race-random); }
+
+.race-stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.race-stat-games {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.race-stat-wins {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
 /* Список игр */
 .player-games-list {
   display: flex;

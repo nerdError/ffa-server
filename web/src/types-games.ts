@@ -61,3 +61,19 @@ export interface GamesListResponse {
 export interface GameResponse {
   game: GameFull;
 }
+
+export interface RaceStat {
+  race: 'T' | 'Z' | 'P' | 'R';
+  games: number;
+  wins: number;
+  winrate: number;
+}
+
+export interface PlayerGameStats {
+  total_games: number;
+  total_wins: number;
+  winrate: number;
+  favorite_race: 'T' | 'Z' | 'P' | 'R' | null;
+  favorite_format: string | null;
+  race_stats: RaceStat[];
+}

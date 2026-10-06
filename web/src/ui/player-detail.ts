@@ -587,7 +587,7 @@ async function goToNextPlayer(): Promise<void> {
     await openPlayerScreen(next.id);
 }
 
-import type { PlayerGameStats, GameListItem, GamesListResponse } from '../types-games';
+import type { PlayerGameStats, RaceStat, GameListItem, GamesListResponse } from '../types-games';
 import { navigateTo } from '../router';
 
 // ============================================================
@@ -683,6 +683,30 @@ function renderPlayerGamesContent(
 
     card.appendChild(summary);
 
+    // ============================================================
+    // Статистика по расам — только если игрок играл более чем на одной
+    // ============================================================
+    const raceStats = stats.race_stats ?? [];
+    if (raceStats.length > 1) {
+        const racesTitle = document.createElement('h4');
+        racesTitle.className = 'player-games-races-title';
+        racesTitle.textContent = t('player.games_races_title');
+
+        const racesGrid = document.createElement('div');
+        racesGrid.className = 'player-games-races';
+
+        for (const rs of raceStats) {
+            const block = buildRaceStatBlock(rs);
+            racesGrid.appendChild(block);
+        }
+
+        const racesSection = document.createElement('div');
+        racesSection.className = 'player-games-races-section';
+        racesSection.append(racesTitle, racesGrid);
+
+        card.appendChild(racesSection);
+    }
+
     // Список последних игр: показываем 3, остальные — раскрываются по кнопке
     const VISIBLE_GAMES = 3;
 
@@ -747,6 +771,31 @@ function buildStatBlock(label: string, value: string): HTMLElement {
     valueEl.textContent = value;
 
     block.append(labelEl, valueEl);
+    return block;
+}
+
+function buildRaceStatBlock(rs: RaceStat): HTMLElement {
+    const block = document.createElement('div');
+    block.className = 'race-stat-block';
+
+    const raceEl = document.createElement('div');
+    raceEl.className = `race-stat-race race-stat-race-${rs.race}`;
+    raceEl.textContent = rs.race;
+
+    const info = document.createElement('div');
+    info.className = 'race-stat-info';
+
+    const gamesEl = document.createElement('div');
+    gamesEl.className = 'race-stat-games';
+    gamesEl.textContent = `${rs.games} ${t('player.games_games_word')}`;
+
+    const winsEl = document.createElement('div');
+    winsEl.className = 'race-stat-wins';
+    winsEl.textContent = `${rs.wins} ${t('player.games_wins_word')} · ${rs.winrate}%`;
+
+    info.append(gamesEl, winsEl);
+
+    block.append(raceEl, info);
     return block;
 }
 

@@ -280,11 +280,12 @@ function renderLeaderboard(players: LeaderboardEntry[], container: HTMLElement):
         }
 
         const tdRank = document.createElement('td');
+        tdRank.className = 'lb-rank';
         tdRank.textContent = String(index + 1);
         tr.appendChild(tdRank);
 
         for (const col of columns) {
-            tr.appendChild(buildCell(col.key, p));
+            tr.appendChild(buildCell(col.key, col.label, p));
         }
 
         tbody.appendChild(tr);
@@ -320,54 +321,72 @@ function columnsFor(mode: Mode): Array<{ label: string; key: SortKey }> {
     ];
 }
 
-function buildCell(key: SortKey, p: LeaderboardEntry): HTMLTableCellElement {
+function buildCell(key: SortKey, label: string, p: LeaderboardEntry): HTMLTableCellElement {
     const td = document.createElement('td');
-    switch (key) {
-        case 'name': {
-            const link = document.createElement('a');
-            link.href = `/?player=${encodeURIComponent(p.name)}`;
-            link.className = 'player-name-link';
-            link.textContent = p.name;
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                navigateTo(`/?player=${encodeURIComponent(p.name)}`);
-            });
-            td.appendChild(link);
-            if (p.aka) {
-                const aka = document.createElement('span');
-                aka.className = 'player-aka';
-                aka.textContent = ` aka ${p.aka}`;
-                td.appendChild(aka);
-            }
-            break;
+
+    if (key === 'name') {
+        td.className = 'lb-name';
+        const link = document.createElement('a');
+        link.href = `/?player=${encodeURIComponent(p.name)}`;
+        link.className = 'player-name-link';
+        link.textContent = p.name;
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateTo(`/?player=${encodeURIComponent(p.name)}`);
+        });
+        td.appendChild(link);
+        if (p.aka) {
+            const aka = document.createElement('span');
+            aka.className = 'player-aka';
+            aka.textContent = ` aka ${p.aka}`;
+            td.appendChild(aka);
         }
+        return td;
+    }
+
+    // Остальные ячейки: подпись (для мобильного) + значение
+    td.className = 'lb-stat';
+    if (key === 'activity') td.classList.add('activity-cell');
+    if (key === 'quality') td.classList.add('quality-cell');
+
+    const lbl = document.createElement('span');
+    lbl.className = 'lb-mobile-label';
+    lbl.textContent = label;
+    td.appendChild(lbl);
+
+    const val = document.createElement('span');
+    val.className = 'lb-value';
+
+    let text = '';
+    switch (key) {
         case 'activity':
-            td.className = 'activity-cell';
-            td.textContent = p.activity_score.toFixed(1);
+            text = p.activity_score.toFixed(1);
             break;
         case 'elo':
-            td.textContent = String(p.elo);
+            text = String(p.elo);
             break;
         case 'games':
-            td.textContent = String(p.games_played);
+            text = String(p.games_played);
             break;
         case 'days':
-            td.textContent = String(p.game_days);
+            text = String(p.game_days);
             break;
         case 'wins':
-            td.textContent = String(p.wins);
+            text = String(p.wins);
             break;
         case 'winrate':
-            td.textContent = `${p.winrate}%`;
+            text = `${p.winrate}%`;
             break;
         case 'quality':
-            td.className = 'quality-cell';
-            td.textContent = p.quality.toFixed(2);
+            text = p.quality.toFixed(2);
             break;
         case 'avg_place':
-            td.textContent = p.avg_place !== null ? p.avg_place.toFixed(2) : '—';
+            text = p.avg_place !== null ? p.avg_place.toFixed(2) : '—';
             break;
     }
+    val.textContent = text;
+    td.appendChild(val);
+
     return td;
 }
 
