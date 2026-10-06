@@ -2,6 +2,10 @@ import { apiRequest } from '../api';
 import { state } from '../state';
 import { buildPlayerCardElement } from '../card';
 import type { PlayerResponse, PlayerWithStats, Race, RatingInput } from '../types';
+import terranIconUrl from '../../assets/race/terran.svg';
+import zergIconUrl from '../../assets/race/zerg.svg';
+import protossIconUrl from '../../assets/race/protoss.svg';
+import randomIconUrl from '../../assets/race/random.svg';
 import {
     renderRatingEditor,
     renderRatingsList,
@@ -778,9 +782,18 @@ function buildRaceStatBlock(rs: RaceStat): HTMLElement {
     const block = document.createElement('div');
     block.className = 'race-stat-block';
 
-    const raceEl = document.createElement('div');
-    raceEl.className = `race-stat-race race-stat-race-${rs.race}`;
-    raceEl.textContent = rs.race;
+    const iconMap: Record<Race, string> = {
+        T: terranIconUrl,
+        Z: zergIconUrl,
+        P: protossIconUrl,
+        R: randomIconUrl,
+    };
+
+    const icon = document.createElement('img');
+    icon.className = `race-stat-icon race-stat-icon-${rs.race}`;
+    icon.src = iconMap[rs.race];
+    icon.alt = rs.race;
+    icon.loading = 'lazy';
 
     const info = document.createElement('div');
     info.className = 'race-stat-info';
@@ -795,7 +808,7 @@ function buildRaceStatBlock(rs: RaceStat): HTMLElement {
 
     info.append(gamesEl, winsEl);
 
-    block.append(raceEl, info);
+    block.append(icon, info);
     return block;
 }
 
