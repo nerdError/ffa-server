@@ -346,6 +346,8 @@ function buildCell(key: SortKey, label: string, p: LeaderboardEntry): HTMLTableC
 
     // Остальные ячейки: подпись (для мобильного) + значение
     td.className = 'lb-stat';
+    if (key === 'activity') td.classList.add('lb-activity');
+    if (key === 'elo') td.classList.add('lb-elo');
     if (key === 'activity') td.classList.add('activity-cell');
     if (key === 'quality') td.classList.add('quality-cell');
 

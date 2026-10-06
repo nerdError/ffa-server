@@ -13,6 +13,10 @@ import {
 import type { PlayerWithStats, PlayersListResponse } from '../types';
 import type { GameListItem, GamesListResponse, GameFull } from '../types-games';
 import { ensureRolesLoaded } from '../app';
+import terranIconUrl from '../../assets/race/terran.svg';
+import zergIconUrl from '../../assets/race/zerg.svg';
+import protossIconUrl from '../../assets/race/protoss.svg';
+import randomIconUrl from '../../assets/race/random.svg';
 
 // ============================================================
 // Состояние модуля
@@ -245,6 +249,11 @@ export function mountGames(params: URLSearchParams): void {
     document.getElementById('game-modal-close')?.addEventListener('click', () => closeGameModal(), { signal });
     document.getElementById('btn-cancel-game')?.addEventListener('click', () => closeGameModal(), { signal });
     form?.addEventListener('submit', (e) => void submitGameForm(e), { signal });
+
+    // Закрываем открытые выпадающие списки рас при клике вне их
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.race-picker-menu').forEach((m) => m.remove());
+    }, { signal });
 
     document.getElementById('btn-add-player')?.addEventListener('click', () => {
         addPlayerDraft();
@@ -977,9 +986,7 @@ function buildSoloSummary(container: HTMLElement, g: GameListItem): void {
         medal.className = 'game-player-medal';
         medal.textContent = '🥇';
 
-        const race = document.createElement('span');
-        race.className = 'game-player-race';
-        race.textContent = p.race;
+        const race = buildRaceIcon(p.race, 'game-player-race');
 
         const name = document.createElement('span');
         name.className = 'game-player-name';
@@ -1043,9 +1050,7 @@ function buildTeamSummary(container: HTMLElement, g: GameListItem): void {
         pEl.className = 'game-player';
         pEl.style.setProperty('--race-color', getRaceColor(p.race));
 
-        const race = document.createElement('span');
-        race.className = 'game-player-race';
-        race.textContent = p.race;
+        const race = buildRaceIcon(p.race, 'game-player-race');
 
         const name = document.createElement('span');
         name.className = 'game-player-name';
@@ -1101,9 +1106,7 @@ function renderSoloPlayers(container: HTMLElement, g: GameListItem): void {
     row.appendChild(placeEl);
 
     // Раса
-    const raceEl = document.createElement('span');
-    raceEl.className = 'player-line-race';
-    raceEl.textContent = p.race;
+    const raceEl = buildRaceIcon(p.race, 'player-line-race');
     row.appendChild(raceEl);
 
     // Имя
@@ -1197,9 +1200,7 @@ function renderTeamPlayers(container: HTMLElement, g: GameListItem): void {
         }
         m.appendChild(placeEl);
 
-        const raceEl = document.createElement('span');
-        raceEl.className = 'player-line-race';
-        raceEl.textContent = p.race;
+        const raceEl = buildRaceIcon(p.race, 'player-line-race');
         m.appendChild(raceEl);
 
         const nameEl = document.createElement('span');
@@ -1223,8 +1224,24 @@ function getRaceColor(race: string): string {
         case 'Z': return 'var(--race-zerg)';
         case 'P': return 'var(--race-protoss)';
         case 'R': return 'var(--race-random)';
-        default: return 'var(--text-secondary)';
+        default: return 'var(--text-muted)';
     }
+}
+
+const RACE_ICON_URL: Record<string, string> = {
+    T: terranIconUrl,
+    Z: zergIconUrl,
+    P: protossIconUrl,
+    R: randomIconUrl,
+};
+
+function buildRaceIcon(race: string, className: string): HTMLImageElement {
+    const img = document.createElement('img');
+    img.className = className;
+    img.src = RACE_ICON_URL[race] ?? randomIconUrl;
+    img.alt = race;
+img.loading = 'lazy';
+    return img;
 }
 
 function highlightGame(gameId: number): void {
@@ -2093,8 +2110,7 @@ function buildPlayerRow(index: number, maxTeams: number, teamMode: boolean): HTM
         (player) => {
             if (player.dominant_race) {
                 draft.race = player.dominant_race;
-                const raceEl = row.querySelector('.race-select') as HTMLSelectElement | null;
-                if (raceEl) raceEl.value = player.dominant_race;
+                setTrigger(player.dominant_race as 'T' | 'Z' | 'P' | 'R');
             }
         }
     );
@@ -2105,20 +2121,81 @@ function buildPlayerRow(index: number, maxTeams: number, teamMode: boolean): HTM
         autocompleteWrap.title = t('games.replay_player_unmatched');
     }
 
-    // --- Раса ---
-    const raceSelect = document.createElement('select');
-    raceSelect.className = 'race-select';
-    for (const r of ['T', 'Z', 'P', 'R']) {
-        const opt = document.createElement('option');
-        opt.value = r;
-        opt.textContent = r;
-        if (draft.race === r) opt.selected = true;
-        raceSelect.appendChild(opt);
-    }
-    raceSelect.addEventListener('change', () => {
-        draft.race = raceSelect.value as 'T' | 'Z' | 'P' | 'R';
-        markDirty();
+    // --- Раса (выпадающий список с иконками) ---
+    const raceOrder: ('T' | 'Z' | 'P' | 'R')[] = ['T', 'Z', 'P', 'R'];
+
+    const racePicker = document.createElement('div');
+    racePicker.className = 'race-picker';
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'race-picker-trigger';
+    const setTrigger = (r: 'T' | 'Z' | 'P' | 'R'): void => {
+        trigger.innerHTML = '';
+        trigger.appendChild(buildRaceIcon(r, 'race-picker-icon'));
+        trigger.title = r;
+    };
+    setTrigger(draft.race);
+
+    let menu: HTMLDivElement | null = null;
+    const closeMenu = (): void => {
+        menu?.remove();
+        menu = null;
+    };
+
+    const openMenu = (): void => {
+        closeMenu();
+        menu = document.createElement('div');
+        menu.className = 'race-picker-menu';
+
+        const slotH = 34;
+        const gap = 4;
+        for (const r of raceOrder) {
+            const slot = document.createElement('button');
+            slot.type = 'button';
+            slot.className = 'race-picker-slot' + (draft.race === r ? ' is-active' : '');
+            slot.title = r;
+            slot.appendChild(buildRaceIcon(r, 'race-picker-icon'));
+            if (draft.race === r) {
+                // Выбранную расу блокируем — её нельзя выбрать повторно.
+                slot.disabled = true;
+            } else {
+                slot.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    setRace(r);
+                    markDirty();
+                    closeMenu();
+                });
+            }
+            menu.appendChild(slot);
+        }
+
+        // Список фиксированный: открывается под триггером, слева выровнен по центру.
+        const tr = trigger.getBoundingClientRect();
+        const menuW = 40;
+        const menuH = raceOrder.length * slotH + (raceOrder.length - 1) * gap + 8;
+        let top = tr.bottom + 6;
+        let left = tr.left + tr.width / 2 - menuW / 2;
+        top = Math.max(8, Math.min(top, window.innerHeight - menuH - 8));
+        left = Math.max(8, Math.min(left, window.innerWidth - menuW - 8));
+        menu.style.top = `${top}px`;
+        menu.style.left = `${left}px`;
+
+        document.body.appendChild(menu);
+    };
+
+    const setRace = (r: 'T' | 'Z' | 'P' | 'R'): void => {
+        draft.race = r;
+        setTrigger(r);
+    };
+
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (menu) closeMenu();
+        else openMenu();
     });
+
+    racePicker.appendChild(trigger);
 
     // --- Победитель ---
     const winnerWrap = document.createElement('label');
@@ -2254,7 +2331,7 @@ function buildPlayerRow(index: number, maxTeams: number, teamMode: boolean): HTM
         removeBtn.style.visibility = 'hidden';
     }
 
-    row.append(autocompleteWrap, raceSelect, winnerWrap);
+    row.append(autocompleteWrap, racePicker, winnerWrap);
     if (placeSelect) row.appendChild(placeSelect);
     row.appendChild(removeBtn);
 

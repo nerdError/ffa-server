@@ -158,11 +158,10 @@
 }
 
 .game-player-race {
-    font-family: var(--font-mono);
-    font-weight: 700;
-    color: var(--race-color);
-    font-size: 0.75rem;
-    letter-spacing: 0.5px;
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+    flex: 0 0 auto;
 }
 
 .game-player-name {
@@ -948,7 +947,7 @@
 /* Строка участника */
 .player-entry {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 60px 120px minmax(0, 140px) 36px;
+    grid-template-columns: minmax(0, 1fr) 122px 120px minmax(0, 140px) 36px;
     gap: 8px;
     align-items: center;
     padding: 6px 4px;
@@ -958,7 +957,7 @@
 }
 
 .player-entry.is-team-mode {
-    grid-template-columns: minmax(0, 1fr) 60px 120px minmax(0, 140px) 36px;
+    grid-template-columns: minmax(0, 1fr) 122px 120px minmax(0, 140px) 36px;
     background: transparent;
 }
 
@@ -969,6 +968,7 @@
 
 .player-entry.is-eliminated .player-name-input,
 .player-entry.is-eliminated .race-select,
+.player-entry.is-eliminated .race-picker,
 .player-entry.is-eliminated .elim-select {
     filter: grayscale(0.5);
 }
@@ -1003,6 +1003,88 @@
 .player-entry .race-select {
     text-align: center;
     font-weight: 700;
+}
+
+/* Иконки рас в форме (выпадающий список) */
+.race-picker {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.race-picker-trigger {
+    appearance: none;
+    background: var(--bg-panel-light);
+    border: 1px solid var(--border-glow);
+    border-radius: 3px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.race-picker-trigger:hover {
+    border-color: var(--gold);
+}
+
+.race-picker-icon {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    display: block;
+}
+
+/* Выпадающий список: слоты по вертикали, центрированы по выбранной расе */
+.race-picker-menu {
+    position: fixed;
+    z-index: 1500;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-glow);
+    border-radius: 4px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+.race-picker-slot {
+    appearance: none;
+    background: var(--bg-panel-light);
+    border: 1px solid var(--border-glow);
+    border-radius: 3px;
+    width: 38px;
+    height: 34px;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+    transition: opacity 0.15s, border-color 0.15s;
+}
+
+.race-picker-slot:hover {
+    opacity: 1;
+    border-color: var(--text-secondary);
+}
+
+.race-picker-slot:disabled {
+    opacity: 1;
+    cursor: default;
+    background: rgba(255, 255, 255, 0.04);
+    box-shadow: inset 0 0 0 1px var(--gold);
+}
+
+.race-picker-slot.is-active {
+    opacity: 1;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 1px var(--gold);
 }
 
 /* Победитель */
@@ -1254,7 +1336,8 @@
         grid-area: name;
     }
 
-    .player-entry .race-select {
+    .player-entry .race-select,
+    .player-entry .race-picker {
         grid-area: race;
     }
 
@@ -1616,11 +1699,10 @@ details[open] .game-card-players-toggle::before {
 
 /* Раса */
 .player-line-race {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  color: var(--race-color);
-  font-size: 0.8rem;
-  letter-spacing: 0.5px;
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  flex: 0 0 auto;
 }
 
 /* Имя */

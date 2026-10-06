@@ -282,12 +282,13 @@
         display: none;
     }
 
-    /* Строка — flex: ранг+имя на первой строке, статы ниже по 2 в ряд */
+    /* Строка — грид: ранг+ник слева вверху, ниже — ровная
+       сетка статов в стиле нижней панели карточки игрока */
     .leaderboard-table tbody tr {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: flex-start;
-        gap: 4px 8px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-auto-rows: auto;
+        gap: 0;
         padding: 10px;
         margin-bottom: 10px;
         background: var(--bg-panel);
@@ -299,38 +300,53 @@
         display: block;
         border-bottom: none;
         padding: 0;
-    }
-
-    /* Ранг — маленький бейдж слева от имени */
-    .leaderboard-table tbody td.lb-rank {
-        flex: 0 0 auto;
-        font-size: 1.05rem;
-        text-align: center;
-        line-height: 1.4;
-    }
-
-    /* Имя — заполняет первую строку рядом с рангом */
-    .leaderboard-table tbody td.lb-name {
-        flex: 1 1 auto;
         min-width: 0;
-        line-height: 1.4;
+    }
+
+    /* Ранг — крупный, в верхнем левом углу; прижат к правому
+       краю первой колонки, чтобы ник начинался сразу за ним */
+    .leaderboard-table tbody td.lb-rank {
+        grid-column: 1;
+        grid-row: 1;
+        justify-self: end;
+        align-self: center;
+        text-align: right;
+        font-family: var(--font-mono);
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+        padding: 0 6px 16px 0;
+    }
+
+    /* Ник — сразу за рангом, слева вверху */
+    .leaderboard-table tbody td.lb-name {
+        grid-column: 2 / 5;
+        grid-row: 1;
+        justify-self: start;
+        align-self: center;
+        text-align: left;
+        padding: 0 0 16px;
     }
 
     .leaderboard-table tbody td.lb-name .player-name-link {
-        font-size: 1.1rem;
+        font-size: 1.15rem;
     }
 
-    /* Статы — 2 в ряд по всей ширине, с подписями */
+    /* Статы — единая сетка метрик (как панель метрик в карточке) */
     .leaderboard-table tbody td.lb-stat {
-        flex: 1 1 calc(50% - 8px);
-        min-width: 0;
-        text-align: left;
-        padding: 2px 0;
+        padding: 8px 4px;
+        text-align: center;
+        border-top: 1px solid var(--border-glow);
     }
 
     .leaderboard-table tbody td.lb-stat .lb-mobile-label {
         display: block;
-        font-size: 0.62rem;
+        font-size: 0.6rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 2px;
     }
 
     .leaderboard-table tbody td.lb-stat .lb-value {
