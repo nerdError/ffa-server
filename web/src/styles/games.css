@@ -947,7 +947,7 @@
 }
 
 .player-entry.is-team-mode {
-    grid-template-columns: minmax(0, 1fr) 60px 120px 36px;
+    grid-template-columns: minmax(0, 1fr) 60px 120px minmax(0, 140px) 36px;
     background: transparent;
 }
 
@@ -1258,12 +1258,6 @@
 
     .player-entry .elim-select {
         grid-area: elim;
-    }
-
-    .player-entry.is-team-mode {
-        grid-template-areas:
-            "name   race   remove"
-            "winner winner winner";
     }
 }
 
@@ -1592,4 +1586,22 @@ details[open] .game-card-players-toggle::before {
   color: var(--text-muted);
   font-weight: 700;
   opacity: 0.6;
+}
+
+/* Метка команды (в раскрытии участников) */
+.player-team-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.player-team-line.is-winner .player-team-label {
+  color: var(--gold);
+}
+
+.player-line-member.is-winner .player-line-place {
+  color: var(--gold);
 }

@@ -413,6 +413,10 @@ export const en: Record<TranslationKey, string> = {
     'leaderboard.mode_all': 'All',
     'leaderboard.mode_solo': 'FFA',
     'leaderboard.mode_team': 'Team FFA',
+    'leaderboard.mode_league_s3': 'FFA League (Season 3)',
+    'leaderboard.mode_team_s1': '2x2 FFA League (Season 1)',
+    'leaderboard.season_help_title': 'Season standings',
+    'leaderboard.season_help_text': 'Only games of this format played from September 2026 through the end of 2026 are counted. The main metric is the number of wins.',
     'leaderboard.days': 'Days',
     'leaderboard.quality': 'Quality',
 

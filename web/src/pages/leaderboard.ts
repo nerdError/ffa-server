@@ -3,7 +3,12 @@ import { t } from '../i18n';
 import { navigateTo } from '../router';
 import { state } from '../state';
 
-let currentMode: 'all' | 'solo' | 'team' = 'all';
+type Mode = 'all' | 'solo' | 'team' | 'ffa-league' | 'team-ffa';
+
+/** Сезонные зачёты: только победы/игры по конкретному формату, без ELO и активности. */
+const isSeasonMode = (mode: Mode): boolean => mode === 'ffa-league' || mode === 'team-ffa';
+
+let currentMode: Mode = 'all';
 
 type SortKey = 'name' | 'activity' | 'games' | 'days' | 'wins' | 'winrate' | 'quality' | 'avg_place' | 'elo';
 type SortDirection = 'asc' | 'desc';
@@ -99,10 +104,12 @@ function renderModeSwitch(): void {
         switcher.innerHTML = '';
     }
 
-    const modes: Array<{ key: 'all' | 'solo' | 'team'; label: string }> = [
+    const modes: Array<{ key: Mode; label: string }> = [
         { key: 'all', label: t('leaderboard.mode_all') },
         { key: 'solo', label: t('leaderboard.mode_solo') },
         { key: 'team', label: t('leaderboard.mode_team') },
+        { key: 'ffa-league', label: t('leaderboard.mode_league_s3') },
+        { key: 'team-ffa', label: t('leaderboard.mode_team_s1') },
     ];
 
     for (const m of modes) {
@@ -151,7 +158,7 @@ export function unmountLeaderboard(): void {
     abortController = null;
 }
 
-async function loadLeaderboard(mode: 'all' | 'solo' | 'team' = 'all'): Promise<void> {
+async function loadLeaderboard(mode: Mode = 'all'): Promise<void> {
     const container = document.getElementById('leaderboard-container');
     if (!container) return;
 
@@ -159,7 +166,8 @@ async function loadLeaderboard(mode: 'all' | 'solo' | 'team' = 'all'): Promise<v
     currentMode = mode;
 
     if (modeChanged) {
-        sortKey = 'activity';
+        // В сезонных зачётах основной параметр — победы.
+        sortKey = isSeasonMode(mode) ? 'wins' : 'activity';
         sortDirection = 'desc';
     }
 
@@ -199,7 +207,7 @@ function renderLeaderboard(players: LeaderboardEntry[], container: HTMLElement):
     let tbody = table?.querySelector<HTMLTableSectionElement>('tbody');
     let thead = table?.querySelector<HTMLTableSectionElement>('thead');
 
-    // Если таблицы нет — создаём всю структуру (как раньше)
+    // Если таблицы нет — создаём всю структуру
     if (!table || !tbody || !thead) {
         container.innerHTML = '';
 
@@ -218,7 +226,6 @@ function renderLeaderboard(players: LeaderboardEntry[], container: HTMLElement):
 
         const helpBox = document.createElement('aside');
         helpBox.className = 'leaderboard-help';
-        helpBox.innerHTML = buildHelpHtml();
 
         wrap.append(tableWrap, helpBox);
         container.appendChild(wrap);
@@ -227,24 +234,20 @@ function renderLeaderboard(players: LeaderboardEntry[], container: HTMLElement):
         renderModeSwitch();
     }
 
+    // Содержимое справки зависит от режима
+    const helpBox = container.querySelector<HTMLElement>('.leaderboard-help');
+    if (helpBox) {
+        helpBox.innerHTML = isSeasonMode(currentMode) ? buildSeasonHelpHtml() : buildHelpHtml();
+    }
+
+    const columns = columnsFor(currentMode);
+
     // --- Обновляем THEAD (заголовки со стрелками) ---
     thead.innerHTML = '';
     const headRow = document.createElement('tr');
     const thRank = document.createElement('th');
     thRank.textContent = '#';
     headRow.appendChild(thRank);
-
-    const columns: Array<{ label: string; key: SortKey }> = [
-        { label: t('players.col.name'), key: 'name' },
-        { label: t('leaderboard.activity'), key: 'activity' },
-        { label: "SKILL " + t('players.col.elo') + "", key: 'elo' },
-        { label: t('leaderboard.games'), key: 'games' },
-        { label: t('leaderboard.days'), key: 'days' },
-        { label: t('leaderboard.wins'), key: 'wins' },
-        { label: t('leaderboard.winrate'), key: 'winrate' },
-        { label: t('leaderboard.quality'), key: 'quality' },
-        { label: t('leaderboard.avg_place'), key: 'avg_place' },
-    ];
 
     for (const col of columns) {
         const th = document.createElement('th');
@@ -276,63 +279,13 @@ function renderLeaderboard(players: LeaderboardEntry[], container: HTMLElement):
             tr.classList.add('is-me');
         }
 
-        // ... остальные ячейки как раньше
         const tdRank = document.createElement('td');
         tdRank.textContent = String(index + 1);
         tr.appendChild(tdRank);
 
-        const tdName = document.createElement('td');
-        const link = document.createElement('a');
-        link.href = `/?player=${encodeURIComponent(p.name)}`;
-        link.className = 'player-name-link';
-        link.textContent = p.name;
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            navigateTo(`/?player=${encodeURIComponent(p.name)}`);
-        });
-        tdName.appendChild(link);
-        if (p.aka) {
-            const aka = document.createElement('span');
-            aka.className = 'player-aka';
-            aka.textContent = ` aka ${p.aka}`;
-            tdName.appendChild(aka);
+        for (const col of columns) {
+            tr.appendChild(buildCell(col.key, p));
         }
-        tr.appendChild(tdName);
-
-        const tdActivity = document.createElement('td');
-        tdActivity.className = 'activity-cell';
-        tdActivity.textContent = p.activity_score.toFixed(1);
-        tr.appendChild(tdActivity);
-
-        const tdElo = document.createElement('td');
-        // tdElo.className = 'elo-cel';
-        tdElo.textContent = "" + p.elo + "";
-        tr.appendChild(tdElo);
-
-        const tdGames = document.createElement('td');
-        tdGames.textContent = String(p.games_played);
-        tr.appendChild(tdGames);
-
-        const tdDays = document.createElement('td');
-        tdDays.textContent = String(p.game_days);
-        tr.appendChild(tdDays);
-
-        const tdWins = document.createElement('td');
-        tdWins.textContent = String(p.wins);
-        tr.appendChild(tdWins);
-
-        const tdWinrate = document.createElement('td');
-        tdWinrate.textContent = `${p.winrate}%`;
-        tr.appendChild(tdWinrate);
-
-        const tdQuality = document.createElement('td');
-        tdQuality.className = 'quality-cell';
-        tdQuality.textContent = p.quality.toFixed(2);
-        tr.appendChild(tdQuality);
-
-        const tdAvg = document.createElement('td');
-        tdAvg.textContent = p.avg_place !== null ? p.avg_place.toFixed(2) : '—';
-        tr.appendChild(tdAvg);
 
         tbody.appendChild(tr);
     });
@@ -341,6 +294,81 @@ function renderLeaderboard(players: LeaderboardEntry[], container: HTMLElement):
     table.classList.remove('is-loading');
     table.classList.add('just-updated');
     setTimeout(() => table.classList.remove('just-updated'), 300);
+}
+
+/** Набор колонок для режима: сезонные зачёты без ELO/активности. */
+function columnsFor(mode: Mode): Array<{ label: string; key: SortKey }> {
+    if (isSeasonMode(mode)) {
+        return [
+            { label: t('players.col.name'), key: 'name' },
+            { label: t('leaderboard.wins'), key: 'wins' },
+            { label: t('leaderboard.winrate'), key: 'winrate' },
+            { label: t('leaderboard.games'), key: 'games' },
+            { label: t('leaderboard.avg_place'), key: 'avg_place' },
+        ];
+    }
+    return [
+        { label: t('players.col.name'), key: 'name' },
+        { label: t('leaderboard.activity'), key: 'activity' },
+        { label: "SKILL " + t('players.col.elo') + "", key: 'elo' },
+        { label: t('leaderboard.games'), key: 'games' },
+        { label: t('leaderboard.days'), key: 'days' },
+        { label: t('leaderboard.wins'), key: 'wins' },
+        { label: t('leaderboard.winrate'), key: 'winrate' },
+        { label: t('leaderboard.quality'), key: 'quality' },
+        { label: t('leaderboard.avg_place'), key: 'avg_place' },
+    ];
+}
+
+function buildCell(key: SortKey, p: LeaderboardEntry): HTMLTableCellElement {
+    const td = document.createElement('td');
+    switch (key) {
+        case 'name': {
+            const link = document.createElement('a');
+            link.href = `/?player=${encodeURIComponent(p.name)}`;
+            link.className = 'player-name-link';
+            link.textContent = p.name;
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                navigateTo(`/?player=${encodeURIComponent(p.name)}`);
+            });
+            td.appendChild(link);
+            if (p.aka) {
+                const aka = document.createElement('span');
+                aka.className = 'player-aka';
+                aka.textContent = ` aka ${p.aka}`;
+                td.appendChild(aka);
+            }
+            break;
+        }
+        case 'activity':
+            td.className = 'activity-cell';
+            td.textContent = p.activity_score.toFixed(1);
+            break;
+        case 'elo':
+            td.textContent = String(p.elo);
+            break;
+        case 'games':
+            td.textContent = String(p.games_played);
+            break;
+        case 'days':
+            td.textContent = String(p.game_days);
+            break;
+        case 'wins':
+            td.textContent = String(p.wins);
+            break;
+        case 'winrate':
+            td.textContent = `${p.winrate}%`;
+            break;
+        case 'quality':
+            td.className = 'quality-cell';
+            td.textContent = p.quality.toFixed(2);
+            break;
+        case 'avg_place':
+            td.textContent = p.avg_place !== null ? p.avg_place.toFixed(2) : '—';
+            break;
+    }
+    return td;
 }
 
 function buildHelpHtml(): string {
@@ -357,5 +385,12 @@ function buildHelpHtml(): string {
       <li>${t('leaderboard.help_quality')}</li>
     </ul>
     <p class="hint">${t('leaderboard.help_outro')}</p>
+  `;
+}
+
+function buildSeasonHelpHtml(): string {
+    return `
+    <h3>${t('leaderboard.season_help_title')}</h3>
+    <p>${t('leaderboard.season_help_text')}</p>
   `;
 }

@@ -415,6 +415,10 @@ export const ru: Record<TranslationKey, string> = {
     'leaderboard.mode_all': 'Все',
     'leaderboard.mode_solo': 'FFA',
     'leaderboard.mode_team': 'Командные FFA',
+    'leaderboard.mode_league_s3': 'FFA Лига (3 сезон)',
+    'leaderboard.mode_team_s1': '2x2 FFA Лига (1 сезон)',
+    'leaderboard.season_help_title': 'Сезонный зачёт',
+    'leaderboard.season_help_text': 'Учитываются только игры этого формата, сыгранные с сентября 2026 года по конец 2026 года. Основной параметр — число побед.',
     'leaderboard.days': 'Дней',
     'leaderboard.quality': 'Качество',
 
