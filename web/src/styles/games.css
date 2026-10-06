@@ -1354,6 +1354,51 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
     padding: 12px 16px;
 }
 
+/* Сворачивание дней: заголовок кликабельный, шеврон + счётчик игр */
+.game-day-header--toggle {
+    cursor: pointer;
+    user-select: none;
+}
+
+.game-day-header-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.game-day-chevron {
+    display: inline-block;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    transition: transform 0.15s ease;
+}
+
+.game-day-group:not(.is-collapsed) > .game-day-header .game-day-chevron {
+    transform: rotate(90deg);
+}
+
+.game-day-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+/* Свёрнутый день: игры скрыты через max-height (а не display:none),
+   чтобы браузерный поиск Ctrl+F всё равно находил скрытые игры. */
+.game-day-group.is-collapsed > .game-day-list {
+    max-height: 0;
+    overflow: hidden;
+}
+
 @media (max-width: 700px) {
     .game-day-header {
         padding: 8px 12px;

@@ -85,6 +85,8 @@ export const ru: Record<TranslationKey, string> = {
     'games.error_duplicate_place': 'У двух игроков одинаковое место',
     'games.error_missing_places': 'Не у всех игроков указано место',
     'games.players_hint': 'Отметьте победителя галочкой. Остальным укажите место (2-е, 3-е, …) — места не должны повторяться.',
+    'games.placement_hint_solo': 'Игроки расставляются по общему счёту, не считая победителя.',
+    'games.placement_hint_team': 'Игроки расставляются по общему счёту независимо от того, победители или нет.',
 
     // Шапка
     'topbar.league': 'SC2 FFA ЛИГА',
@@ -387,8 +389,10 @@ export const ru: Record<TranslationKey, string> = {
 
     'games.is_team_label': 'Командная игра',
     'games.team_size_label': 'Размер команды',
+    'games.team_count_label': 'Количество команд',
     'games.error_team_size_mismatch': 'Количество игроков должно делиться на размер команды ({size})',
     'games.error_teams_uneven': 'Все команды должны быть одинакового размера ({size})',
+    'games.error_teams_incomplete': 'Заполните все слоты: {teams} команд(ы) по {size} игроков.',
     'games.distribute_teams': "Распределить по командам",
     'games.team_short': 'Команда',
 

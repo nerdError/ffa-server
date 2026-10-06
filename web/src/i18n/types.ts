@@ -59,6 +59,8 @@ export type TranslationKey =
     | 'games.error_duplicate_place'
     | 'games.error_missing_places'
     | 'games.players_hint'
+    | 'games.placement_hint_solo'
+    | 'games.placement_hint_team'
 
     | 'nav.leaderboard'
 
@@ -360,6 +362,7 @@ export type TranslationKey =
     | 'games.team_size_label'
     | 'games.error_team_size_mismatch'
     | 'games.error_teams_uneven'
+    | 'games.error_teams_incomplete'
     | 'games.distribute_teams'
     | 'games.team_short'
 

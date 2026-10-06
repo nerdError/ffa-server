@@ -99,7 +99,9 @@ let durationInput: HTMLInputElement | null = null;
 let notesInput: HTMLTextAreaElement | null = null;
 let isTeamCheckbox: HTMLInputElement | null = null;
 let teamSizeSelect: HTMLSelectElement | null = null;
+let teamCountSelect: HTMLSelectElement | null = null;
 let teamModeOptions: HTMLElement | null = null;
+let placementHintEl: HTMLElement | null = null;
 
 const LAST_GAME_KEY = 'games:lastGameSettings';
 
@@ -111,6 +113,7 @@ interface LastGameSettings {
     duration_min: number | null;
     is_team: boolean;
     team_size: number;
+    team_count: number;
     track_elim: boolean;
     played_at: string | null;   // ← НОВОЕ: время последней игры
     players: Array<{
@@ -152,7 +155,9 @@ export function mountGames(params: URLSearchParams): void {
     notesInput = document.getElementById('field-notes') as HTMLTextAreaElement | null;
     isTeamCheckbox = document.getElementById('field-is-team') as HTMLInputElement | null;
     teamSizeSelect = document.getElementById('field-team-size') as HTMLSelectElement | null;
+    teamCountSelect = document.getElementById('field-team-count') as HTMLSelectElement | null;
     teamModeOptions = document.getElementById('team-mode-options');
+    placementHintEl = document.getElementById('players-placement-hint');
 
     filters.formatId = params.get('format') ? Number(params.get('format')) : null;
     filters.hostId = params.get('host') ? Number(params.get('host')) : null;
@@ -293,13 +298,20 @@ export function mountGames(params: URLSearchParams): void {
 
     isTeamCheckbox?.addEventListener('change', () => {
         updateTeamModeVisibility();
-        redistributeTeams();
+        if (isTeamMode()) enableTeamMode();
+        else for (const d of drafts) d.team = null;
         renderPlayerDrafts();
         markDirty();
     }, { signal });
 
     teamSizeSelect?.addEventListener('change', () => {
-        redistributeTeams();
+        ensureTeamSlots();
+        renderPlayerDrafts();
+        markDirty();
+    }, { signal });
+
+    teamCountSelect?.addEventListener('change', () => {
+        ensureTeamSlots();
         renderPlayerDrafts();
         markDirty();
     }, { signal });
@@ -312,6 +324,7 @@ export function mountGames(params: URLSearchParams): void {
 
     onLocaleChange(() => {
         renderGames();
+        updateTeamModeVisibility();
         if (modal && !modal.classList.contains('hidden')) {
             renderPlayerDrafts();
         }
@@ -409,9 +422,9 @@ function renderGames(): void {
     const groups = groupGamesByDay(filtered);
 
     container.innerHTML = '';
-    for (const group of groups) {
-        container.appendChild(buildDayGroup(group));
-    }
+    groups.forEach((group, i) => {
+        container.appendChild(buildDayGroup(group, i === 0));
+    });
 }
 
 /** Игры с учётом активных фильтров и поиска. */
@@ -549,7 +562,7 @@ function applyEditedGame(gf: GameFull): void {
         );
         const group = byKey.get(key);
         if (group) {
-            const node = buildDayGroup(group);
+            const node = buildDayGroup(group, order[0] === key);
             if (existing) existing.replaceWith(node);
             else insertDayGroupInOrder(container, node, key, order);
         } else if (existing) {
@@ -583,7 +596,7 @@ function removeGameFromList(id: number): void {
     const existing = container.querySelector<HTMLElement>(`.game-day-group[data-day-key="${key}"]`);
 
     if (group) {
-        const node = buildDayGroup(group);
+        const node = buildDayGroup(group, groups[0]?.dateKey === key);
         if (existing) existing.replaceWith(node);
         else insertDayGroupInOrder(container, node, key, groups.map((g) => g.dateKey));
     } else if (existing) {
@@ -629,34 +642,76 @@ function groupGamesByDay(games: GameListItem[]): DayGroup[] {
     return groups;
 }
 
-function buildDayGroup(group: DayGroup): HTMLElement {
+/** Свёрнутые дни (пользовательские переключения) и уже встречавшиеся дни. */
+const collapsedDays = new Set<string>();
+const knownDays = new Set<string>();
+
+/** По умолчанию свёрнуты все дни, кроме самого свежего. */
+function isDayCollapsed(key: string, isLatest: boolean): boolean {
+    if (!knownDays.has(key)) {
+        knownDays.add(key);
+        if (!isLatest) collapsedDays.add(key);
+    }
+    return collapsedDays.has(key);
+}
+
+function buildDayGroup(group: DayGroup, isLatest: boolean): HTMLElement {
     const wrap = document.createElement('div');
     wrap.className = 'game-day-group';
     wrap.dataset.dayKey = group.dateKey;
+    if (isDayCollapsed(group.dateKey, isLatest)) wrap.classList.add('is-collapsed');
 
-    // Заголовок
+    // Заголовок (кликабельный — сворачивает/разворачивает игры дня)
     const header = document.createElement('div');
-    header.className = 'game-day-header';
+    header.className = 'game-day-header game-day-header--toggle';
+    header.setAttribute('role', 'button');
+    header.tabIndex = 0;
+
+    const chevron = document.createElement('span');
+    chevron.className = 'game-day-chevron';
+    chevron.textContent = '▸';
+    chevron.setAttribute('aria-hidden', 'true');
 
     const date = document.createElement('div');
     date.className = 'game-day-date';
     date.textContent = formatDayHeader(group.dateObj);
 
+    const count = document.createElement('span');
+    count.className = 'game-day-count';
+    count.textContent = String(group.games.length);
+
     const hosts = document.createElement('div');
     hosts.className = 'game-day-hosts';
-    if (group.hosts.length > 0) {
-        for (const hostName of group.hosts) {
-            const badge = document.createElement('span');
-            badge.className = 'game-day-host-badge';
-            badge.textContent = `🎤 ${hostName}`;
-            hosts.appendChild(badge);
-        }
+    for (const hostName of group.hosts) {
+        const badge = document.createElement('span');
+        badge.className = 'game-day-host-badge';
+        badge.textContent = `🎤 ${hostName}`;
+        hosts.appendChild(badge);
     }
 
-    header.append(date, hosts);
+    const left = document.createElement('div');
+    left.className = 'game-day-header-left';
+    left.append(chevron, date, count);
+
+    header.append(left, hosts);
+
+    const toggle = () => {
+        const nowCollapsed = wrap.classList.toggle('is-collapsed');
+        if (nowCollapsed) collapsedDays.add(group.dateKey);
+        else collapsedDays.delete(group.dateKey);
+    };
+    header.addEventListener('click', toggle);
+    header.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggle();
+        }
+    });
+
     wrap.appendChild(header);
 
-    // Игры внутри дня
+    // Игры внутри дня. Сворачиваем через CSS max-height (а не display:none),
+    // чтобы браузерный поиск (Ctrl+F) всё равно находил скрытые игры.
     const list = document.createElement('div');
     list.className = 'game-day-list';
     for (const g of group.games) {
@@ -1151,6 +1206,13 @@ function highlightGame(gameId: number): void {
     if (!container || !Number.isInteger(gameId)) return;
     const card = container.querySelector<HTMLElement>(`[data-game-id="${gameId}"]`);
     if (!card) return;
+    // Если день свёрнут — разворачиваем, чтобы подсвеченная игра была видна.
+    const group = card.closest<HTMLElement>('.game-day-group');
+    if (group?.classList.contains('is-collapsed')) {
+        group.classList.remove('is-collapsed');
+        const key = group.dataset.dayKey;
+        if (key) collapsedDays.delete(key);
+    }
     card.scrollIntoView({ behavior: 'smooth', block: 'center' });
     card.classList.add('is-highlighted');
     setTimeout(() => card.classList.remove('is-highlighted'), 3000);
@@ -1521,6 +1583,14 @@ function isTrackElim(): boolean {
 function updateTeamModeVisibility(): void {
     const enabled = isTeamMode();
     if (teamModeOptions) teamModeOptions.hidden = !enabled;
+    // В командном режиме слоты фиксированы — кнопка «Добавить игрока» не нужна.
+    const addBtn = document.getElementById('btn-add-player');
+    if (addBtn) addBtn.hidden = enabled;
+    if (placementHintEl) {
+        placementHintEl.textContent = enabled
+            ? t('games.placement_hint_team')
+            : t('games.placement_hint_solo');
+    }
 }
 
 // ============================================================
@@ -1536,6 +1606,7 @@ function saveLastGameSettings(): void {
             duration_min: durationInput?.value ? Number(durationInput.value) : null,
             is_team: isTeamMode(),
             team_size: Number(teamSizeSelect?.value ?? '2'),
+            team_count: Number(teamCountSelect?.value ?? '2'),
             track_elim: isTrackElim(),
             played_at: playedAtInput?.value ?? null,   // ← НОВОЕ
             players: drafts
@@ -1735,58 +1806,96 @@ function getTeamSize(): number {
     return Number(teamSizeSelect?.value ?? '2');
 }
 
-function getMaxTeams(): number {
-    const total = drafts.length;
-    const size = getTeamSize();
-    if (size <= 0) return 1;
-    return Math.max(1, Math.floor(total / size));
+function getTeamCount(): number {
+    return Math.max(1, Number(teamCountSelect?.value ?? '2'));
+}
+
+/** Пустой слот команды (без игрока). */
+function emptyTeamSlot(team: number): GamePlayerDraft {
+    return { player_id: null, race: 'T', team, is_winner: false, place: null };
+}
+
+/** Очищает слот от игрока, но сам слот (команду) сохраняет. */
+function clearDraftPlayer(draft: GamePlayerDraft): void {
+    draft.player_id = null;
+    draft.raw_name = undefined;
+    draft.race = 'T';
+    draft.is_winner = false;
+    draft.place = null;
+    draft.from_replay = false;
+}
+
+/** Строит сетку слотов, распределяя игроков по их командам (team сохраняется). */
+function buildTeamSlots(players: GamePlayerDraft[]): GamePlayerDraft[] {
+    const teamSize = getTeamSize();
+    const teamCount = getTeamCount();
+    const byTeam = new Map<number, GamePlayerDraft[]>();
+    for (const d of players) {
+        const t = Math.min(Math.max(d.team ?? 1, 1), teamCount);
+        const arr = byTeam.get(t);
+        if (arr) arr.push(d);
+        else byTeam.set(t, [d]);
+    }
+    const slots: GamePlayerDraft[] = [];
+    for (let t = 1; t <= teamCount; t++) {
+        const members = byTeam.get(t) ?? [];
+        for (let s = 0; s < teamSize; s++) {
+            const src = members[s];
+            slots.push(src ? { ...src, team: t } : emptyTeamSlot(t));
+        }
+    }
+    return slots;
+}
+
+/** При включении командного режима распределяет заполненных игроков по командам подряд. */
+function buildTeamSlotsSequential(filled: GamePlayerDraft[]): GamePlayerDraft[] {
+    const teamSize = getTeamSize();
+    const teamCount = getTeamCount();
+    const slots: GamePlayerDraft[] = [];
+    let fi = 0;
+    for (let t = 1; t <= teamCount; t++) {
+        for (let s = 0; s < teamSize; s++) {
+            const src = filled[fi];
+            if (src) {
+                slots.push({ ...src, team: t });
+                fi++;
+            } else {
+                slots.push(emptyTeamSlot(t));
+            }
+        }
+    }
+    return slots;
 }
 
 /**
- * Назначает команду для draft так, чтобы в ней было меньше teamSize игроков.
+ * Приводит drafts к фиксированной сетке слотов (teamCount × teamSize).
+ * Слоты нельзя удалить — можно только очистить/заполнить.
  */
-function pickTeamForDraft(draft: GamePlayerDraft, teamSize: number, maxTeams: number): number | null {
-    const counts: Record<number, number> = {};
-    for (const d of drafts) {
-        if (d === draft) continue;
-        if (d.team !== null) counts[d.team] = (counts[d.team] ?? 0) + 1;
-    }
-    for (let teamNum = 1; teamNum <= maxTeams; teamNum++) {
-        if ((counts[teamNum] ?? 0) < teamSize) return teamNum;
-    }
-    return null;
-}
-
-/**
- * Перераспределяет всех игроков по командам равномерно, если это командный режим.
- */
-function redistributeTeams(): void {
+function ensureTeamSlots(): void {
     if (!isTeamMode()) {
         for (const d of drafts) d.team = null;
         return;
     }
-    const teamSize = getTeamSize();
-    const maxTeams = getMaxTeams();
-    drafts.forEach((d, i) => {
-        d.team = Math.floor(i / teamSize) + 1;
-        if (d.team > maxTeams) d.team = maxTeams; // на случай переполнения
-    });
+    drafts = buildTeamSlots(drafts);
+}
+
+/** Включение командного режима: перестраиваем сетку, распределяя игроков подряд. */
+function enableTeamMode(): void {
+    const filled = drafts.filter((d) => d.player_id !== null || d.raw_name);
+    drafts = buildTeamSlotsSequential(filled);
 }
 
 function addPlayerDraft(): void {
-    const newDraft: GamePlayerDraft = {
+    // В командном режиме слоты фиксированы — добавлять игроков нельзя,
+    // только заполнять пустые слоты.
+    if (isTeamMode()) return;
+    drafts.push({
         player_id: null,
         race: 'T',
         team: null,
         is_winner: false,
         place: null,
-    };
-    drafts.push(newDraft);
-    if (isTeamMode()) {
-        const teamSize = getTeamSize();
-        const maxTeams = getMaxTeams();
-        newDraft.team = pickTeamForDraft(newDraft, teamSize, maxTeams) ?? 1;
-    }
+    });
     renderPlayerDrafts();
     markDirty();
 }
@@ -1826,51 +1935,19 @@ function renderPlayerDrafts(): void {
     playersListBox.innerHTML = '';
 
     const teamMode = isTeamMode();
-    const teamSize = teamMode ? getTeamSize() : 0;
-    const maxTeams = teamMode ? getMaxTeams() : 0;
 
     if (teamMode) {
-        // Группируем по командам
-        const teams = new Map<number, number[]>();
-        drafts.forEach((d, i) => {
-            if (d.team === null || d.team < 1 || d.team > maxTeams) {
-                let assigned = false;
-                for (let t = 1; t <= maxTeams; t++) {
-                    const members = teams.get(t) ?? [];
-                    if (members.length < teamSize) {
-                        d.team = t;
-                        assigned = true;
-                        break;
-                    }
-                }
-                if (!assigned) d.team = 1;
-            }
-            const t = d.team!;
-            const arr = teams.get(t) ?? [];
-            arr.push(i);
-            teams.set(t, arr);
-        });
+        // Командный режим: drafts — фиксированная сетка слотов (team 1..teamCount).
+        const teamCount = getTeamCount();
+        for (let t = 1; t <= teamCount; t++) {
+            const color = getTeamColor(t);
+            const members: number[] = [];
+            drafts.forEach((d, i) => {
+                if (d.team === t) members.push(i);
+            });
 
-        // Место команды: 1 у победителя, иначе выбранное место, иначе — внизу.
-        const teamPlace = (indices: number[]): number => {
-            if (indices.some((i) => drafts[i]?.is_winner)) return 1;
-            const p = indices
-                .map((i) => drafts[i]?.place)
-                .find((x): x is number => typeof x === 'number' && x > 1);
-            return p ?? Number.MAX_SAFE_INTEGER;
-        };
-
-        const sortedTeams = [...teams.keys()].sort((a, b) => {
-            const pa = teamPlace(teams.get(a) ?? []);
-            const pb = teamPlace(teams.get(b) ?? []);
-            if (pa !== pb) return pa - pb;
-            return a - b;
-        });
-        for (const teamNum of sortedTeams) {
-            const indices = teams.get(teamNum) ?? [];
-            const color = getTeamColor(teamNum);
-            const allWinners = indices.every((i) => drafts[i]?.is_winner);
-            const someWinners = indices.some((i) => drafts[i]?.is_winner);
+            const allWinners = members.every((i) => drafts[i]?.is_winner);
+            const someWinners = members.some((i) => drafts[i]?.is_winner);
 
             const group = document.createElement('div');
             group.className = 'team-group';
@@ -1883,7 +1960,7 @@ function renderPlayerDrafts(): void {
 
             const headerLabel = document.createElement('span');
             headerLabel.className = 'team-group-label';
-            headerLabel.textContent = `${t('games.team_label')} ${teamNum}`;
+            headerLabel.textContent = `${t('games.team_label')} ${t}`;
             header.appendChild(headerLabel);
 
             // Победитель / предупреждение
@@ -1902,16 +1979,9 @@ function renderPlayerDrafts(): void {
 
             group.appendChild(header);
 
-            // --- Игроки команды (индивидуальные места) ---
-            const sortedIndices = indices.slice().sort((a, b) => {
-                const pa = drafts[a]?.place ?? Number.MAX_SAFE_INTEGER;
-                const pb = drafts[b]?.place ?? Number.MAX_SAFE_INTEGER;
-                if (pa !== pb) return pa - pb;
-                return a - b;
-            });
-            for (const idx of sortedIndices) {
-                const row = buildPlayerRow(idx, maxTeams, true);
-                group.appendChild(row);
+            // --- Слоты команды (фиксированные, заполняются автокомплитом) ---
+            for (const idx of members) {
+                group.appendChild(buildPlayerRow(idx, teamCount, true));
             }
 
             playersListBox.appendChild(group);
@@ -2023,7 +2093,8 @@ function buildPlayerRow(index: number, maxTeams: number, teamMode: boolean): HTM
         noPlace.textContent = '—';
         placeSelect.appendChild(noPlace);
 
-        const maxPlace = Math.max(1, totalPlayers);
+        const filledCount = drafts.filter((d) => d.player_id !== null).length;
+        const maxPlace = Math.max(1, filledCount);
         const usedPlaces = new Set(
             drafts
                 .filter((d) => d !== draft && d.place !== null)
@@ -2097,18 +2168,27 @@ function buildPlayerRow(index: number, maxTeams: number, teamMode: boolean): HTM
         });
     }
 
-    // --- Удалить ---
+    // --- Удалить / очистить ---
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
     removeBtn.className = 'remove-player';
     removeBtn.textContent = '✕';
     removeBtn.title = t('games.remove_player');
     removeBtn.addEventListener('click', () => {
-        drafts.splice(index, 1);
-        if (isTeamMode()) redistributeTeams();
+        if (teamMode) {
+            // В командном режиме слот фиксирован: крестик очищает игрока,
+            // но не удаляет сам слот.
+            clearDraftPlayer(draft);
+        } else {
+            drafts.splice(index, 1);
+        }
         renderPlayerDrafts();
         markDirty();
     });
+    if (teamMode && draft.player_id === null && !draft.raw_name) {
+        // Пустой слот — очищать нечего.
+        removeBtn.style.visibility = 'hidden';
+    }
 
     row.append(autocompleteWrap, raceSelect, winnerWrap);
     if (placeSelect) row.appendChild(placeSelect);
@@ -2365,6 +2445,7 @@ async function applyReplayPrefill(prefill: ReplayPrefill): Promise<void> {
     }
     if (isTeamCheckbox) isTeamCheckbox.checked = teamMode;
     if (teamSizeSelect) teamSizeSelect.value = String(Math.min(4, Math.max(2, teamSize)));
+    if (teamCountSelect) teamCountSelect.value = String(Math.max(2, teamIds.length));
     updateTeamModeVisibility();
 
     // Победитель: явный (result === 'win') либо единственный доживший до конца
@@ -2383,7 +2464,7 @@ async function applyReplayPrefill(prefill: ReplayPrefill): Promise<void> {
         ? (eligibleSurvivors[0]?.name ?? null)
         : null;
 
-    drafts = prefill.players.map((p) => {
+    const loadedReplay = prefill.players.map((p) => {
         const matched = matchCachedPlayer(p.name);
         const cleanName = p.name ? stripClanTag(p.name) : null;
         const isWinner =
@@ -2400,6 +2481,7 @@ async function applyReplayPrefill(prefill: ReplayPrefill): Promise<void> {
             from_replay: true,
         };
     });
+    drafts = teamMode ? buildTeamSlots(loadedReplay) : loadedReplay;
 }
 
 async function openReplayGameModal(file: File): Promise<void> {
@@ -2474,6 +2556,7 @@ async function openCreateGameModal(prefill?: ReplayPrefill, fromGame?: GameFull)
         if (durationInput) durationInput.value = lastGame.duration_min ? String(lastGame.duration_min) : '';
         if (isTeamCheckbox) isTeamCheckbox.checked = lastGame.is_team;
         if (teamSizeSelect) teamSizeSelect.value = String(lastGame.team_size ?? 2);
+        if (teamCountSelect) teamCountSelect.value = String(Math.max(2, lastGame.team_count ?? 2));
         updateTeamModeVisibility();
 
         if (playedAtInput) {
@@ -2484,18 +2567,20 @@ async function openCreateGameModal(prefill?: ReplayPrefill, fromGame?: GameFull)
             }
         }
 
-        drafts = lastGame.players.map((p) => ({
+        const loadedLast = lastGame.players.map((p) => ({
             player_id: p.player_id,
             race: p.race,
             team: p.team,
             is_winner: false,
             place: null,
         }));
+        drafts = lastGame.is_team ? buildTeamSlots(loadedLast) : loadedLast;
     } else {
         if (playedAtInput) playedAtInput.value = toDatetimeLocal(new Date());
         if (durationInput) durationInput.value = '';
         if (isTeamCheckbox) isTeamCheckbox.checked = false;
         if (teamSizeSelect) teamSizeSelect.value = '2';
+        if (teamCountSelect) teamCountSelect.value = '2';
         updateTeamModeVisibility();
         if (formatSelect) {
             const fanFfa = cachedFormats.find((f) => f.slug === 'fan-ffa');
@@ -2505,7 +2590,6 @@ async function openCreateGameModal(prefill?: ReplayPrefill, fromGame?: GameFull)
         for (let i = 0; i < 4; i++) {
             drafts.push({ player_id: null, race: 'T', team: null, is_winner: false, place: null });
         }
-        if (isTeamMode()) redistributeTeams();
     }
 
     if (notesInput) notesInput.value = '';
@@ -2557,16 +2641,19 @@ function applyGameSettingsFromGame(gameFull: GameFull): void {
         const firstTeam = gameFull.players[0]?.team ?? 1;
         const size = gameFull.players.filter((p) => p.team === firstTeam).length;
         teamSizeSelect.value = String(size);
+        const teamCount = Math.max(...gameFull.players.map((p) => p.team ?? 1));
+        if (teamCountSelect) teamCountSelect.value = String(Math.max(2, teamCount));
     }
     updateTeamModeVisibility();
 
-    drafts = gameFull.players.map((p) => ({
+    const loadedFromGame = gameFull.players.map((p) => ({
         player_id: p.player_id,
         race: p.race,
         team: p.team,
         is_winner: false,
         place: null,
     }));
+    drafts = hasTeams ? buildTeamSlots(loadedFromGame) : loadedFromGame;
 }
 
 /** Открывает форму новой игры с настройками указанной игры. */
@@ -2626,19 +2713,22 @@ async function openEditGameModal(gameId: number): Promise<void> {
         const firstTeam = gameFull.players[0]?.team ?? 1;
         const size = gameFull.players.filter((p) => p.team === firstTeam).length;
         teamSizeSelect.value = String(size);
+        const teamCount = Math.max(...gameFull.players.map((p) => p.team ?? 1));
+        if (teamCountSelect) teamCountSelect.value = String(Math.max(2, teamCount));
     }
     updateTeamModeVisibility();
 
     // Преобразуем сохранённый порядок выбывания в индивидуальные места.
     const totalPlayers = gameFull.players.length;
 
-    drafts = gameFull.players.map((p) => ({
+    const loadedEdit = gameFull.players.map((p) => ({
         player_id: p.player_id,
         race: p.race,
         team: p.team,
         is_winner: p.is_winner,
         place: entryPlace(p, totalPlayers),
     }));
+    drafts = hasTeams ? buildTeamSlots(loadedEdit) : loadedEdit;
 
     normalizePlaces();
     renderPlayerDrafts();
@@ -2687,10 +2777,14 @@ async function submitGameForm(e: Event): Promise<void> {
     const teamMode = isTeamMode();
 
     if (teamMode) {
-        const teamSize = Number(teamSizeSelect?.value ?? '2');
-        if (filledPlayers.length % teamSize !== 0) {
-            alert(t('games.error_team_size_mismatch', { size: teamSize })); return;
+        const teamSize = getTeamSize();
+        const teamCount = getTeamCount();
+
+        // Все слоты должны быть заполнены (пустые недопустимы).
+        if (filledPlayers.length !== teamCount * teamSize) {
+            alert(t('games.error_teams_incomplete', { teams: teamCount, size: teamSize })); return;
         }
+
         const teamsMap = new Map<number, typeof filledPlayers>();
         for (const p of filledPlayers) {
             const tNum = p.team ?? 0;
@@ -2703,6 +2797,7 @@ async function submitGameForm(e: Event): Promise<void> {
         if (new Set(sizes).size !== 1 || sizes[0] !== teamSize) {
             alert(t('games.error_teams_uneven', { size: teamSize })); return;
         }
+
         const winnerTeams: number[] = [];
         for (const [tNum, players] of teamsMap) {
             if (players.every((p) => p.is_winner)) winnerTeams.push(tNum);

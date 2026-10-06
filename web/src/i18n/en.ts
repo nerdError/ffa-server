@@ -61,6 +61,8 @@ export const en: Record<TranslationKey, string> = {
     'games.error_duplicate_place': 'Two players have the same place',
     'games.error_missing_places': 'Not all players have a place assigned',
     'games.players_hint': 'Check the winner. Assign a place to everyone else (2nd, 3rd, …) — places must be unique.',
+    'games.placement_hint_solo': 'Players are ranked by the overall score, excluding the winner.',
+    'games.placement_hint_team': 'Players are ranked by the overall score regardless of whether they won.',
 
     'player.games_title': 'Games',
     'player.games_all': 'All games',
@@ -386,8 +388,10 @@ export const en: Record<TranslationKey, string> = {
     'games.error_incomplete_winner_team': 'All players of the winning team must be marked',
     'games.is_team_label': 'Team game',
     'games.team_size_label': 'Team size',
+    'games.team_count_label': 'Number of teams',
     'games.error_team_size_mismatch': 'Player count must be divisible by team size ({size})',
     'games.error_teams_uneven': 'All teams must have the same size ({size})',
+    'games.error_teams_incomplete': 'Fill in all slots: {teams} teams of {size} players each.',
     'games.distribute_teams': 'Distribute teams',
     'games.team_short': 'Team',
 

@@ -617,12 +617,25 @@
                                     <option value="4">4v4</option>
                                 </select>
                             </label>
+                            <label class="form-field form-field--inline">
+                                <span data-i18n="games.team_count_label">Количество команд</span>
+                                <select id="field-team-count" class="games-filter-select">
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="8">8</option>
+                                </select>
+                            </label>
                         </div>
                     </div>
 
                     <p class="form-hint" data-i18n="games.players_hint">
                         Отметьте победителя. Остальным укажите место (2-е, 3-е, …) — места не должны повторяться.
                     </p>
+
+                    <p class="form-hint form-hint--placement" id="players-placement-hint"></p>
 
                     <div id="players-list" class="players-list"></div>
                 </div>
