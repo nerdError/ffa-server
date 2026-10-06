@@ -1605,3 +1605,45 @@ details[open] .game-card-players-toggle::before {
 .player-line-member.is-winner .player-line-place {
   color: var(--gold);
 }
+
+/* Карта удалена (в карточке игры) */
+.game-map-deleted {
+  color: #ff5c5c;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(255, 92, 92, 0.45);
+  cursor: help;
+}
+
+/* Альт. название карты в форме игры */
+.map-alt-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.map-alt-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.field-hint.is-ok { color: #2ecc71; }
+.field-hint.is-error { color: #e74c3c; }
+
+/* Предупреждение у поля карты */
+.field-warning {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 3px;
+  background: rgba(231, 76, 60, 0.12);
+  border: 1px solid rgba(231, 76, 60, 0.5);
+  color: #ffb3ab;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}

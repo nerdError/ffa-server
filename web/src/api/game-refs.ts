@@ -24,6 +24,10 @@ export interface GameHost {
 export interface GameMap {
   id: number;
   name: string;
+  /** Альтернативное название (локализация клиента). */
+  alt_name: string | null;
+  /** Мягкое удаление: карта скрыта из выбора, но игры на неё ссылаются. */
+  deleted_at: string | null;
   created_at: string;
 }
 

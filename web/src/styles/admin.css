@@ -724,3 +724,24 @@
     gap: 4px;
   }
 }
+
+/* Мягко удалённая карта в справочнике */
+.admin-ref-card.is-deleted {
+  opacity: 0.6;
+  border-color: rgba(231, 76, 60, 0.5);
+}
+
+.admin-ref-deleted-badge {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #ff5c5c;
+  border: 1px solid rgba(231, 76, 60, 0.5);
+  border-radius: 3px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+.admin-ref-btn--restore {
+  color: #2ecc71;
+}

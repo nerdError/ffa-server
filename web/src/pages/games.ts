@@ -4,6 +4,7 @@ import { t, getLocale, onLocaleChange } from '../i18n';
 import {
     listRefs,
     createRef,
+    updateRef,
     type GameFormat,
     type GameHost,
     type GameMap,
@@ -30,6 +31,8 @@ const filters = {
     formatId: null as number | null,
     hostId: null as number | null,
     mapId: null as number | null,
+    /** Фильтр «карта удалена»: игры, чья карта мягко удалена. */
+    mapDeleted: false,
     playerId: null as number | null,
 };
 
@@ -73,8 +76,8 @@ interface ReplayPrefill {
     playedAtMs: number | null;
     gameType: string | null;
     mapTitle: string | null;
-    /** Карта, найденная/созданная сервером по названию из реплея. */
-    map?: { id: number; name: string } | null;
+    /** Карта, найденная сервером по названию из реплея (основному или альтернативному). */
+    map?: { id: number; name: string; alt_name?: string | null } | null;
     replayType: string | null;
     players: ReplayPrefillPlayer[];
 }
@@ -153,7 +156,11 @@ export function mountGames(params: URLSearchParams): void {
 
     filters.formatId = params.get('format') ? Number(params.get('format')) : null;
     filters.hostId = params.get('host') ? Number(params.get('host')) : null;
-    filters.mapId = params.get('map') ? Number(params.get('map')) : null;
+    const mapParam = params.get('map');
+    filters.mapDeleted = mapParam === 'deleted';
+    filters.mapId = mapParam && mapParam !== 'deleted' && Number.isInteger(Number(mapParam))
+        ? Number(mapParam)
+        : null;
 
     const playerParam = params.get('player_id');
     filters.playerId = playerParam && Number.isInteger(Number(playerParam))
@@ -214,7 +221,13 @@ export function mountGames(params: URLSearchParams): void {
 
     document.getElementById('filter-map')?.addEventListener('change', (e) => {
         const v = (e.target as HTMLSelectElement).value;
-        filters.mapId = v ? Number(v) : null;
+        if (v === 'deleted') {
+            filters.mapDeleted = true;
+            filters.mapId = null;
+        } else {
+            filters.mapDeleted = false;
+            filters.mapId = v ? Number(v) : null;
+        }
         applyFilters();
     }, { signal });
 
@@ -236,6 +249,15 @@ export function mountGames(params: URLSearchParams): void {
 
     document.getElementById('btn-add-map')?.addEventListener('click', () => {
         void createMapInline();
+    }, { signal });
+
+    mapSelect?.addEventListener('change', () => {
+        refreshMapAltField();
+        if (mapSelect?.value) showMapWarning(null);
+    }, { signal });
+
+    document.getElementById('btn-save-map-alt')?.addEventListener('click', () => {
+        void saveSelectedMapAlt();
     }, { signal });
 
     document.getElementById('btn-add-mod')?.addEventListener('click', () => {
@@ -295,11 +317,13 @@ export function mountGames(params: URLSearchParams): void {
         }
     });
 
-    void loadGames().then(() => {
+    // Сначала справочники (карты нужны для подсветки удалённых), затем игры.
+    void (async () => {
+        await setupFilterSelects();
+        await loadGames();
         const highlightId = params.get('highlight');
         if (highlightId) highlightGame(Number(highlightId));
-    });
-    void setupFilterSelects();
+    })();
 }
 
 function updateCreateButtonVisibility(): void {
@@ -353,6 +377,7 @@ function hasActiveFilters(): boolean {
     return filters.formatId !== null
         || filters.hostId !== null
         || filters.mapId !== null
+        || filters.mapDeleted
         || filters.playerId !== null;
 }
 
@@ -376,7 +401,12 @@ function renderGames(): void {
 
     if (filters.formatId !== null) filtered = filtered.filter((g) => g.format_id === filters.formatId);
     if (filters.hostId !== null) filtered = filtered.filter((g) => g.host_id === filters.hostId);
-    if (filters.mapId !== null) filtered = filtered.filter((g) => g.map_id === filters.mapId);
+    if (filters.mapDeleted) {
+        const deleted = deletedMapIds();
+        filtered = filtered.filter((g) => g.map_id !== null && deleted.has(g.map_id));
+    } else if (filters.mapId !== null) {
+        filtered = filtered.filter((g) => g.map_id === filters.mapId);
+    }
 
     if (searchQuery) {
         filtered = filtered.filter((g) => {
@@ -537,14 +567,21 @@ function buildGameCard(g: GameListItem): HTMLElement {
     meta.className = 'game-card-meta';
 
     if (g.map_name) {
+        const deleted = g.map_id !== null && deletedMapIds().has(g.map_id);
         const mapEl = document.createElement('span');
-        mapEl.className = 'game-clickable';
-        mapEl.textContent = g.map_name;
-        mapEl.title = t('games.click_to_filter');
-        mapEl.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (g.map_id) setFilter('map', g.map_id);
-        });
+        if (deleted) {
+            mapEl.className = 'game-map-deleted';
+            mapEl.textContent = `🗑 ${t('games.map_deleted')}: ${g.map_name}`;
+            mapEl.title = t('games.map_deleted_hint');
+        } else {
+            mapEl.className = 'game-clickable';
+            mapEl.textContent = g.map_name;
+            mapEl.title = t('games.click_to_filter');
+            mapEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (g.map_id) setFilter('map', g.map_id);
+            });
+        }
         meta.appendChild(mapEl);
     }
 
@@ -964,7 +1001,7 @@ async function setupFilterSelects(): Promise<void> {
 
         fillFilterSelect('filter-format', cachedFormats);
         fillFilterSelect('filter-host', cachedHosts);
-        fillFilterSelect('filter-map', cachedMaps);
+        fillMapFilterSelect();
 
         const formatSel = document.getElementById('filter-format') as HTMLSelectElement | null;
         const hostSel = document.getElementById('filter-host') as HTMLSelectElement | null;
@@ -972,7 +1009,8 @@ async function setupFilterSelects(): Promise<void> {
 
         if (formatSel && filters.formatId !== null) formatSel.value = String(filters.formatId);
         if (hostSel && filters.hostId !== null) hostSel.value = String(filters.hostId);
-        if (mapSel && filters.mapId !== null) mapSel.value = String(filters.mapId);
+        if (mapSel && filters.mapDeleted) mapSel.value = 'deleted';
+        else if (mapSel && filters.mapId !== null) mapSel.value = String(filters.mapId);
 
         renderActiveFilterChips();
     } catch (err) {
@@ -998,6 +1036,33 @@ function fillFilterSelect(selectId: string, items: { id: number; name: string }[
     select.value = currentValue;
 }
 
+/** Фильтр по картам: неудалённые карты + спец-вариант «карта удалена». */
+function fillMapFilterSelect(): void {
+    const select = document.getElementById('filter-map') as HTMLSelectElement | null;
+    if (!select) return;
+    const currentValue = select.value;
+    select.innerHTML = '';
+
+    const allOpt = document.createElement('option');
+    allOpt.value = '';
+    allOpt.textContent = t('games.filter_all');
+    select.appendChild(allOpt);
+
+    for (const m of activeMaps()) {
+        const opt = document.createElement('option');
+        opt.value = String(m.id);
+        opt.textContent = mapLabel(m);
+        select.appendChild(opt);
+    }
+
+    const delOpt = document.createElement('option');
+    delOpt.value = 'deleted';
+    delOpt.textContent = `🗑 ${t('games.map_deleted')}`;
+    select.appendChild(delOpt);
+
+    select.value = currentValue;
+}
+
 function applyFilters(): void {
     updateUrlFromFilters();
     renderGames();
@@ -1009,6 +1074,7 @@ function resetFilters(): void {
     filters.formatId = null;
     filters.hostId = null;
     filters.mapId = null;
+    filters.mapDeleted = false;
     filters.playerId = null;
     playerFilterName = null;
     const formatSel = document.getElementById('filter-format') as HTMLSelectElement | null;
@@ -1041,7 +1107,8 @@ function updateUrlFromFilters(): void {
     else url.searchParams.delete('format');
     if (filters.hostId !== null) url.searchParams.set('host', String(filters.hostId));
     else url.searchParams.delete('host');
-    if (filters.mapId !== null) url.searchParams.set('map', String(filters.mapId));
+    if (filters.mapDeleted) url.searchParams.set('map', 'deleted');
+    else if (filters.mapId !== null) url.searchParams.set('map', String(filters.mapId));
     else url.searchParams.delete('map');
     if (filters.playerId !== null) url.searchParams.set('player_id', String(filters.playerId));
     else url.searchParams.delete('player_id');
@@ -1051,7 +1118,10 @@ function updateUrlFromFilters(): void {
 function setFilter(type: 'format' | 'host' | 'map', id: number): void {
     if (type === 'format') filters.formatId = id;
     if (type === 'host') filters.hostId = id;
-    if (type === 'map') filters.mapId = id;
+    if (type === 'map') {
+        filters.mapId = id;
+        filters.mapDeleted = false;
+    }
     const selectId = type === 'format' ? 'filter-format' : type === 'host' ? 'filter-host' : 'filter-map';
     const sel = document.getElementById(selectId) as HTMLSelectElement | null;
     if (sel) sel.value = String(id);
@@ -1101,11 +1171,24 @@ function renderActiveFilterChips(): void {
         });
     }
 
+    if (filters.mapDeleted) {
+        chips.push({
+            label: t('games.filter_map'),
+            value: t('games.map_deleted'),
+            onRemove: () => {
+                filters.mapDeleted = false;
+                const sel = document.getElementById('filter-map') as HTMLSelectElement | null;
+                if (sel) sel.value = '';
+                applyFilters();
+            },
+        });
+    }
+
     if (filters.mapId !== null) {
         const m = cachedMaps.find((x) => x.id === filters.mapId);
         if (m) chips.push({
             label: t('games.filter_map'),
-            value: m.name,
+            value: mapLabel(m),
             onRemove: () => {
                 filters.mapId = null;
                 const sel = document.getElementById('filter-map') as HTMLSelectElement | null;
@@ -1177,7 +1260,9 @@ function fillSelect(
     items: { id: number; name: string }[],
     placeholder: string,
     /** Если задано — пустой вариант становится выбираемым с этим текстом. */
-    emptyLabel?: string
+    emptyLabel?: string,
+    /** Подпись опции (по умолчанию — name). */
+    labelFn?: (item: { id: number; name: string }) => string
 ): void {
     if (!select) return;
     select.innerHTML = '';
@@ -1194,7 +1279,7 @@ function fillSelect(
     for (const item of items) {
         const opt = document.createElement('option');
         opt.value = String(item.id);
-        opt.textContent = item.name;
+        opt.textContent = labelFn ? labelFn(item) : item.name;
         select.appendChild(opt);
     }
 }
@@ -1318,6 +1403,102 @@ function normalizeRefName(name: string): string {
     return name.trim().toLowerCase().replace(/\.sc2map$/i, '');
 }
 
+/** Подпись карты в списках: «Название · Альт.название». */
+function mapLabel(m: { name: string; alt_name?: string | null }): string {
+    return m.alt_name ? `${m.name} · ${m.alt_name}` : m.name;
+}
+
+/** Карты, доступные для выбора (без мягко удалённых). */
+function activeMaps(): GameMap[] {
+    return cachedMaps.filter((m) => !m.deleted_at);
+}
+
+function fillMapSelect(): void {
+    fillSelect(mapSelect, activeMaps(), t('games.select_placeholder'), undefined, (m) => mapLabel(m as GameMap));
+}
+
+/** Находит неудалённую карту по названию (name или alt_name), нормализованно. */
+function findCachedMap(title: string | null | undefined): GameMap | undefined {
+    if (!title) return undefined;
+    const target = normalizeRefName(title);
+    return cachedMaps.find(
+        (m) =>
+            !m.deleted_at &&
+            (normalizeRefName(m.name) === target ||
+                (m.alt_name ? normalizeRefName(m.alt_name) === target : false))
+    );
+}
+
+/** Множество id мягко удалённых карт. */
+function deletedMapIds(): Set<number> {
+    return new Set(cachedMaps.filter((m) => m.deleted_at).map((m) => m.id));
+}
+
+function mapAltInput(): HTMLInputElement | null {
+    return document.getElementById('field-map-alt') as HTMLInputElement | null;
+}
+
+function showMapWarning(title: string | null, deleted = false): void {
+    const el = document.getElementById('field-map-warning');
+    if (!el) return;
+    if (!title) {
+        el.classList.add('hidden');
+        el.textContent = '';
+        return;
+    }
+    el.classList.remove('hidden');
+    el.textContent = deleted
+        ? t('games.map_deleted_warning', { name: title })
+        : t('games.replay_map_not_found', { name: title });
+}
+
+/** Показывает/скрывает поле альтернативного названия для выбранной карты. */
+function refreshMapAltField(): void {
+    const wrap = document.getElementById('field-map-alt-wrap');
+    const input = mapAltInput();
+    const status = document.getElementById('field-map-alt-status');
+    if (!wrap || !input) return;
+    if (status) {
+        status.textContent = '';
+        status.className = 'field-hint';
+    }
+    const id = mapSelect?.value ? Number(mapSelect.value) : null;
+    const map = id !== null ? cachedMaps.find((m) => m.id === id) : undefined;
+    if (!map || map.deleted_at) {
+        wrap.classList.add('hidden');
+        input.value = '';
+        return;
+    }
+    wrap.classList.remove('hidden');
+    input.value = map.alt_name ?? '';
+}
+
+async function saveSelectedMapAlt(): Promise<void> {
+    const input = mapAltInput();
+    const status = document.getElementById('field-map-alt-status');
+    if (!input || !mapSelect) return;
+    const id = mapSelect.value ? Number(mapSelect.value) : null;
+    if (id === null) return;
+    const value = input.value.trim();
+    try {
+        const updated = await updateRef<GameMap>('maps', id, { alt_name: value || null }, state.token);
+        cachedMaps = cachedMaps.map((m) => (m.id === id ? { ...m, alt_name: updated.alt_name ?? null } : m));
+        fillMapSelect();
+        mapSelect.value = String(id);
+        refreshMapAltField();
+        markDirty();
+        if (status) {
+            status.textContent = t('games.map_alt_saved');
+            status.className = 'field-hint is-ok';
+        }
+    } catch (err) {
+        if (status) {
+            status.textContent = t('games.map_alt_error');
+            status.className = 'field-hint is-error';
+        }
+    }
+}
+
 async function createMapInline(): Promise<void> {
     const name = prompt(t('games.new_map_prompt'));
     if (name === null) return;
@@ -1327,8 +1508,10 @@ async function createMapInline(): Promise<void> {
         const newMap = await createRef<GameMap>('maps', { name: trimmed }, state.token);
         cachedMaps = [...cachedMaps, newMap];
         cachedMaps.sort((a, b) => a.name.localeCompare(b.name));
-        fillSelect(mapSelect, cachedMaps, t('games.select_placeholder'));
+        fillMapSelect();
         if (mapSelect) mapSelect.value = String(newMap.id);
+        refreshMapAltField();
+        showMapWarning(null);
         markDirty();
     } catch (err) {
         alert(t('games.new_map_error') + (err instanceof Error ? err.message : String(err)));
@@ -1970,21 +2153,23 @@ async function applyReplayPrefill(prefill: ReplayPrefill): Promise<void> {
         durationInput.value = String(Math.max(1, Math.round(prefill.durationSeconds / 60)));
     }
 
-    // Карта — сервер уже нашёл/создал её при разборе реплея. Если по какой-то
-    // причине карты нет, пробуем сопоставить по названию в загруженном кэше.
+    // Карта: сервер ищет по основному и альтернативному названию, но НЕ создаёт
+    // новую. Если не нашли — предупреждаем и оставляем выбор вручную.
     if (mapSelect) {
-        const prefillMap = prefill.map
-            ?? (prefill.mapTitle
-                ? cachedMaps.find((m) => normalizeRefName(m.name) === normalizeRefName(prefill.mapTitle!))
-                : undefined);
+        const prefillMap = (prefill.map as GameMap | null | undefined) ?? findCachedMap(prefill.mapTitle);
         if (prefillMap) {
             if (!cachedMaps.some((m) => m.id === prefillMap.id)) {
                 cachedMaps = [...cachedMaps, prefillMap as GameMap]
                     .sort((a, b) => a.name.localeCompare(b.name));
-                fillSelect(mapSelect, cachedMaps, t('games.select_placeholder'));
+                fillMapSelect();
             }
             mapSelect.value = String(prefillMap.id);
+            showMapWarning(null);
+        } else if (prefill.mapTitle) {
+            mapSelect.value = '';
+            showMapWarning(prefill.mapTitle);
         }
+        refreshMapAltField();
     }
 
     // Командный режим — если в реплее есть >= 2 равных команд по >= 2 игрока
@@ -2093,7 +2278,7 @@ async function openCreateGameModal(prefill?: ReplayPrefill, fromGame?: GameFull)
 
     fillSelect(formatSelect, cachedFormats, t('games.select_placeholder'));
     fillSelect(hostSelect, cachedHosts, t('games.select_placeholder'));
-    fillSelect(mapSelect, cachedMaps, t('games.select_placeholder'));
+    fillMapSelect();
     fillSelect(modSelect, cachedMods, t('games.select_placeholder'), t('games.no_mod'));
 
     const useLastCheckbox = document.getElementById('field-use-last') as HTMLInputElement | null;
@@ -2107,7 +2292,7 @@ async function openCreateGameModal(prefill?: ReplayPrefill, fromGame?: GameFull)
         if (hostSelect && lastGame.host_id && cachedHosts.some((h) => h.id === lastGame.host_id)) {
             hostSelect.value = String(lastGame.host_id);
         }
-        if (mapSelect && lastGame.map_id && cachedMaps.some((m) => m.id === lastGame.map_id)) {
+        if (mapSelect && lastGame.map_id && activeMaps().some((m) => m.id === lastGame.map_id)) {
             mapSelect.value = String(lastGame.map_id);
         }
         if (modSelect && lastGame.mod_id && cachedMods.some((m) => m.id === lastGame.mod_id)) {
@@ -2152,8 +2337,13 @@ async function openCreateGameModal(prefill?: ReplayPrefill, fromGame?: GameFull)
 
     if (notesInput) notesInput.value = '';
 
-    if (prefill) await applyReplayPrefill(prefill);
-    else if (fromGame) applyGameSettingsFromGame(fromGame);
+    if (prefill) {
+        await applyReplayPrefill(prefill);
+    } else {
+        if (fromGame) applyGameSettingsFromGame(fromGame);
+        showMapWarning(null);
+        refreshMapAltField();
+    }
 
     normalizePlaces();
     renderPlayerDrafts();
@@ -2175,7 +2365,7 @@ function applyGameSettingsFromGame(gameFull: GameFull): void {
     if (hostSelect && gameFull.host && cachedHosts.some((h) => h.id === gameFull.host!.id)) {
         hostSelect.value = String(gameFull.host.id);
     }
-    if (mapSelect && gameFull.map && cachedMaps.some((m) => m.id === gameFull.map!.id)) {
+    if (mapSelect && gameFull.map && activeMaps().some((m) => m.id === gameFull.map!.id)) {
         mapSelect.value = String(gameFull.map.id);
     }
     if (modSelect && gameFull.mod && cachedMods.some((m) => m.id === gameFull.mod!.id)) {
@@ -2234,12 +2424,21 @@ async function openEditGameModal(gameId: number): Promise<void> {
 
     fillSelect(formatSelect, cachedFormats, t('games.select_placeholder'));
     fillSelect(hostSelect, cachedHosts, t('games.select_placeholder'));
-    fillSelect(mapSelect, cachedMaps, t('games.select_placeholder'));
+    fillMapSelect();
     fillSelect(modSelect, cachedMods, t('games.select_placeholder'), t('games.no_mod'));
 
     if (formatSelect && gameFull.format) formatSelect.value = String(gameFull.format.id);
     if (hostSelect && gameFull.host) hostSelect.value = String(gameFull.host.id);
-    if (mapSelect && gameFull.map) mapSelect.value = String(gameFull.map.id);
+    if (mapSelect && gameFull.map) {
+        const selectable = activeMaps().some((m) => m.id === gameFull.map!.id);
+        if (selectable) {
+            mapSelect.value = String(gameFull.map.id);
+        } else {
+            mapSelect.value = '';
+            showMapWarning(gameFull.map.name, true);
+        }
+    }
+    refreshMapAltField();
     if (modSelect && gameFull.mod) modSelect.value = String(gameFull.mod.id);
     else if (modSelect) modSelect.value = '';
 

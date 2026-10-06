@@ -42,7 +42,7 @@ const REFS: Record<RefType, RefConfig> = {
   maps: {
     table: 'game_maps',
     minRole: 'moderator',
-    fields: ['name'],
+    fields: ['name', 'alt_name', 'deleted_at'],
     orderBy: 'name',
   },
   mods: {
@@ -114,6 +114,14 @@ function pickFields(body: any, allowed: string[]): Record<string, unknown> {
   return out;
 }
 
+/** Приводит alt_name к непустой строке или null. */
+function normalizeAltName(payload: Record<string, unknown>): void {
+  if (payload.alt_name !== undefined) {
+    const v = typeof payload.alt_name === 'string' ? payload.alt_name.trim() : '';
+    payload.alt_name = v || null;
+  }
+}
+
 // ============================================================
 // GET /api/game-refs/:refType — список (публичный)
 // ============================================================
@@ -151,6 +159,47 @@ gameRefsRouter.post('/:refType', async (req, res) => {
     return res.status(400).json({ error: 'name is required' });
   }
   payload.name = String(payload.name).trim();
+  normalizeAltName(payload);
+
+  // Карты: если такое название уже есть и карта была мягко удалена — восстанавливаем,
+  // а не создаём дубликат (unique по name не даст вставить).
+  if (refType === 'maps') {
+    const { data: allMaps } = await check.client
+      .from('game_maps')
+      .select('id, name, alt_name, deleted_at');
+
+    const target = String(payload.name).trim().toLowerCase();
+    const existing = (allMaps ?? []).find(
+      (m: { name: string }) => m.name.trim().toLowerCase() === target
+    );
+
+    if (existing) {
+      if (!existing.deleted_at) {
+        return res.status(409).json({ error: 'Item with this name already exists' });
+      }
+      const update: Record<string, unknown> = { deleted_at: null };
+      if (payload.alt_name !== undefined) update.alt_name = payload.alt_name;
+      const { data: revived, error: reviveError } = await check.client
+        .from('game_maps')
+        .update(update)
+        .eq('id', existing.id)
+        .select()
+        .single();
+      if (reviveError) {
+        console.error('[game-refs] map revive error:', reviveError);
+        return res.status(500).json({ error: 'DB error' });
+      }
+      void logAction({
+        action: 'ref.create',
+        actorId: check.userId,
+        entityType: refType,
+        entityId: revived.id,
+        summary: `Восстановлена карта: "${revived.name}"`,
+        details: { refType, name: revived.name },
+      });
+      return res.status(201).json({ item: revived });
+    }
+  }
 
   const { data, error } = await check.client
     .from(config.table)
@@ -203,6 +252,7 @@ gameRefsRouter.patch('/:refType/:id', async (req, res) => {
     }
     payload.name = String(payload.name).trim();
   }
+  normalizeAltName(payload);
 
   const { data, error } = await check.client
     .from(config.table)
@@ -258,12 +308,23 @@ gameRefsRouter.delete('/:refType/:id', async (req, res) => {
     return res.status(400).json({ error: 'Invalid id' });
   }
 
-  const { data, error } = await check.client
-    .from(config.table)
-    .delete()
-    .eq('id', id)
-    .select()
-    .maybeSingle();
+  // Карты удаляем мягко: строку не убираем, чтобы игры сохраняли ссылку и
+  // название (игровые карточки смогут показать «карта удалена»).
+  const result = refType === 'maps'
+    ? await check.client
+        .from('game_maps')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .maybeSingle()
+    : await check.client
+        .from(config.table)
+        .delete()
+        .eq('id', id)
+        .select()
+        .maybeSingle();
+
+  const { data, error } = result;
 
   if (error) {
     console.error(`[game-refs] ${config.table} delete error:`, error);

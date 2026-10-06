@@ -416,7 +416,7 @@
                 <section class="admin-section">
                     <div class="admin-section-header">
                         <h2 data-i18n="admin.formats_title">Форматы игр</h2>
-                        <button type="button" id="btn-add-format" class="btn-primary" data-i18n="admin.add_format">
+                        <button type="button" id="btn-add-formats" class="btn-primary" data-i18n="admin.add_format">
                             + Добавить формат
                         </button>
                     </div>
@@ -428,7 +428,7 @@
                 <section class="admin-section">
                     <div class="admin-section-header">
                         <h2 data-i18n="admin.hosts_title">Ведущие</h2>
-                        <button type="button" id="btn-add-host" class="btn-primary" data-i18n="admin.add_host">
+                        <button type="button" id="btn-add-hosts" class="btn-primary" data-i18n="admin.add_host">
                             + Добавить ведущего
                         </button>
                     </div>
@@ -563,6 +563,14 @@
                             <button type="button" id="btn-add-map" class="form-add-btn"
                                 title="Добавить карту">+</button>
                         </div>
+                        <div id="field-map-alt-wrap" class="map-alt-wrap hidden">
+                            <input type="text" id="field-map-alt" class="map-alt-input"
+                                data-i18n-placeholder="games.map_alt_placeholder" placeholder="Альт. название" />
+                            <button type="button" id="btn-save-map-alt" class="form-add-btn"
+                                data-i18n-title="games.map_alt_save" title="Сохранить альт. название">💾</button>
+                            <span id="field-map-alt-status" class="field-hint"></span>
+                        </div>
+                        <div id="field-map-warning" class="field-warning hidden"></div>
                     </label>
                     <label class="form-field">
                         <span data-i18n="games.field_mod">Мод</span>

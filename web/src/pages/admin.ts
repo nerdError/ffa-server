@@ -12,6 +12,7 @@ import {
     type RefItem,
     type GameFormat,
     type GameHost,
+    type GameMap,
 } from '../api/game-refs';
 
 type Role = 'moderator' | 'admin' | 'ghost';
@@ -98,7 +99,7 @@ interface RefConfig {
     newPromptKey: string;
     newErrorKey: string;
     deleteConfirmKey: string;
-    editableFields: ('slug' | 'elo_weight' | 'aka')[];
+    editableFields: ('slug' | 'elo_weight' | 'aka' | 'alt_name')[];
 }
 
 const REF_CONFIGS: RefConfig[] = [
@@ -130,7 +131,7 @@ const REF_CONFIGS: RefConfig[] = [
         newPromptKey: 'admin.new_map_prompt',
         newErrorKey: 'admin.new_map_error',
         deleteConfirmKey: 'admin.delete_map_confirm',
-        editableFields: [],
+        editableFields: ['alt_name'],
     },
     {
         type: 'mods',
@@ -761,12 +762,22 @@ function buildRefCard(config: RefConfig, item: RefItem): HTMLElement {
     const card = document.createElement('div');
     card.className = 'admin-ref-card';
 
+    const isDeletedMap = config.type === 'maps' && !!(item as GameMap).deleted_at;
+    if (isDeletedMap) card.classList.add('is-deleted');
+
     // --- Название (редактируемое) ---
     const nameInput = document.createElement('input');
     nameInput.type = 'text';
     nameInput.className = 'admin-ref-input';
     nameInput.value = item.name;
     card.appendChild(nameInput);
+
+    if (isDeletedMap) {
+        const badge = document.createElement('span');
+        badge.className = 'admin-ref-deleted-badge';
+        badge.textContent = t('admin.map_deleted_badge');
+        card.appendChild(badge);
+    }
 
     // --- Доп. поля ---
     const extraInputs: Record<string, HTMLInputElement> = {};
@@ -791,6 +802,10 @@ function buildRefCard(config: RefConfig, item: RefItem): HTMLElement {
             input.type = 'text';
             input.value = (item as GameHost).aka ?? '';
             input.placeholder = 'aka';
+        } else if (field === 'alt_name') {
+            input.type = 'text';
+            input.value = (item as GameMap).alt_name ?? '';
+            input.placeholder = t('admin.alt_name_placeholder');
         }
 
         extraInputs[field] = input;
@@ -814,11 +829,20 @@ function buildRefCard(config: RefConfig, item: RefItem): HTMLElement {
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.className = 'admin-ref-btn admin-ref-btn--delete';
-    delBtn.textContent = '🗑';
-    delBtn.title = t('common.delete');
-    delBtn.addEventListener('click', () => {
-        void deleteRefItem(config, item);
-    });
+    if (isDeletedMap) {
+        delBtn.textContent = '↩';
+        delBtn.title = t('admin.restore');
+        delBtn.classList.add('admin-ref-btn--restore');
+        delBtn.addEventListener('click', () => {
+            void restoreRefItem(config, item);
+        });
+    } else {
+        delBtn.textContent = '🗑';
+        delBtn.title = t('common.delete');
+        delBtn.addEventListener('click', () => {
+            void deleteRefItem(config, item);
+        });
+    }
     actions.appendChild(delBtn);
 
     card.appendChild(actions);
@@ -869,6 +893,7 @@ async function saveRef(
         if (field === 'slug') payload.slug = input.value.trim();
         else if (field === 'elo_weight') payload.elo_weight = Number(input.value);
         else if (field === 'aka') payload.aka = input.value.trim() || null;
+        else if (field === 'alt_name') payload.alt_name = input.value.trim() || null;
     }
 
     try {
@@ -884,6 +909,15 @@ async function deleteRefItem(config: RefConfig, item: RefItem): Promise<void> {
 
     try {
         await deleteRef(config.type, item.id, state.token);
+        await loadRefs(config);
+    } catch (err) {
+        alert(t('common.error') + ': ' + (err instanceof Error ? err.message : String(err)));
+    }
+}
+
+async function restoreRefItem(config: RefConfig, item: RefItem): Promise<void> {
+    try {
+        await updateRef(config.type, item.id, { deleted_at: null }, state.token);
         await loadRefs(config);
     } catch (err) {
         alert(t('common.error') + ': ' + (err instanceof Error ? err.message : String(err)));

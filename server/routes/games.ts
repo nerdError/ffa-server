@@ -139,48 +139,32 @@ function normalizeMapName(name: string): string {
 }
 
 /**
- * Ищет карту по названию или создаёт новую. Использует клиент уже
- * аутентифицированного модератора (проверка прав выполнена выше в этом же
- * запросе), поэтому отдельный привилегированный запрос с клиента не нужен.
+ * Ищет карту по основному ИЛИ альтернативному названию (нормализованно) среди
+ * неудалённых. Новую карту НЕ создаёт: если не найдено — возвращает null, чтобы
+ * форма предложила добавить вариацию названия существующей карте либо новую карту.
  */
-async function findOrCreateMap(
+async function findMap(
     client: any,
     name: string
-): Promise<{ id: number; name: string } | null> {
+): Promise<{ id: number; name: string; alt_name: string | null } | null> {
     const trimmed = name.trim();
     if (!trimmed) return null;
     const target = normalizeMapName(trimmed);
 
-    const { data: maps, error: listError } = await client
+    const { data: maps, error } = await client
         .from('game_maps')
-        .select('id, name');
-    if (listError) {
-        console.warn('[games] map lookup failed:', listError.message);
+        .select('id, name, alt_name, deleted_at')
+        .is('deleted_at', null);
+    if (error) {
+        console.warn('[games] map lookup failed:', error.message);
         return null;
     }
     const existing = (maps ?? []).find(
-        (m: { id: number; name: string }) => normalizeMapName(m.name) === target
+        (m: { id: number; name: string; alt_name: string | null }) =>
+            normalizeMapName(m.name) === target ||
+            (m.alt_name ? normalizeMapName(m.alt_name) === target : false)
     );
-    if (existing) return existing;
-
-    const { data: created, error: createError } = await client
-        .from('game_maps')
-        .insert({ name: trimmed })
-        .select('id, name')
-        .single();
-    if (createError) {
-        // Возможная гонка: карту создали параллельно — пробуем найти ещё раз
-        if (createError.code === '23505') {
-            const { data: again } = await client.from('game_maps').select('id, name');
-            const found = (again ?? []).find(
-                (m: { id: number; name: string }) => normalizeMapName(m.name) === target
-            );
-            if (found) return found;
-        }
-        console.warn('[games] map create failed:', createError.message);
-        return null;
-    }
-    return created;
+    return existing ?? null;
 }
 
 gamesRouter.post(
@@ -239,7 +223,7 @@ gamesRouter.post(
                             return new Map<string, number>();
                         }),
                 summary.mapTitle
-                    ? findOrCreateMap(auth.client, summary.mapTitle)
+                    ? findMap(auth.client, summary.mapTitle)
                     : Promise.resolve(null),
             ]);
 
