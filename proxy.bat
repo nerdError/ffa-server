@@ -1,0 +1,1 @@
+dsh-openai-shim serve --upstream https://routerai.ru/api/v1 --port 8090 --effort-mode low

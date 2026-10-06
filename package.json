@@ -12,7 +12,8 @@
     "start": "tsx server/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p web/tsconfig.json --noEmit && tsc -p tsconfig.server.json --noEmit",
     "preview": "vite preview",
-    "ollama": "ollama serve"
+    "ollama": "ollama serve",
+    "proxy": "proxy.bat"
   },
   "keywords": [],
   "author": "",

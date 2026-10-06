@@ -567,14 +567,6 @@ function buildGameCard(g: GameListItem): HTMLElement {
         meta.appendChild(hostEl);
     }
 
-    if (g.created_by_username) {
-        if (meta.childNodes.length > 0) meta.appendChild(document.createTextNode(' · '));
-        const creator = document.createElement('span');
-        creator.className = 'game-card-creator';
-        creator.textContent = `${t('games.added_by')}: ${g.created_by_username}`;
-        meta.appendChild(creator);
-    }
-
     card.appendChild(meta);
 
     const playersSummary = document.createElement('div');
@@ -622,6 +614,16 @@ function buildGameCard(g: GameListItem): HTMLElement {
     detailsWrap.append(toggle, allListWrap);
     card.appendChild(detailsWrap);
 
+    const footer = document.createElement('div');
+    footer.className = 'game-card-footer';
+
+    if (g.created_by_username) {
+        const creator = document.createElement('span');
+        creator.className = 'game-card-creator';
+        creator.textContent = `${t('games.added_by')}: ${g.created_by_username}`;
+        footer.appendChild(creator);
+    }
+
     const canEdit = Boolean(state.user?.is_moderator || state.user?.is_admin);
     if (canEdit) {
         const actions = document.createElement('div');
@@ -658,8 +660,10 @@ function buildGameCard(g: GameListItem): HTMLElement {
         });
 
         actions.append(editBtn, dupBtn, delBtn);
-        card.appendChild(actions);
+        footer.appendChild(actions);
     }
+
+    card.appendChild(footer);
 
     return card;
 }

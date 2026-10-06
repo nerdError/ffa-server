@@ -216,14 +216,34 @@
     font-size: 0.9rem;
 }
 
+/* Футер карточки: подпись автора справа снизу, над кнопками действия */
+.game-card-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-glow);
+}
+
+.game-card-creator {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* Действия на карточке */
 .game-card-actions {
     display: flex;
     gap: 6px;
     justify-content: flex-end;
-    padding-top: 8px;
-    border-top: 1px solid var(--border-glow);
-    margin-top: 4px;
+    padding-top: 0;
+    border-top: none;
+    margin-top: 0;
 }
 
 .game-action-btn {
