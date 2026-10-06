@@ -517,6 +517,8 @@ function gameFullToListItem(gf: GameFull): GameListItem {
             team: p.team,
             is_winner: p.is_winner,
             eliminated_at: p.eliminated_at,
+            elo_delta: p.elo_delta,
+            activity_delta: p.activity_delta,
         })),
     };
 }
@@ -1071,6 +1073,30 @@ function buildTeamSummary(container: HTMLElement, g: GameListItem): void {
     container.appendChild(teamsCount);
 }
 
+/** Бейдж дельт Elo и activity за игру (из rating_history). */
+function buildDeltaBadge(p: GameListItem['participants'][number]): HTMLElement | null {
+    if (p.elo_delta == null && p.activity_delta == null) return null;
+    const badge = document.createElement('span');
+    badge.className = 'player-line-delta';
+
+    if (p.elo_delta != null) {
+        const elo = document.createElement('span');
+        elo.className = 'player-delta-elo' + (p.elo_delta >= 0 ? ' is-plus' : ' is-minus');
+        elo.textContent = `${p.elo_delta >= 0 ? '+' : ''}${p.elo_delta}`;
+        badge.appendChild(elo);
+    }
+
+    if (p.activity_delta != null) {
+        const act = document.createElement('span');
+        act.className = 'player-delta-activity';
+        const v = Number(p.activity_delta);
+        act.textContent = `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
+        badge.appendChild(act);
+    }
+
+    return badge;
+}
+
 function renderSoloPlayers(container: HTMLElement, g: GameListItem): void {
   const total = g.participants.length;
 
@@ -1116,6 +1142,9 @@ function renderSoloPlayers(container: HTMLElement, g: GameListItem): void {
     if (p.player_aka) nameEl.title = `aka ${p.player_aka}`;
     makePlayerNameClickable(nameEl, p.player_id);
     row.appendChild(nameEl);
+
+    const delta = buildDeltaBadge(p);
+    if (delta) row.appendChild(delta);
 
     container.appendChild(row);
   }
@@ -1209,6 +1238,9 @@ function renderTeamPlayers(container: HTMLElement, g: GameListItem): void {
         if (p.player_aka) nameEl.title = `aka ${p.player_aka}`;
         makePlayerNameClickable(nameEl, p.player_id);
         m.appendChild(nameEl);
+
+        const delta = buildDeltaBadge(p);
+        if (delta) m.appendChild(delta);
 
         membersEl.appendChild(m);
       });

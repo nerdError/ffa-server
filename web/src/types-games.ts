@@ -6,6 +6,10 @@ export interface GamePlayerEntry {
   team: number | null;
   is_winner: boolean;
   eliminated_at: number | null;
+  /** Изменение Elo за игру (rating_history.elo_delta). */
+  elo_delta: number | null;
+  /** Изменение activity за игру (rating_history.activity_delta, place-score). */
+  activity_delta: number | null;
 }
 
 export interface GameRef {

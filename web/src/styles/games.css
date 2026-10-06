@@ -1716,6 +1716,43 @@ details[open] .game-card-players-toggle::before {
   color: var(--gold);
 }
 
+/* Дельта рейтинга/activity за игру */
+.player-line-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+.player-line.is-winner .player-line-delta {
+  opacity: 1;
+}
+
+.player-delta-elo {
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.player-delta-elo.is-plus {
+  color: #2ecc71;
+  background: rgba(46, 204, 113, 0.12);
+}
+
+.player-delta-elo.is-minus {
+  color: #ff5c5c;
+  background: rgba(255, 92, 92, 0.12);
+}
+
+.player-delta-activity {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
 /* Состав команды */
 .player-team-members {
   display: inline-flex;
