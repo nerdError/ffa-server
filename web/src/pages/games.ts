@@ -979,6 +979,7 @@ function buildSoloSummary(container: HTMLElement, g: GameListItem): void {
         const name = document.createElement('span');
         name.className = 'game-player-name';
         name.textContent = p.player_name;
+        makePlayerNameClickable(name, p.player_id);
 
         el.append(medal, race, name);
         container.appendChild(el);
@@ -1044,6 +1045,7 @@ function buildTeamSummary(container: HTMLElement, g: GameListItem): void {
         const name = document.createElement('span');
         name.className = 'game-player-name';
         name.textContent = p.player_name;
+        makePlayerNameClickable(name, p.player_id);
 
         pEl.append(race, name);
         members.appendChild(pEl);
@@ -1104,6 +1106,7 @@ function renderSoloPlayers(container: HTMLElement, g: GameListItem): void {
     nameEl.className = 'player-line-name';
     nameEl.textContent = p.player_name;
     if (p.player_aka) nameEl.title = `aka ${p.player_aka}`;
+    makePlayerNameClickable(nameEl, p.player_id);
     row.appendChild(nameEl);
 
     container.appendChild(row);
@@ -1198,6 +1201,7 @@ function renderTeamPlayers(container: HTMLElement, g: GameListItem): void {
         nameEl.className = 'player-line-name';
         nameEl.textContent = p.player_name;
         if (p.player_aka) nameEl.title = `aka ${p.player_aka}`;
+        makePlayerNameClickable(nameEl, p.player_id);
         m.appendChild(nameEl);
 
         membersEl.appendChild(m);
@@ -1385,6 +1389,26 @@ function setFilter(type: 'format' | 'host' | 'map' | 'mod', id: number, modName?
         if (sel) sel.value = String(id);
     }
     applyFilters();
+}
+
+/** Включает фильтр по игроку (как при переходе на «все игры» из карточки игрока). */
+function setPlayerFilter(playerId: number): void {
+    filters.playerId = playerId;
+    playerFilterName = null;
+    void loadPlayerFilterName(playerId);
+    updateUrlFromFilters();
+    renderActiveFilterChips();
+    void loadGames();
+}
+
+/** Делает имя игрока кликабельным — клик включает фильтр по этому игроку. */
+function makePlayerNameClickable(nameEl: HTMLElement, playerId: number): void {
+    nameEl.classList.add('game-clickable');
+    nameEl.title = t('games.click_to_filter');
+    nameEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setPlayerFilter(playerId);
+    });
 }
 
 function renderActiveFilterChips(): void {

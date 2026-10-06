@@ -105,6 +105,18 @@
     transform: translateY(-1px);
 }
 
+.game-player-name.game-clickable,
+.player-line-name.game-clickable {
+    cursor: pointer;
+    text-decoration: underline dotted rgba(255, 255, 255, 0.4);
+    transition: color 0.15s;
+}
+
+.game-player-name.game-clickable:hover,
+.player-line-name.game-clickable:hover {
+    color: var(--gold);
+}
+
 .game-card-creator {
     color: var(--text-muted);
     font-size: 0.78rem;
