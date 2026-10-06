@@ -397,6 +397,25 @@ function renderGames(): void {
     const container = document.getElementById('games-list-container');
     if (!container) return;
 
+    const filtered = getFilteredGames();
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<p class="hint">${searchQuery || hasActiveFilters() ? t('games.nothing_found') : t('games.no_games')
+            }</p>`;
+        return;
+    }
+
+    // Группируем по дню
+    const groups = groupGamesByDay(filtered);
+
+    container.innerHTML = '';
+    for (const group of groups) {
+        container.appendChild(buildDayGroup(group));
+    }
+}
+
+/** Игры с учётом активных фильтров и поиска. */
+function getFilteredGames(): GameListItem[] {
     let filtered = cachedGames;
 
     if (filters.formatId !== null) filtered = filtered.filter((g) => g.format_id === filters.formatId);
@@ -420,18 +439,160 @@ function renderGames(): void {
         });
     }
 
-    if (filtered.length === 0) {
-        container.innerHTML = `<p class="hint">${searchQuery || hasActiveFilters() ? t('games.nothing_found') : t('games.no_games')
-            }</p>`;
+    return filtered;
+}
+
+/** Локальный ключ дня (YYYY-MM-DD) — совпадает с группировкой в списке. */
+function localDateKey(playedAt: string | Date): string {
+    const d = playedAt instanceof Date ? playedAt : new Date(playedAt);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** Дата-время для отображения (локаль сайта). */
+function formatDateTime(iso: string): string {
+    return new Date(iso).toLocaleString(getLocale() === 'ru' ? 'ru-RU' : 'en-US', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+    });
+}
+
+/** Преобразует полную игру (из API) в элемент списка. */
+function gameFullToListItem(gf: GameFull): GameListItem {
+    const players = gf.players ?? [];
+    return {
+        id: gf.id,
+        played_at: gf.played_at,
+        duration_min: gf.duration_min,
+        format_id: gf.format?.id ?? null,
+        format_name: gf.format?.name ?? null,
+        format_slug: gf.format?.slug ?? null,
+        is_team: gf.format?.is_team ?? false,
+        host_id: gf.host?.id ?? null,
+        host_name: gf.host?.name ?? null,
+        map_id: gf.map?.id ?? null,
+        map_name: gf.map?.name ?? null,
+        mod_name: gf.mod?.name ?? null,
+        created_by_username: gf.created_by_username,
+        created_at: gf.created_at,
+        updated_at: gf.updated_at,
+        player_count: players.length,
+        winners: players.filter((p) => p.is_winner).map((p) => p.player_name),
+        participants: players.map((p) => ({
+            player_id: p.player_id,
+            player_name: p.player_name,
+            player_aka: p.player_aka,
+            race: p.race,
+            team: p.team,
+            is_winner: p.is_winner,
+            eliminated_at: p.eliminated_at,
+        })),
+    };
+}
+
+/** Вставляет day-group в правильную позицию (список отсортирован по дате desc). */
+function insertDayGroupInOrder(
+    container: HTMLElement,
+    node: HTMLElement,
+    key: string,
+    order: string[]
+): void {
+    const idx = order.indexOf(key);
+    const nodes = [...container.querySelectorAll<HTMLElement>('.game-day-group')];
+    let before: HTMLElement | null = null;
+    for (const n of nodes) {
+        const nk = n.dataset.dayKey;
+        if (!nk) continue;
+        if (order.indexOf(nk) > idx) {
+            before = n;
+            break;
+        }
+    }
+    container.insertBefore(node, before);
+}
+
+/**
+ * Обновляет только карточку изменённой игры (без полного перерендера списка).
+ * Перерисовываются лишь затронутые день-группы (старая и новая).
+ */
+function applyEditedGame(gf: GameFull): void {
+    const container = document.getElementById('games-list-container');
+    if (!container) return;
+
+    const idx = cachedGames.findIndex((g) => g.id === gf.id);
+    if (idx === -1) {
+        // Игра не была в загруженном списке — обновляем полным запросом.
+        void loadGames();
         return;
     }
 
-    // Группируем по дню
-    const groups = groupGamesByDay(filtered);
+    const prevKey = localDateKey(cachedGames[idx]!.played_at);
+    const item = gameFullToListItem(gf);
+    cachedGames[idx] = item;
+    // Сохраняем порядок списка (сервер отдаёт игры по played_at desc).
+    cachedGames.sort((a, b) => new Date(b.played_at).getTime() - new Date(a.played_at).getTime());
+    const newKey = localDateKey(item.played_at);
 
-    container.innerHTML = '';
-    for (const group of groups) {
-        container.appendChild(buildDayGroup(group));
+    // Если список ещё не отрисован — рисуем целиком.
+    if (!container.querySelector('.game-day-group')) {
+        renderGames();
+        return;
+    }
+
+    const groups = groupGamesByDay(getFilteredGames());
+    const byKey = new Map(groups.map((g) => [g.dateKey, g] as const));
+    const order = groups.map((g) => g.dateKey);
+
+    for (const key of new Set([prevKey, newKey])) {
+        const existing = container.querySelector<HTMLElement>(
+            `.game-day-group[data-day-key="${key}"]`
+        );
+        const group = byKey.get(key);
+        if (group) {
+            const node = buildDayGroup(group);
+            if (existing) existing.replaceWith(node);
+            else insertDayGroupInOrder(container, node, key, order);
+        } else if (existing) {
+            existing.remove();
+        }
+    }
+
+    // Если после обновления список пуст — показать подсказку.
+    if (!container.querySelector('.game-day-group')) {
+        container.innerHTML = `<p class="hint">${searchQuery || hasActiveFilters() ? t('games.nothing_found') : t('games.no_games')}</p>`;
+    }
+}
+
+/** Убирает карточку удалённой игры из списка без полного перерендера. */
+function removeGameFromList(id: number): void {
+    const container = document.getElementById('games-list-container');
+    const idx = cachedGames.findIndex((g) => g.id === id);
+    if (idx === -1) return;
+
+    const key = localDateKey(cachedGames[idx]!.played_at);
+    cachedGames.splice(idx, 1);
+    if (!container) return;
+
+    if (!container.querySelector('.game-day-group')) {
+        renderGames();
+        return;
+    }
+
+    const groups = groupGamesByDay(getFilteredGames());
+    const group = groups.find((g) => g.dateKey === key) ?? null;
+    const existing = container.querySelector<HTMLElement>(`.game-day-group[data-day-key="${key}"]`);
+
+    if (group) {
+        const node = buildDayGroup(group);
+        if (existing) existing.replaceWith(node);
+        else insertDayGroupInOrder(container, node, key, groups.map((g) => g.dateKey));
+    } else if (existing) {
+        existing.remove();
+    }
+
+    // Если после удаления список пуст — показать подсказку.
+    if (!container.querySelector('.game-day-group')) {
+        container.innerHTML = `<p class="hint">${searchQuery || hasActiveFilters() ? t('games.nothing_found') : t('games.no_games')}</p>`;
     }
 }
 
@@ -448,8 +609,7 @@ function groupGamesByDay(games: GameListItem[]): DayGroup[] {
     for (const g of games) {
         const d = new Date(g.played_at);
         // Ключ — локальная дата (не UTC), чтобы соответствовать тому, что видит пользователь
-        const pad = (n: number) => String(n).padStart(2, '0');
-        const dateKey = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        const dateKey = localDateKey(d);
 
         let group = map.get(dateKey);
         if (!group) {
@@ -472,6 +632,7 @@ function groupGamesByDay(games: GameListItem[]): DayGroup[] {
 function buildDayGroup(group: DayGroup): HTMLElement {
     const wrap = document.createElement('div');
     wrap.className = 'game-day-group';
+    wrap.dataset.dayKey = group.dateKey;
 
     // Заголовок
     const header = document.createElement('div');
@@ -654,15 +815,22 @@ function buildGameCard(g: GameListItem): HTMLElement {
     const footer = document.createElement('div');
     footer.className = 'game-card-footer';
 
+    const canViewMeta = Boolean(state.user?.is_moderator || state.user?.is_admin);
+
     if (g.created_by_username) {
         const creator = document.createElement('span');
         creator.className = 'game-card-creator';
-        creator.textContent = `${t('games.added_by')}: ${g.created_by_username}`;
+        let text = `${t('games.added_by')}: ${g.created_by_username}`;
+        // Время последнего редактирования — только для модераторов/админов,
+        // и только если игру действительно правили (updated_at != created_at).
+        if (canViewMeta && g.updated_at && g.created_at && g.updated_at !== g.created_at) {
+            text += ` · ${t('games.edited_at')}: ${formatDateTime(g.updated_at)}`;
+        }
+        creator.textContent = text;
         footer.appendChild(creator);
     }
 
-    const canEdit = Boolean(state.user?.is_moderator || state.user?.is_admin);
-    if (canEdit) {
+    if (canViewMeta) {
         const actions = document.createElement('div');
         actions.className = 'game-card-actions';
 
@@ -686,17 +854,22 @@ function buildGameCard(g: GameListItem): HTMLElement {
             void openCreateFromGame(g.id);
         });
 
-        const delBtn = document.createElement('button');
-        delBtn.type = 'button';
-        delBtn.className = 'game-action-btn game-action-btn--delete';
-        delBtn.title = t('games.delete_game');
-        delBtn.textContent = '🗑';
-        delBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            void deleteGame(g);
-        });
+        actions.append(editBtn, dupBtn);
 
-        actions.append(editBtn, dupBtn, delBtn);
+        // Удалять игры может только админ.
+        if (state.user?.is_admin) {
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'game-action-btn game-action-btn--delete';
+            delBtn.title = t('games.delete_game');
+            delBtn.textContent = '🗑';
+            delBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                void deleteGame(g);
+            });
+            actions.appendChild(delBtn);
+        }
+
         footer.appendChild(actions);
     }
 
@@ -2588,14 +2761,24 @@ async function submitGameForm(e: Event): Promise<void> {
     if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = t('common.saving'); }
 
     try {
-        if (editingGameId !== null) {
-            await apiRequest(`/api/games/${editingGameId}`, { method: 'PATCH', token: state.token, body: payload });
+        const editingId = editingGameId;
+        if (editingId !== null) {
+            const res = await apiRequest<{ game: GameFull }>(`/api/games/${editingId}`, {
+                method: 'PATCH',
+                token: state.token,
+                body: payload,
+            });
+            saveLastGameSettings();
+            closeGameModal(true);
+            // Обновляем только карточку игры, без полной перезагрузки списка.
+            if (res.game) applyEditedGame(res.game);
+            else await loadGames();
         } else {
             await apiRequest('/api/games', { method: 'POST', token: state.token, body: payload });
+            saveLastGameSettings();
+            closeGameModal(true);
+            await loadGames();
         }
-        saveLastGameSettings();
-        closeGameModal(true);
-        await loadGames();
     } catch (err) {
         alert(t('games.save_error') + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -2616,7 +2799,7 @@ async function deleteGame(g: GameListItem): Promise<void> {
     if (!confirmed) return;
     try {
         await apiRequest(`/api/games/${g.id}`, { method: 'DELETE', token: state.token });
-        await loadGames();
+        removeGameFromList(g.id);
     } catch (err) {
         alert(t('games.delete_error') + (err instanceof Error ? err.message : String(err)));
     }

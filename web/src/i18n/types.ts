@@ -112,6 +112,7 @@ export type TranslationKey =
     | 'games.load_error'
     | 'games.host_label'
     | 'games.added_by'
+    | 'games.edited_at'
     | 'games.minutes_short'
 
     // Шапка

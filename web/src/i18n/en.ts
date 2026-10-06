@@ -83,6 +83,7 @@ export const en: Record<TranslationKey, string> = {
     'games.load_error': 'Failed to load games: ',
     'games.host_label': 'Host',
     'games.added_by': 'added by',
+    'games.edited_at': 'edited',
     'games.minutes_short': 'min',
 
     // Topbar

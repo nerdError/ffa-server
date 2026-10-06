@@ -30,6 +30,8 @@ export interface GameListItem {
   map_name: string | null;
   mod_name: string | null;
   created_by_username: string | null;
+  created_at: string | null;
+  updated_at: string | null;
   player_count: number;
   winners: string[];
   participants: GamePlayerEntry[];

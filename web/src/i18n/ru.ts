@@ -48,6 +48,7 @@ export const ru: Record<TranslationKey, string> = {
     'games.load_error': 'Не удалось загрузить игры: ',
     'games.host_label': 'Проводил',
     'games.added_by': 'добавил',
+    'games.edited_at': 'изменено',
     'games.minutes_short': 'мин',
 
     'games.form_title': 'Новая игра',

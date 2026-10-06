@@ -525,6 +525,12 @@ gamesRouter.delete('/:id', async (req, res) => {
     const auth = await authenticate(req);
     if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
 
+    // Удалять игры может только админ.
+    const { data: isAdmin } = await auth.client.rpc('is_admin');
+    if (!isAdmin) {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+
     const { data, error } = await auth.client
         .from('games')
         .delete()
