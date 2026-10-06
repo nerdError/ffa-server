@@ -1998,11 +1998,11 @@ function renderPlayerDrafts(): void {
     if (teamMode) {
         // Командный режим: drafts — фиксированная сетка слотов (team 1..teamCount).
         const teamCount = getTeamCount();
-        for (let t = 1; t <= teamCount; t++) {
-            const color = getTeamColor(t);
+        for (let tn = 1; tn <= teamCount; tn++) {
+            const color = getTeamColor(tn);
             const members: number[] = [];
             drafts.forEach((d, i) => {
-                if (d.team === t) members.push(i);
+                if (d.team === tn) members.push(i);
             });
 
             const allWinners = members.every((i) => drafts[i]?.is_winner);
@@ -2019,7 +2019,7 @@ function renderPlayerDrafts(): void {
 
             const headerLabel = document.createElement('span');
             headerLabel.className = 'team-group-label';
-            headerLabel.textContent = `${t('games.team_label')} ${t}`;
+            headerLabel.textContent = `${t('games.team_label')} ${tn}`;
             header.appendChild(headerLabel);
 
             // Победитель / предупреждение
