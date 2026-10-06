@@ -116,6 +116,11 @@ export type TranslationKey =
     | 'games.host_label'
     | 'games.added_by'
     | 'games.edited_at'
+    | 'games.created_at'
+    | 'games.time_ago_just_now'
+    | 'games.time_ago_minutes'
+    | 'games.time_ago_hours'
+    | 'games.time_ago_days'
     | 'games.minutes_short'
 
     // Шапка

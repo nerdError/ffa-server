@@ -49,6 +49,11 @@ export const ru: Record<TranslationKey, string> = {
     'games.host_label': 'Проводил',
     'games.added_by': 'добавил',
     'games.edited_at': 'изменено',
+    'games.created_at': 'создано',
+    'games.time_ago_just_now': 'только что',
+    'games.time_ago_minutes': '{n} мин назад',
+    'games.time_ago_hours': '{n} ч назад',
+    'games.time_ago_days': '{n} дн назад',
     'games.minutes_short': 'мин',
 
     'games.form_title': 'Новая игра',

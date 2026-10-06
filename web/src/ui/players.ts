@@ -115,7 +115,7 @@ export async function loadPlayers(cb: PlayersCallbacks): Promise<void> {
     if (!tbody || !errBox) return;
 
     errBox.classList.add('hidden');
-    tbody.innerHTML = `<tr><td colspan="10">${t("common.loading")}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8">${t("common.loading")}</td></tr>`;
 
     const searchInput = document.getElementById('players-search') as HTMLInputElement | null;
 
@@ -195,7 +195,7 @@ function renderPlayersTable(
 
     if (filtered.length === 0) {
         tbody.innerHTML =
-            `<tr><td colspan="9" class="hint">${t("players.no_players")}.</td></tr>`;
+            `<tr><td colspan="8" class="hint">${t("players.no_players")}.</td></tr>`;
         return;
     }
 
@@ -242,39 +242,20 @@ function renderPlayersTable(
         tdRaces.classList.add('col-mobile-hide');
         tr.appendChild(tdRaces);
 
-        // --- Мобильная ячейка со статами: цепочка букв ---
-        const tdStatsMobile = document.createElement('td');
-        tdStatsMobile.className = 'col-mobile stats-cell-mobile';
-
-        const letters: Record<number, string> = {
-            1: 'E', 2: 'D', 3: 'C', 4: 'B', 5: 'A',
-        };
-
-        // Обёртка — чтобы буквы шли в строку
-        const lettersWrap = document.createElement('div');
-        lettersWrap.className = 'stat-letters';
-
-        for (const axis of STAT_ORDER) {
-            const val = p[axis.key];
-            if (typeof val !== 'number') continue;
-
-            const span = document.createElement('span');
-            span.className = 'stat-letter';
-            span.style.color = axis.color;
-            span.dataset.i18n = axis.langKey;
-            span.title = `${axis.getStr()}: ${val.toFixed(2)} (${letters[Math.round(val)] ?? '?'})`;
-            span.textContent = letters[Math.round(val)] ?? '?';
-            lettersWrap.appendChild(span);
-        }
-
-        tdStatsMobile.appendChild(lettersWrap);
-        tr.appendChild(tdStatsMobile);
-
         // Статы — в порядке STAT_ORDER
         for (const axis of STAT_ORDER) {
             const td = document.createElement('td');
             td.className = 'col-desktop';
             td.appendChild(statBarCell(p[axis.key], axis.color));
+
+            // Мобильная подпись к полоске (видна только на телефоне,
+            // где шапка таблицы скрыта)
+            const label = document.createElement('span');
+            label.className = 'stat-mobile-label';
+            label.dataset.i18n = axis.langKey;
+            label.textContent = t(axis.langKey as TranslationKey);
+            td.insertBefore(label, td.firstChild);
+
             tr.appendChild(td);
         }
 

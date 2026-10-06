@@ -467,12 +467,16 @@ function localDateKey(playedAt: string | Date): string {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-/** Дата-время для отображения (локаль сайта). */
-function formatDateTime(iso: string): string {
-    return new Date(iso).toLocaleString(getLocale() === 'ru' ? 'ru-RU' : 'en-US', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit',
-    });
+/** Относительное время: «5 часов назад», «только что» и т.п. */
+function timeAgo(iso: string): string {
+    const diff = Date.now() - new Date(iso).getTime();
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return t('games.time_ago_just_now');
+    if (min < 60) return t('games.time_ago_minutes', { n: String(min) });
+    const h = Math.floor(min / 60);
+    if (h < 24) return t('games.time_ago_hours', { n: String(h) });
+    const d = Math.floor(h / 24);
+    return t('games.time_ago_days', { n: String(d) });
 }
 
 /** Преобразует полную игру (из API) в элемент списка. */
@@ -893,10 +897,11 @@ function buildGameCard(g: GameListItem): HTMLElement {
         const creator = document.createElement('span');
         creator.className = 'game-card-creator';
         let text = `${t('games.added_by')}: ${g.created_by_username}`;
-        // Время последнего редактирования — только для модераторов/админов,
-        // и только если игру действительно правили (updated_at != created_at).
+        // Показываем относительное время: «изменено N назад», либо «создано N назад».
         if (canViewMeta && g.updated_at && g.created_at && g.updated_at !== g.created_at) {
-            text += ` · ${t('games.edited_at')}: ${formatDateTime(g.updated_at)}`;
+            text += ` · ${t('games.edited_at')}: ${timeAgo(g.updated_at)}`;
+        } else if (g.created_at) {
+            text += ` · ${t('games.created_at')}: ${timeAgo(g.created_at)}`;
         }
         creator.textContent = text;
         footer.appendChild(creator);

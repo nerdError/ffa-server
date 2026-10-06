@@ -195,6 +195,7 @@ export function buildPlayerCardElement(
         t('leaderboard.games'),
         String(gamesPlayed),
         'games',
+        'games',
     ));
 
     // Побед
@@ -202,6 +203,7 @@ export function buildPlayerCardElement(
         t('leaderboard.wins'),
         String(wins),
         wins > 0 ? 'win' : 'muted',
+        'wins',
     ));
 
     // Winrate
@@ -213,6 +215,7 @@ export function buildPlayerCardElement(
         t('leaderboard.winrate'),
         `${winrate}%`,
         winrateLevel,
+        'winrate',
     ));
 
     // Среднее место
@@ -220,6 +223,7 @@ export function buildPlayerCardElement(
         t('leaderboard.avg_place'),
         avgPlace !== null ? avgPlace.toFixed(2) : '—',
         avgPlace !== null ? 'mid' : 'muted',
+        'avg_place',
     ));
 
     // ELO — отделённая метрика
@@ -240,9 +244,10 @@ export function buildPlayerCardElement(
     return card;
 }
 
-function buildMetric(label: string, value: string, modifier: string): HTMLElement {
+function buildMetric(label: string, value: string, modifier: string, name: string): HTMLElement {
     const el = document.createElement('div');
     el.className = `pc-metric pc-metric--${modifier}`;
+    el.dataset.metric = name;
     el.innerHTML = `
     <div class="pc-metric-value">${escapeHtml(value)}</div>
     <div class="pc-metric-label">${escapeHtml(label)}</div>

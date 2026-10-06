@@ -328,9 +328,24 @@
 
 .players-wall {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 40px 32px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px 28px;
     width: 100%;
+}
+
+/* Очень широкие экраны — можно 3 колонки */
+@media (min-width: 1200px) {
+    .players-wall {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+/* Телефон — одна крупная карточка в ряд */
+@media (max-width: 700px) {
+    .players-wall {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
 }
 
 /* =========================================
@@ -496,9 +511,20 @@
 .player-tile-radar svg {
     width: 100%;
     height: auto;
-    max-width: 300px;
+    max-width: 380px;
     display: block;
     overflow: visible;
+}
+
+/* Крупнее на телефоне (1 колонка) */
+@media (max-width: 700px) {
+    .player-tile {
+        padding: 24px 18px 18px;
+    }
+
+    .player-tile-radar svg {
+        max-width: 460px;
+    }
 }
 
 .player-tile-footer {
@@ -643,38 +669,80 @@
 }
 
 /* =========================================
-   Мобильная колонка статов
+   Мобильная подпись к полоске стата
+   (видна только на телефоне, где шапка скрыта)
    ========================================= */
-.players-table .col-mobile {
+.stat-mobile-label {
     display: none;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
+/* =========================================
+   Таблица на телефоне: строки — мультистрочные карточки
+   Без горизонтального скролла, все статы помещаются
+   ========================================= */
 @media (max-width: 700px) {
-    .players-table .col-desktop {
+    .players-table-wrap {
+        overflow-x: hidden;
+    }
+
+    .players-table thead {
         display: none;
     }
 
-    .players-table .col-mobile {
-        display: table-cell;
+    .players-table tbody tr {
+        display: block;
+        padding: 12px 10px;
+        margin-bottom: 12px;
+        background: var(--bg-panel);
+        border: 1px solid var(--border-glow);
+        border-radius: 4px;
     }
-}
 
-.stats-cell-mobile {
-    padding: 8px 10px;
-}
+    .players-table tbody td {
+        display: block;
+        border-bottom: none;
+        padding: 3px 0;
+    }
 
-.stat-letters {
-    display: flex;
-    gap: 2px;
-    font-family: 'Zekton', sans-serif;
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-}
+    /* Имя игрока — на всю ширину */
+    .players-table tbody tr td:first-child {
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+    }
 
-.stat-letter {
-    display: inline-block;
-    text-shadow: 0 0 6px currentColor;
+    /* Расы скрываем на телефоне */
+    .players-table .col-mobile-hide {
+        display: none;
+    }
+
+    /* Статы — сетка 3 в ряд, 2 ряда, с подписями */
+    .players-table tbody tr .col-desktop {
+        display: inline-block;
+        width: 30%;
+        min-width: 0;
+        vertical-align: top;
+        margin: 4px 1.5%;
+        padding: 2px 0;
+    }
+
+    .players-table tbody tr .col-desktop .stat-mobile-label {
+        display: block;
+    }
+
+    .players-table tbody tr .col-desktop .stat-cell {
+        min-width: 0;
+        padding: 0;
+    }
 }
 
 /* =========================================

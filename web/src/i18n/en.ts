@@ -86,6 +86,11 @@ export const en: Record<TranslationKey, string> = {
     'games.host_label': 'Host',
     'games.added_by': 'added by',
     'games.edited_at': 'edited',
+    'games.created_at': 'created',
+    'games.time_ago_just_now': 'just now',
+    'games.time_ago_minutes': '{n} min ago',
+    'games.time_ago_hours': '{n} hr ago',
+    'games.time_ago_days': '{n} d ago',
     'games.minutes_short': 'min',
 
     // Topbar
