@@ -858,6 +858,33 @@ function buildGameRow(g: GameListItem, playerId: number, playerName: string): HT
     map.className = 'game-row-map';
     map.textContent = g.map_name ?? '';
 
+    const delta = me ? buildPlayerDeltaBadge(me) : null;
+
     row.append(date, format, result, map);
+    if (delta) row.insertBefore(delta, map);
     return row;
+}
+
+/** Бейдж дельт Elo и activity за игру (из rating_history) для строки игры игрока. */
+function buildPlayerDeltaBadge(me: GameListItem['participants'][number]): HTMLElement | null {
+    if (me.elo_delta == null && me.activity_delta == null) return null;
+    const badge = document.createElement('span');
+    badge.className = 'game-row-delta';
+
+    if (me.elo_delta != null) {
+        const elo = document.createElement('span');
+        elo.className = 'game-row-delta-elo' + (me.elo_delta >= 0 ? ' is-plus' : ' is-minus');
+        elo.textContent = `${me.elo_delta >= 0 ? '+' : ''}${me.elo_delta}`;
+        badge.appendChild(elo);
+    }
+
+    if (me.activity_delta != null) {
+        const act = document.createElement('span');
+        act.className = 'game-row-delta-activity';
+        const v = Number(me.activity_delta);
+        act.textContent = `${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
+        badge.appendChild(act);
+    }
+
+    return badge;
 }

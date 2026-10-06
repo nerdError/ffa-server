@@ -216,7 +216,7 @@
 
 .game-row {
   display: grid;
-  grid-template-columns: 80px 1fr auto auto;
+  grid-template-columns: 80px 1fr auto auto auto;
   gap: 12px;
   align-items: center;
   padding: 8px 12px;
@@ -266,9 +266,41 @@
   text-align: right;
 }
 
+/* Дельта рейтинга/activity за игру */
+.game-row-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  justify-self: end;
+}
+
+.game-row-delta-elo {
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.game-row-delta-elo.is-plus {
+  color: #2ecc71;
+  background: rgba(46, 204, 113, 0.12);
+}
+
+.game-row-delta-elo.is-minus {
+  color: #ff5c5c;
+  background: rgba(255, 92, 92, 0.12);
+}
+
+.game-row-delta-activity {
+  color: var(--gold);
+  font-weight: 600;
+}
+
 @media (max-width: 600px) {
   .game-row {
-    grid-template-columns: 70px 1fr auto;
+    grid-template-columns: 70px 1fr auto auto;
     gap: 8px;
     font-size: 0.8rem;
   }

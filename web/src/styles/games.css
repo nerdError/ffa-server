@@ -1749,7 +1749,7 @@ details[open] .game-card-players-toggle::before {
 }
 
 .player-delta-activity {
-  color: var(--text-muted);
+  color: var(--gold);
   font-weight: 600;
 }
 
