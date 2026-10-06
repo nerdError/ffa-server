@@ -1341,6 +1341,17 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
 }
 
 .game-day-list {
+    /* Плавное раскрытие через grid-template-rows: 1fr → 0fr (как у списка игроков) */
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 0.3s ease, opacity 0.25s ease;
+    opacity: 1;
+    overflow: hidden;
+}
+
+.game-day-list-inner {
+    min-height: 0;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -1392,11 +1403,11 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
     font-weight: 700;
 }
 
-/* Свёрнутый день: игры скрыты через max-height (а не display:none),
+/* Свёрнутый день: игры скрыты через grid-template-rows: 0fr (а не display:none),
    чтобы браузерный поиск Ctrl+F всё равно находил скрытые игры. */
 .game-day-group.is-collapsed > .game-day-list {
-    max-height: 0;
-    overflow: hidden;
+    grid-template-rows: 0fr;
+    opacity: 0;
 }
 
 @media (max-width: 700px) {

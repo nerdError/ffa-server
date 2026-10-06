@@ -147,6 +147,7 @@ export const en: Record<TranslationKey, string> = {
     'games.filter_format': 'Format',
     'games.filter_host': 'Host',
     'games.filter_map': 'Map',
+    'games.filter_mod': 'Mod',
     'games.filter_player': 'Player',
     'games.filter_all': 'All',
     'games.filter_reset': 'Reset filters',
@@ -215,8 +216,7 @@ export const en: Record<TranslationKey, string> = {
     'player.card_mode_average': 'Average',
     'player.card_mode_mine': 'Mine',
     'player.card_mode_ghost': 'By GHOST',
-    'player.card_mode_no_rating': 'You have not rated this player yet',
-    'player.card_mode_no_ghost': 'No ratings from GHOST users yet',
+    
 
     // Ratings
     'ratings.title': 'User ratings',

@@ -167,6 +167,7 @@ export const ru: Record<TranslationKey, string> = {
     'games.filter_format': 'Формат',
     'games.filter_host': 'Проводящий',
     'games.filter_map': 'Карта',
+    'games.filter_mod': 'Мод',
     'games.filter_player': 'Игрок',
     'games.filter_all': 'Все',
     'games.filter_reset': 'Сбросить фильтры',
@@ -215,8 +216,7 @@ export const ru: Record<TranslationKey, string> = {
     'player.card_mode_average': 'Средняя',
     'player.card_mode_mine': 'Моя',
     'player.card_mode_ghost': 'По GHOSTу',
-    'player.card_mode_no_rating': 'У вас пока нет оценки этого игрока',
-    'player.card_mode_no_ghost': 'Пока нет оценок от пользователей с ролью GHOST',
+    
 
     // Оценки
     'ratings.title': 'Оценки пользователей',

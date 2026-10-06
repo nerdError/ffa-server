@@ -73,6 +73,7 @@ export type TranslationKey =
     | 'games.filter_format'
     | 'games.filter_host'
     | 'games.filter_map'
+    | 'games.filter_mod'
     | 'games.filter_player'
     | 'games.filter_all'
     | 'games.filter_reset'
@@ -214,8 +215,7 @@ export type TranslationKey =
     | 'player.card_mode_average'
     | 'player.card_mode_mine'
     | 'player.card_mode_ghost'
-    | 'player.card_mode_no_rating'
-    | 'player.card_mode_no_ghost'
+    
 
     // Оценки
     | 'ratings.title'

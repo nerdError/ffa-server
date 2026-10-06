@@ -33,6 +33,7 @@ const filters = {
     mapId: null as number | null,
     /** Фильтр «карта удалена»: игры, чья карта мягко удалена. */
     mapDeleted: false,
+    modName: null as string | null,
     playerId: null as number | null,
 };
 
@@ -166,6 +167,7 @@ export function mountGames(params: URLSearchParams): void {
     filters.mapId = mapParam && mapParam !== 'deleted' && Number.isInteger(Number(mapParam))
         ? Number(mapParam)
         : null;
+    filters.modName = params.get('mod') || null;
 
     const playerParam = params.get('player_id');
     filters.playerId = playerParam && Number.isInteger(Number(playerParam))
@@ -391,6 +393,7 @@ function hasActiveFilters(): boolean {
         || filters.hostId !== null
         || filters.mapId !== null
         || filters.mapDeleted
+        || filters.modName !== null
         || filters.playerId !== null;
 }
 
@@ -439,6 +442,7 @@ function getFilteredGames(): GameListItem[] {
     } else if (filters.mapId !== null) {
         filtered = filtered.filter((g) => g.map_id === filters.mapId);
     }
+    if (filters.modName !== null) filtered = filtered.filter((g) => g.mod_name === filters.modName);
 
     if (searchQuery) {
         filtered = filtered.filter((g) => {
@@ -447,6 +451,7 @@ function getFilteredGames(): GameListItem[] {
                 ...g.participants.map((p) => p.player_name),
                 g.map_name ?? '',
                 g.host_name ?? '',
+                g.mod_name ?? '',
             ].join(' ').toLowerCase();
             return hay.includes(searchQuery);
         });
@@ -710,13 +715,17 @@ function buildDayGroup(group: DayGroup, isLatest: boolean): HTMLElement {
 
     wrap.appendChild(header);
 
-    // Игры внутри дня. Сворачиваем через CSS max-height (а не display:none),
-    // чтобы браузерный поиск (Ctrl+F) всё равно находил скрытые игры.
+    // Игры внутри дня. Сворачиваем через grid-template-rows: 0fr → 1fr
+    // (плавно, как раскрытие списка игроков). Контент остаётся в DOM,
+    // поэтому браузерный Ctrl+F всё равно находит скрытые игры.
     const list = document.createElement('div');
     list.className = 'game-day-list';
+    const inner = document.createElement('div');
+    inner.className = 'game-day-list-inner';
     for (const g of group.games) {
-        list.appendChild(buildGameCard(g));
+        inner.appendChild(buildGameCard(g));
     }
+    list.appendChild(inner);
     wrap.appendChild(list);
 
     return wrap;
@@ -803,7 +812,15 @@ function buildGameCard(g: GameListItem): HTMLElement {
 
     if (g.mod_name) {
         if (meta.childNodes.length > 0) meta.appendChild(document.createTextNode(' · '));
-        meta.appendChild(document.createTextNode(g.mod_name));
+        const modEl = document.createElement('span');
+        modEl.className = 'game-clickable';
+        modEl.textContent = g.mod_name;
+        modEl.title = t('games.click_to_filter');
+        modEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (g.mod_name) setFilter('mod', -1, g.mod_name);
+        });
+        meta.appendChild(modEl);
     }
 
     if (g.host_name) {
@@ -1310,6 +1327,7 @@ function resetFilters(): void {
     filters.hostId = null;
     filters.mapId = null;
     filters.mapDeleted = false;
+    filters.modName = null;
     filters.playerId = null;
     playerFilterName = null;
     const formatSel = document.getElementById('filter-format') as HTMLSelectElement | null;
@@ -1345,21 +1363,27 @@ function updateUrlFromFilters(): void {
     if (filters.mapDeleted) url.searchParams.set('map', 'deleted');
     else if (filters.mapId !== null) url.searchParams.set('map', String(filters.mapId));
     else url.searchParams.delete('map');
+    if (filters.modName !== null) url.searchParams.set('mod', filters.modName);
+    else url.searchParams.delete('mod');
     if (filters.playerId !== null) url.searchParams.set('player_id', String(filters.playerId));
     else url.searchParams.delete('player_id');
     window.history.replaceState({}, '', url.pathname + url.search);
 }
 
-function setFilter(type: 'format' | 'host' | 'map', id: number): void {
+function setFilter(type: 'format' | 'host' | 'map' | 'mod', id: number, modName?: string): void {
     if (type === 'format') filters.formatId = id;
     if (type === 'host') filters.hostId = id;
     if (type === 'map') {
         filters.mapId = id;
         filters.mapDeleted = false;
     }
-    const selectId = type === 'format' ? 'filter-format' : type === 'host' ? 'filter-host' : 'filter-map';
-    const sel = document.getElementById(selectId) as HTMLSelectElement | null;
-    if (sel) sel.value = String(id);
+    if (type === 'mod') filters.modName = modName ?? null;
+    // Для мода нет селекта в панели — фильтр виден как чип.
+    if (type !== 'mod') {
+        const selectId = type === 'format' ? 'filter-format' : type === 'host' ? 'filter-host' : 'filter-map';
+        const sel = document.getElementById(selectId) as HTMLSelectElement | null;
+        if (sel) sel.value = String(id);
+    }
     applyFilters();
 }
 
@@ -1401,6 +1425,17 @@ function renderActiveFilterChips(): void {
                 filters.hostId = null;
                 const sel = document.getElementById('filter-host') as HTMLSelectElement | null;
                 if (sel) sel.value = '';
+                applyFilters();
+            },
+        });
+    }
+
+    if (filters.modName !== null) {
+        chips.push({
+            label: t('games.filter_mod'),
+            value: filters.modName,
+            onRemove: () => {
+                filters.modName = null;
                 applyFilters();
             },
         });

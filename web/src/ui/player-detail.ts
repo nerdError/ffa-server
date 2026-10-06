@@ -506,15 +506,6 @@ function buildCardModeToggle(): void {
     }
 }
 
-function renderNoRatingHint(pane: HTMLElement, key: TranslationKey): void {
-    lastPlayer = null;
-    pane.innerHTML = '';
-    const hint = document.createElement('p');
-    hint.className = 'hint fade-in';
-    hint.textContent = t(key);
-    pane.appendChild(hint);
-}
-
 async function renderCardForMode(
     pane: HTMLElement,
     playerId: number,
@@ -545,16 +536,6 @@ async function renderCardForMode(
             `/api/players/${playerId}/stats?mode=${mode}`,
             { token: state.token }
         );
-
-        if (mode === 'personal' && (!Array.isArray(player.races) || player.vote_count === 0)) {
-            renderNoRatingHint(pane, 'player.card_mode_no_rating');
-            return;
-        }
-
-        if (mode === 'ghost' && player.vote_count === 0) {
-            renderNoRatingHint(pane, 'player.card_mode_no_ghost');
-            return;
-        }
 
         renderCard(pane, player);
     } catch {
