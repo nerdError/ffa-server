@@ -1109,6 +1109,15 @@ function renderSoloPlayers(container: HTMLElement, g: GameListItem): void {
   });
 
   for (const p of sorted) {
+    container.appendChild(buildPlayerLine(p, total));
+  }
+}
+
+/** Строка участника (место + раса + имя + дельты) для списка участников. */
+function buildPlayerLine(
+    p: GameListItem['participants'][number],
+    total: number
+): HTMLElement {
     const place = entryPlace(p, total);
     const row = document.createElement('div');
     row.className = 'player-line';
@@ -1146,8 +1155,7 @@ function renderSoloPlayers(container: HTMLElement, g: GameListItem): void {
     const delta = buildDeltaBadge(p);
     if (delta) row.appendChild(delta);
 
-    container.appendChild(row);
-  }
+    return row;
 }
 
 function renderTeamPlayers(container: HTMLElement, g: GameListItem): void {
@@ -1180,6 +1188,7 @@ function renderTeamPlayers(container: HTMLElement, g: GameListItem): void {
     const isWinner = players.some((p) => p.is_winner);
     const hasEliminated = players.some((p) => p.eliminated_at !== null);
 
+    // Строка-заголовок команды
     const teamRow = document.createElement('div');
     teamRow.className = 'player-team-line';
     if (isWinner) teamRow.classList.add('is-winner');
@@ -1189,9 +1198,11 @@ function renderTeamPlayers(container: HTMLElement, g: GameListItem): void {
     labelEl.className = 'player-team-label';
     labelEl.textContent = `${t('games.team_label')} ${teamNum}${isWinner ? ' 👑' : ''}`;
     teamRow.appendChild(labelEl);
+    container.appendChild(teamRow);
 
-    const membersEl = document.createElement('span');
-    membersEl.className = 'player-team-members';
+    // Игроки команды — каждый на новой строке с отступом
+    const playersEl = document.createElement('div');
+    playersEl.className = 'player-team-players';
 
     players
       .slice()
@@ -1201,52 +1212,13 @@ function renderTeamPlayers(container: HTMLElement, g: GameListItem): void {
         if (pa !== pb) return pa - pb;
         return a.player_name.localeCompare(b.player_name);
       })
-      .forEach((p, i) => {
-        if (i > 0) {
-          const sep = document.createElement('span');
-          sep.className = 'player-line-sep';
-          sep.textContent = '+';
-          membersEl.appendChild(sep);
-        }
-
-        const place = entryPlace(p, total);
-        const m = document.createElement('span');
-        m.className = 'player-line-member';
-        m.style.setProperty('--race-color', getRaceColor(p.race));
-        if (p.is_winner) m.classList.add('is-winner');
-        if (!p.is_winner && place !== null) m.classList.add('is-eliminated');
-
-        const placeEl = document.createElement('span');
-        placeEl.className = 'player-line-place';
-        if (place === 1) {
-          placeEl.textContent = '🥇';
-          placeEl.title = t('games.place_1');
-        } else if (place !== null) {
-          placeEl.textContent = place === 2 ? '🥈' : place === 3 ? '🥉' : `#${place}`;
-          placeEl.title = formatPlace(place);
-        } else {
-          placeEl.textContent = '—';
-        }
-        m.appendChild(placeEl);
-
-        const raceEl = buildRaceIcon(p.race, 'player-line-race');
-        m.appendChild(raceEl);
-
-        const nameEl = document.createElement('span');
-        nameEl.className = 'player-line-name';
-        nameEl.textContent = p.player_name;
-        if (p.player_aka) nameEl.title = `aka ${p.player_aka}`;
-        makePlayerNameClickable(nameEl, p.player_id);
-        m.appendChild(nameEl);
-
-        const delta = buildDeltaBadge(p);
-        if (delta) m.appendChild(delta);
-
-        membersEl.appendChild(m);
+      .forEach((p) => {
+        const row = buildPlayerLine(p, total);
+        row.classList.add('player-team-player');
+        playersEl.appendChild(row);
       });
 
-    teamRow.appendChild(membersEl);
-    container.appendChild(teamRow);
+    container.appendChild(playersEl);
   }
 }
 

@@ -1753,25 +1753,16 @@ details[open] .game-card-players-toggle::before {
   font-weight: 600;
 }
 
-/* Состав команды */
-.player-team-members {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
+/* Состав команды: заголовок + игроки с отступом */
+.player-team-players {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 8px;
 }
 
-.player-line-member {
-  --race-color: #8899aa;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.player-line-sep {
-  color: var(--text-muted);
-  font-weight: 700;
-  opacity: 0.6;
+.player-team-player {
+  padding-left: 26px;
 }
 
 /* Метка команды (в раскрытии участников) */
@@ -1785,10 +1776,6 @@ details[open] .game-card-players-toggle::before {
 }
 
 .player-team-line.is-winner .player-team-label {
-  color: var(--gold);
-}
-
-.player-line-member.is-winner .player-line-place {
   color: var(--gold);
 }
 

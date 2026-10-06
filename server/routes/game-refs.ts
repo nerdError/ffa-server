@@ -274,7 +274,7 @@ gameRefsRouter.patch('/:refType/:id', async (req, res) => {
 
   // Если обновили формат (например, elo_weight) — пересчитываем Elo
   if (refType === 'formats') {
-    const { error: recalcError } = await check.client.rpc('recalculate_all_ratings');
+    const { error: recalcError } = await supabaseAdmin.rpc('recalculate_all_ratings');
     if (recalcError) {
       console.error('[game-refs] recalculate after format update failed:', recalcError);
       // Не возвращаем ошибку клиенту — формат обновлён успешно.
@@ -336,7 +336,7 @@ gameRefsRouter.delete('/:refType/:id', async (req, res) => {
 
   // Если удалили формат — пересчитываем Elo
   if (refType === 'formats') {
-    const { error: recalcError } = await check.client.rpc('recalculate_all_ratings');
+    const { error: recalcError } = await supabaseAdmin.rpc('recalculate_all_ratings');
     if (recalcError) {
       console.error('[game-refs] recalculate after format delete failed:', recalcError);
     }

@@ -398,7 +398,7 @@ gamesRouter.post('/', async (req, res) => {
     }
 
     // Пересчитываем Elo после создания игры
-    const { error: recalcError } = await auth.client.rpc('recalculate_all_ratings');
+    const { error: recalcError } = await supabaseAdmin.rpc('recalculate_all_ratings');
     if (recalcError) {
         console.error('[games] recalculate after create failed:', recalcError);
         // Не возвращаем ошибку — игра создана, рейтинг можно пересчитать позже
@@ -492,7 +492,7 @@ gamesRouter.patch('/:id', async (req, res) => {
     }
 
     // Пересчитываем Elo после обновления игры
-    const { error: recalcError } = await auth.client.rpc('recalculate_all_ratings');
+    const { error: recalcError } = await supabaseAdmin.rpc('recalculate_all_ratings');
     if (recalcError) {
         console.error('[games] recalculate after update failed:', recalcError);
     }
@@ -555,7 +555,7 @@ gamesRouter.delete('/:id', async (req, res) => {
     });
 
     // Пересчитываем Elo после удаления игры
-    const { error: recalcError } = await auth.client.rpc('recalculate_all_ratings');
+    const { error: recalcError } = await supabaseAdmin.rpc('recalculate_all_ratings');
     if (recalcError) {
         console.error('[games] recalculate after delete failed:', recalcError);
         // Возвращаем success, но с предупреждением — если хочешь
