@@ -47,6 +47,7 @@ export interface PlayerWithStats {
     name: string;
     aka: string | null;
     user_id: string | null;
+    username?: string | null;
     races: Race[];
     dominant_race: Race | null;
     vote_count: number;

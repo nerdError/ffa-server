@@ -4,9 +4,13 @@
 
 ## Правила работы (обязательно)
 
+- НЕ рассуждай вслух. Не пиши «Let me…», «Now I'll…», «But wait…», «Let me check…». Никак не описывай процесс своей работы.
+- Отвечай только кодом, diff'ом или кратким пояснением (1–2 предложения).
+- Если нужно объяснить — делай это в комментарии к коду, а не в тексте ответа.
 - Отвечай по-русски, кратко, без рассуждений и лишнего текста.
 - НЕ запускай команды сборки/проверки (`npm run build`, `typecheck` и т.п.). Пользователь сам запускает `npm run dev`.
 - SQL для Supabase выдавай текстом — пользователь выполняет его сам.
+- **Изменение существующей функции в Supabase → всегда сначала `DROP FUNCTION`** (и только потом `CREATE OR REPLACE`): Supabase не даёт менять сигнатуру/тип возврата существующей функции (`cannot change return type of existing function`). Для табличных функций, используемых PostgREST/RPC, может понадобиться `DROP FUNCTION ... CASCADE`.
 - **Новая таблица в Supabase → всегда выдавай гранты `service_role`** (Supabase не делает это по умолчанию):
   ```sql
   grant select, insert, update, delete on public.<table> to service_role;
@@ -15,6 +19,7 @@
   Иначе серверная роль получит `permission denied for table`.
 - Не коммить и не пушить без явной просьбы.
 - Не создавай `.md`-файлы без просьбы.
+- Обновляй AGENTS.md при необходимости, сохраняя его компактность
 
 ## Стек и запуск
 
@@ -90,7 +95,7 @@ RLS: публичное чтение players/ratings/profiles/games/game_players
 - `/api/admin` users, roles/grant|revoke, ratings/:id DELETE, players/:id/ratings, players/:id/name|aka, users/:id DELETE, players/:id/link-user|unlink-user, **logs** (GET, admin-only, q/action/limit/offset)
 - `/api/health`, `/api/deploy`
 
-## Лог действий (сделано)
+## Лог действий
 
 - Таблица `action_log` (+ гранты service_role). Пишется через `lib/action-log.ts` → `logAction()` (best-effort, не ломает запрос).
 - Логируются: signup/login/logout, player create/rename/aka/delete/link/unlink, rating create/update/delete, game create/update/delete, ref create/update/delete, role grant/revoke, user delete.

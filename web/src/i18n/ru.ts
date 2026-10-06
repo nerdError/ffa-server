@@ -47,6 +47,7 @@ export const ru: Record<TranslationKey, string> = {
     'games.nothing_found': 'Ничего не найдено',
     'games.load_error': 'Не удалось загрузить игры: ',
     'games.host_label': 'Проводил',
+    'games.added_by': 'добавил',
     'games.minutes_short': 'мин',
 
     'games.form_title': 'Новая игра',
@@ -283,6 +284,11 @@ export const ru: Record<TranslationKey, string> = {
     'admin.rating_delete_confirm': 'Удалить оценку пользователя "{user}"?',
     'admin.player_delete_confirm': 'Удалить игрока "{name}"?\n\nВсе его оценки ({count}) будут удалены безвозвратно.',
     'admin.registered_at': 'Регистрация',
+    'admin.last_seen': 'Заходил',
+    'admin.last_seen_just_now': 'только что',
+    'admin.last_seen_minutes': '{n} мин назад',
+    'admin.last_seen_hours': '{n} ч назад',
+    'admin.last_seen_days': '{n} дн назад',
     'admin.delete_user': 'Удалить аккаунт',
     'admin.delete_user_confirm': 'Удалить аккаунт "{user}"?\n\nВсе его оценки, роли и данные будут безвозвратно удалены.',
     'admin.delete_user_error': 'Не удалось удалить: ',
@@ -320,6 +326,7 @@ export const ru: Record<TranslationKey, string> = {
     'admin.unlink_user_title': 'Отвязать игрока от профиля пользователя',
     'admin.unlink_user_confirm': 'Отвязать игрока "{name}" от профиля пользователя?',
     'admin.linked_player': 'Связан с игроком',
+    'admin.user_linked_player': 'Игрок: {name}',
     'admin.my_profile': 'Мой профиль',
 
     'admin.logs_title': 'Лог действий',

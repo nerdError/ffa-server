@@ -29,6 +29,7 @@ export interface GameListItem {
   map_id: number | null;
   map_name: string | null;
   mod_name: string | null;
+  created_by_username: string | null;
   player_count: number;
   winners: string[];
   participants: GamePlayerEntry[];
@@ -41,6 +42,7 @@ export interface GameFull {
   notes: string | null;
   track_elim: boolean;   // ← должно быть
   created_by: string | null;
+  created_by_username: string | null;
   created_at: string;
   updated_at: string;
   format: GameRef | null;

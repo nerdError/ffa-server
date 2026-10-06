@@ -14,7 +14,32 @@ playersRouter.get('/', async (_req, res) => {
   const client = anonClient();
   const { data, error } = await client.rpc('get_players_with_stats');
   if (error) return res.status(500).json({ error: error.message });
-  return res.status(200).json({ players: data });
+
+  const userIds = [
+    ...new Set(
+      (data ?? [])
+        .map((p: { user_id: string | null }) => p.user_id)
+        .filter((id): id is string => !!id),
+    ),
+  ];
+
+  const nameByUser = new Map<string, string>();
+  if (userIds.length > 0) {
+    const { data: profiles } = await client
+      .from('profiles')
+      .select('user_id, username')
+      .in('user_id', userIds);
+    for (const p of profiles ?? []) {
+      if (p.username) nameByUser.set(p.user_id, p.username);
+    }
+  }
+
+  const players = (data ?? []).map((p: { user_id: string | null }) => ({
+    ...p,
+    username: p.user_id ? nameByUser.get(p.user_id) ?? null : null,
+  }));
+
+  return res.status(200).json({ players });
 });
 
 // POST /api/players — создание (только авторизованные)

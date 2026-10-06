@@ -376,6 +376,20 @@
   margin-top: 2px;
 }
 
+.admin-user-player {
+  font-size: 0.8rem;
+  color: var(--gold);
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+}
+
+.admin-user-lastseen {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  margin-top: 2px;
+}
+
 .admin-user-delete-btn {
   appearance: none;
   padding: 8px 12px;

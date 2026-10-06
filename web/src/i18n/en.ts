@@ -82,6 +82,7 @@ export const en: Record<TranslationKey, string> = {
     'games.nothing_found': 'Nothing found',
     'games.load_error': 'Failed to load games: ',
     'games.host_label': 'Host',
+    'games.added_by': 'added by',
     'games.minutes_short': 'min',
 
     // Topbar
@@ -283,6 +284,11 @@ export const en: Record<TranslationKey, string> = {
     'admin.rating_delete_confirm': 'Delete rating by "{user}"?',
     'admin.player_delete_confirm': 'Delete player "{name}"?\n\nAll their ratings ({count}) will be permanently deleted.',
     'admin.registered_at': 'Registered',
+    'admin.last_seen': 'Last seen',
+    'admin.last_seen_just_now': 'just now',
+    'admin.last_seen_minutes': '{n} min ago',
+    'admin.last_seen_hours': '{n} hr ago',
+    'admin.last_seen_days': '{n} d ago',
     'admin.delete_user': 'Delete account',
     'admin.delete_user_confirm': 'Delete account "{user}"?\n\nAll ratings, roles, and data will be permanently deleted.',
     'admin.delete_user_error': 'Failed to delete: ',
@@ -320,6 +326,7 @@ export const en: Record<TranslationKey, string> = {
     'admin.unlink_user_title': 'Unlink player from user profile',
     'admin.unlink_user_confirm': 'Unlink player "{name}" from user profile?',
     'admin.linked_player': 'Linked to player',
+    'admin.user_linked_player': 'Player: {name}',
     'admin.my_profile': 'My profile',
 
     'admin.logs_title': 'Action log',

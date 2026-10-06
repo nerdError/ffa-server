@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { authenticate, anonClient } from '../../lib/auth.js';
 import { logAction } from '../../lib/action-log.js';
+import { supabaseAdmin } from '../../lib/supabase-admin.js';
 
 export const gamesRouter = Router();
 
@@ -325,6 +326,20 @@ gamesRouter.get('/:id', async (req, res) => {
 // ============================================================
 // POST /api/games — создать игру (модератор)
 // ============================================================
+/** Никнейм пользователя из profiles (best-effort). */
+async function resolveUsername(userId: string): Promise<string | null> {
+    try {
+        const { data } = await supabaseAdmin
+            .from('profiles')
+            .select('username')
+            .eq('user_id', userId)
+            .maybeSingle();
+        return data?.username ?? null;
+    } catch {
+        return null;
+    }
+}
+
 gamesRouter.post('/', async (req, res) => {
     const auth = await authenticate(req);
     if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
@@ -360,6 +375,8 @@ gamesRouter.post('/', async (req, res) => {
         return res.status(400).json({ error: 'At least one player must be a winner' });
     }
 
+    const createdByUsername = await resolveUsername(auth.user.id);
+
     const { data, error } = await auth.client.rpc('create_game_with_players', {
         p_played_at: played_at,
         p_format_id: format_id ?? null,
@@ -370,6 +387,7 @@ gamesRouter.post('/', async (req, res) => {
         p_notes: notes ?? null,
         p_players: players,
         p_track_elim: track_elim ?? true,   // ← должно быть
+        p_created_by_username: createdByUsername,
     });
 
     if (error) {

@@ -567,6 +567,14 @@ function buildGameCard(g: GameListItem): HTMLElement {
         meta.appendChild(hostEl);
     }
 
+    if (g.created_by_username) {
+        if (meta.childNodes.length > 0) meta.appendChild(document.createTextNode(' · '));
+        const creator = document.createElement('span');
+        creator.className = 'game-card-creator';
+        creator.textContent = `${t('games.added_by')}: ${g.created_by_username}`;
+        meta.appendChild(creator);
+    }
+
     card.appendChild(meta);
 
     const playersSummary = document.createElement('div');
@@ -1462,7 +1470,21 @@ function renderPlayerDrafts(): void {
             teams.set(t, arr);
         });
 
-        const sortedTeams = [...teams.keys()].sort((a, b) => a - b);
+        // Место команды: 1 у победителя, иначе выбранное место, иначе — внизу.
+        const teamPlace = (indices: number[]): number => {
+            if (indices.some((i) => drafts[i]?.is_winner)) return 1;
+            const p = indices
+                .map((i) => drafts[i]?.place)
+                .find((x): x is number => typeof x === 'number' && x > 1);
+            return p ?? Number.MAX_SAFE_INTEGER;
+        };
+
+        const sortedTeams = [...teams.keys()].sort((a, b) => {
+            const pa = teamPlace(teams.get(a) ?? []);
+            const pb = teamPlace(teams.get(b) ?? []);
+            if (pa !== pb) return pa - pb;
+            return a - b;
+        });
         for (const teamNum of sortedTeams) {
             const indices = teams.get(teamNum) ?? [];
             const color = getTeamColor(teamNum);
@@ -1544,6 +1566,7 @@ function renderPlayerDrafts(): void {
                         if (d && !d.is_winner) d.place = place;
                     }
                     markDirty();
+                    renderPlayerDrafts();
                 });
 
                 header.appendChild(teamPlaceSelect);
@@ -1560,8 +1583,17 @@ function renderPlayerDrafts(): void {
             playersListBox.appendChild(group);
         }
     } else {
-        // Одиночный режим
-        for (let i = 0; i < drafts.length; i++) {
+        // Одиночный режим: сортируем по выбранному месту (1, 2, …),
+        // невыбранные игроки — внизу, сохраняя исходный порядок.
+        const order = drafts
+            .map((_, i) => i)
+            .sort((a, b) => {
+                const pa = drafts[a]?.place ?? Number.MAX_SAFE_INTEGER;
+                const pb = drafts[b]?.place ?? Number.MAX_SAFE_INTEGER;
+                if (pa !== pb) return pa - pb;
+                return a - b;
+            });
+        for (const i of order) {
             const row = buildPlayerRow(i, 0, false);
             playersListBox.appendChild(row);
         }
@@ -1678,6 +1710,7 @@ function buildPlayerRow(index: number, maxTeams: number, teamMode: boolean): HTM
                 const v = ps.value;
                 draft.place = v === '' ? null : Number(v);
                 markDirty();
+                renderPlayerDrafts();
             });
         } else {
             placeSelect.style.visibility = 'hidden';
@@ -1722,18 +1755,35 @@ function createPlayerAutocomplete(
     input.placeholder = t('games.player_placeholder');
     input.autocomplete = 'off';
 
+    const akaEl = document.createElement('span');
+    akaEl.className = 'player-autocomplete-aka-hint';
+    akaEl.hidden = true;
+
     const dropdown = document.createElement('div');
     dropdown.className = 'player-autocomplete-dropdown hidden';
 
-    wrapper.append(input, dropdown);
+    wrapper.append(input, akaEl, dropdown);
 
     let selectedPlayerId: number | null = draft.player_id;
     let highlightedIndex = -1;
     let matches: PlayerWithStats[] = [];
 
+    function updateAkaBadge(): void {
+        const player = cachedPlayers.find((p) => p.id === selectedPlayerId);
+        const aka = player?.aka?.trim();
+        if (aka) {
+            akaEl.textContent = `aka ${aka}`;
+            akaEl.hidden = false;
+        } else {
+            akaEl.textContent = '';
+            akaEl.hidden = true;
+        }
+    }
+
     function refresh(): void {
         const player = cachedPlayers.find((p) => p.id === selectedPlayerId);
         input.value = player ? player.name : (draft.raw_name ?? '');
+        updateAkaBadge();
     }
 
     function showDropdown(query: string): void {
@@ -1778,6 +1828,7 @@ function createPlayerAutocomplete(
         input.value = p.name;
         dropdown.classList.add('hidden');
         highlightedIndex = -1;
+        updateAkaBadge();
         onPlayerSelected(p);
         onSelect();
     }
@@ -1790,6 +1841,7 @@ function createPlayerAutocomplete(
         }
         draft.raw_name = input.value;
         highlightedIndex = -1;
+        updateAkaBadge();
         showDropdown(input.value);
         onSelect();
     });
@@ -2091,6 +2143,9 @@ async function openCreateGameModal(prefill?: ReplayPrefill, fromGame?: GameFull)
  * Победитель и места НЕ переносятся — их нужно проставить заново.
  */
 function applyGameSettingsFromGame(gameFull: GameFull): void {
+    if (playedAtInput && gameFull.played_at) {
+        playedAtInput.value = toDatetimeLocal(new Date(gameFull.played_at));
+    }
     if (formatSelect && gameFull.format && cachedFormats.some((f) => f.id === gameFull.format!.id)) {
         formatSelect.value = String(gameFull.format.id);
     }

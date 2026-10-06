@@ -103,6 +103,7 @@ export type TranslationKey =
     | 'games.nothing_found'
     | 'games.load_error'
     | 'games.host_label'
+    | 'games.added_by'
     | 'games.minutes_short'
 
     // Шапка
@@ -282,6 +283,11 @@ export type TranslationKey =
     | 'admin.rating_delete_confirm'
     | 'admin.player_delete_confirm'
     | 'admin.registered_at'
+    | 'admin.last_seen'
+    | 'admin.last_seen_just_now'
+    | 'admin.last_seen_minutes'
+    | 'admin.last_seen_hours'
+    | 'admin.last_seen_days'
     | 'admin.delete_user'
     | 'admin.delete_user_confirm'
     | 'admin.delete_user_error'
@@ -322,6 +328,7 @@ export type TranslationKey =
     | 'admin.unlink_user_title'
     | 'admin.unlink_user_confirm'
     | 'admin.linked_player'
+    | 'admin.user_linked_player'
     | 'admin.my_profile'
 
     | 'topbar.my_profile'

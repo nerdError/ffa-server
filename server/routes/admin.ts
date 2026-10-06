@@ -103,6 +103,23 @@ adminRouter.get('/users', async (req, res) => {
         return res.status(500).json({ error: 'DB error' });
     }
 
+    // Получаем привязанные игроки (players.user_id)
+    const { data: linkedPlayers, error: linkedErr } = await supabaseAdmin
+        .from('players')
+        .select('user_id, name')
+        .not('user_id', 'is', null);
+
+    if (linkedErr) {
+        console.error('[admin/users] players error:', linkedErr);
+        return res.status(500).json({ error: 'DB error' });
+    }
+
+    // Карта: user_id -> имя игрока
+    const playerByUser = new Map<string, string>();
+    for (const p of linkedPlayers ?? []) {
+        if (p.user_id) playerByUser.set(p.user_id, p.name);
+    }
+
     // Собираем карту ролей
     const rolesByUser = new Map<string, { role: Role; granted_at: string }[]>();
     for (const r of roles ?? []) {
@@ -128,14 +145,16 @@ adminRouter.get('/users', async (req, res) => {
             email: u.email ?? '',
             username: profile?.username ?? null,
             created_at: u.created_at ?? profile?.created_at ?? null,
+            last_seen_at: u.last_sign_in_at ?? null,
             roles: (rolesByUser.get(u.id) ?? []).map((r) => r.role),
+            player_name: playerByUser.get(u.id) ?? null,
         };
     });
 
     // Фильтруем по поиску
     const filtered = q
         ? result.filter((u) => {
-            const hay = `${u.email} ${u.username ?? ''}`.toLowerCase();
+            const hay = `${u.email} ${u.username ?? ''} ${u.player_name ?? ''}`.toLowerCase();
             return hay.includes(q);
         })
         : result;

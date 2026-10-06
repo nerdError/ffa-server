@@ -21,7 +21,9 @@ interface AdminUser {
     email: string;
     username: string | null;
     created_at: string | null;
+    last_seen_at: string | null;
     roles: Role[];
+    player_name: string | null;
 }
 
 interface AdminUsersResponse {
@@ -284,6 +286,13 @@ function buildUserCard(u: AdminUser): HTMLElement {
 
     info.append(email, username);
 
+    if (u.player_name) {
+        const linkedPlayer = document.createElement('div');
+        linkedPlayer.className = 'admin-user-player';
+        linkedPlayer.textContent = `🔗 ${t('admin.user_linked_player', { name: u.player_name })}`;
+        info.appendChild(linkedPlayer);
+    }
+
     if (u.created_at) {
         const reg = document.createElement('div');
         reg.className = 'admin-user-registered';
@@ -294,6 +303,19 @@ function buildUserCard(u: AdminUser): HTMLElement {
         );
         reg.textContent = `${t('admin.registered_at')}: ${formatted}`;
         info.appendChild(reg);
+    }
+
+    if (u.last_seen_at) {
+        const lastSeen = document.createElement('div');
+        lastSeen.className = 'admin-user-lastseen';
+        const d = new Date(u.last_seen_at);
+        const formatted = d.toLocaleDateString(
+            getLocale() === 'ru' ? 'ru-RU' : 'en-US',
+            { day: '2-digit', month: '2-digit', year: 'numeric' }
+        );
+        lastSeen.textContent = `${t('admin.last_seen')}: ${formatted} · ${relativeTime(u.last_seen_at)}`;
+        lastSeen.title = d.toLocaleString();
+        info.appendChild(lastSeen);
     }
 
     if (u.roles.length > 0) {
@@ -464,7 +486,7 @@ function renderPlayers(players: PlayerWithStats[]): void {
         if (p.user_id) {
             const linked = document.createElement('span');
             linked.className = 'admin-linked-badge';
-            linked.textContent = `🔗 ${t('admin.linked_player')}`;
+            linked.textContent = `🔗 ${p.username || t('admin.linked_player')}`;
             linked.title = p.user_id;
             nameWrap.appendChild(linked);
         }
@@ -991,4 +1013,16 @@ function buildLogRow(log: AdminLog): HTMLElement {
 function actionLabel(action: string): string {
     const key = LOG_ACTION_LABELS[action];
     return key ? t(key as any) : action;
+}
+
+function relativeTime(iso: string): string {
+    const diff = Date.now() - new Date(iso).getTime();
+    if (diff < 0) return t('admin.last_seen_just_now');
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return t('admin.last_seen_just_now');
+    if (min < 60) return t('admin.last_seen_minutes', { n: String(min) });
+    const h = Math.floor(min / 60);
+    if (h < 24) return t('admin.last_seen_hours', { n: String(h) });
+    const d = Math.floor(h / 24);
+    return t('admin.last_seen_days', { n: String(d) });
 }
