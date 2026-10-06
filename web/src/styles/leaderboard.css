@@ -303,29 +303,29 @@
         min-width: 0;
     }
 
-    /* Ранг — крупный, в верхнем левом углу; прижат к правому
-       краю первой колонки, чтобы ник начинался сразу за ним */
+    /* Ранг — крупный, ровно у левого края карточки */
     .leaderboard-table tbody td.lb-rank {
         grid-column: 1;
         grid-row: 1;
-        justify-self: end;
+        justify-self: start;
         align-self: center;
-        text-align: right;
+        text-align: left;
         font-family: var(--font-mono);
         font-size: 1.5rem;
         font-weight: 700;
         line-height: 1;
         padding: 0 6px 16px 0;
+        z-index: 1;
     }
 
-    /* Ник — сразу за рангом, слева вверху */
+    /* Ник — тоже от левого края, текст начинается сразу за номером */
     .leaderboard-table tbody td.lb-name {
-        grid-column: 2 / 5;
+        grid-column: 1 / 5;
         grid-row: 1;
         justify-self: start;
         align-self: center;
         text-align: left;
-        padding: 0 0 16px;
+        padding: 0 0 16px 2.2rem;
     }
 
     .leaderboard-table tbody td.lb-name .player-name-link {
