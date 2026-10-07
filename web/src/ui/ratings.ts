@@ -3,6 +3,8 @@ import { STAT_ORDER } from '../radar';
 import { state } from '../state';
 import {
     RACES,
+    type GivenRating,
+    type GivenRatingsResponse,
     type MyRating,
     type MyRatingResponse,
     type Race,
@@ -309,7 +311,210 @@ export function renderRatingEditor(
     emitChange();
 }
 
-export async function renderRatingsList(playerId: number): Promise<void> {
+/**
+ * Кнопка удаления оценки для админа. Возвращает null, если текущий
+ * пользователь не админ.
+ */
+function buildAdminDeleteButton(
+    ratingId: number,
+    onDeleted: () => void
+): HTMLButtonElement | null {
+    if (!state.user?.is_admin) return null;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'rating-admin-delete';
+    btn.textContent = '🗑';
+    btn.title = t('ratings.admin_delete');
+    btn.setAttribute('aria-label', t('ratings.admin_delete'));
+
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        void (async () => {
+            if (!confirm(t('ratings.admin_delete_confirm'))) return;
+            btn.disabled = true;
+            try {
+                await apiRequest(`/api/admin/ratings/${ratingId}`, {
+                    method: 'DELETE',
+                    token: state.token,
+                });
+                onDeleted();
+            } catch (err) {
+                btn.disabled = false;
+                alert(
+                    `${t('ratings.admin_delete_error')}: ` +
+                    (err instanceof Error ? err.message : String(err))
+                );
+            }
+        })();
+    });
+
+    return btn;
+}
+
+/**
+ * Кнопка «Удалить все» для админа. Возвращает null для не-админов.
+ */
+function buildAdminDeleteAllButton(
+    endpoint: string,
+    confirmText: string,
+    onDeleted: () => void
+): HTMLButtonElement | null {
+    if (!state.user?.is_admin) return null;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-danger rating-admin-delete-all';
+    btn.textContent = t('ratings.admin_delete_all');
+
+    btn.addEventListener('click', () => {
+        void (async () => {
+            if (!confirm(confirmText)) return;
+            btn.disabled = true;
+            try {
+                await apiRequest(endpoint, {
+                    method: 'DELETE',
+                    token: state.token,
+                });
+                onDeleted();
+            } catch (err) {
+                btn.disabled = false;
+                alert(
+                    `${t('ratings.admin_delete_error')}: ` +
+                    (err instanceof Error ? err.message : String(err))
+                );
+            }
+        })();
+    });
+
+    return btn;
+}
+
+// ============================================================
+// Список оценок, поставленных самим игроком
+// (показываем только если игрок связан с профилем)
+// ============================================================
+export async function renderGivenRatingsList(
+    playerId: number,
+    isLinked: boolean,
+    onDeleted?: () => void
+): Promise<void> {
+    const container = document.getElementById('given-ratings-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!isLinked) return;
+
+    let ratings: GivenRating[] = [];
+    try {
+        const res = await apiRequest<GivenRatingsResponse>(
+            `/api/players/${playerId}/given-ratings`
+        );
+        ratings = res.ratings;
+    } catch {
+        return;
+    }
+
+    const card = document.createElement('div');
+    card.className = 'card ratings-list ratings-list--given fade-in';
+
+    const header = document.createElement('div');
+    header.className = 'ratings-list-header';
+
+    const h3 = document.createElement('h3');
+    h3.textContent = t('ratings.given_title');
+    header.appendChild(h3);
+
+    if (ratings.length > 0) {
+        const deleteAll = buildAdminDeleteAllButton(
+            `/api/admin/players/${playerId}/given-ratings`,
+            t('ratings.admin_delete_all_given_confirm'),
+            () => onDeleted?.()
+        );
+        if (deleteAll) header.appendChild(deleteAll);
+    }
+
+    card.appendChild(header);
+
+    if (ratings.length === 0) {
+        const p = document.createElement('p');
+        p.className = 'hint';
+        p.textContent = t('ratings.given_empty');
+        card.appendChild(p);
+        container.appendChild(card);
+        return;
+    }
+
+    const table = document.createElement('table');
+    const thead = document.createElement('thead');
+    const headRow = document.createElement('tr');
+
+    const thPlayer = document.createElement('th');
+    thPlayer.textContent = t('ratings.col.player');
+    headRow.appendChild(thPlayer);
+
+    const thRace = document.createElement('th');
+    thRace.textContent = t('ratings.col.race');
+    headRow.appendChild(thRace);
+
+    for (const axis of STAT_ORDER) {
+        const th = document.createElement('th');
+        th.dataset.i18n = axis.langKey;
+        th.textContent = axis.getStr();
+        headRow.appendChild(th);
+    }
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    for (const r of ratings) {
+        const tr = document.createElement('tr');
+
+        const tdPlayer = document.createElement('td');
+        if (r.player_name) {
+            const link = document.createElement('a');
+            link.className = 'rating-player-link';
+            link.href = `/?player=${encodeURIComponent(r.player_name)}`;
+            link.textContent = r.player_name;
+            tdPlayer.appendChild(link);
+        } else {
+            tdPlayer.textContent = '—';
+        }
+
+        const givenDelBtn = buildAdminDeleteButton(r.id, () => onDeleted?.());
+        if (givenDelBtn) tdPlayer.appendChild(givenDelBtn);
+
+        tr.appendChild(tdPlayer);
+
+        const tdRace = document.createElement('td');
+        const raceBadge = document.createElement('span');
+        raceBadge.className = `race-badge race-${r.race}`;
+        raceBadge.textContent = r.race;
+        tdRace.appendChild(raceBadge);
+        tr.appendChild(tdRace);
+
+        for (const axis of STAT_ORDER) {
+            const td = document.createElement('td');
+            const span = document.createElement('span');
+            span.className = 'stat-value';
+            span.textContent = String(Number(r[axis.key]));
+            span.style.color = axis.color;
+            td.appendChild(span);
+            tr.appendChild(td);
+        }
+
+        tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    card.appendChild(table);
+    container.appendChild(card);
+}
+
+export async function renderRatingsList(
+    playerId: number,
+    onDeleted?: () => void
+): Promise<void> {
     const container = document.getElementById('ratings-list-container');
     if (!container) return;
     container.innerHTML = '';
@@ -329,11 +534,25 @@ export async function renderRatingsList(playerId: number): Promise<void> {
     const card = document.createElement('div');
     card.className = 'card ratings-list fade-in';
 
+    const header = document.createElement('div');
+    header.className = 'ratings-list-header';
+
     const h3 = document.createElement('h3');
 
     h3.dataset.i18n = "ratings.title";
     h3.textContent = t("ratings.title");
-    card.appendChild(h3);
+    header.appendChild(h3);
+
+    if (ratings.length > 0) {
+        const deleteAll = buildAdminDeleteAllButton(
+            `/api/admin/players/${playerId}/ratings`,
+            t('ratings.admin_delete_all_confirm'),
+            () => onDeleted?.()
+        );
+        if (deleteAll) header.appendChild(deleteAll);
+    }
+
+    card.appendChild(header);
 
     if (ratings.length === 0) {
         const p = document.createElement('p');
@@ -395,7 +614,20 @@ export async function renderRatingsList(playerId: number): Promise<void> {
                 userWrap.appendChild(badge);
             }
 
+            // Бейдж «не учитывается» — только для админов (иначе палит shadow-ban).
+            if (r.excluded && state.user?.is_admin) {
+                const excludedBadge = document.createElement('span');
+                excludedBadge.className = 'role-badge role-badge--excluded';
+                excludedBadge.textContent = t('ratings.excluded');
+                excludedBadge.title = t('ratings.excluded_title');
+                userWrap.appendChild(excludedBadge);
+            }
+
             tdUser.appendChild(userWrap);
+
+            const rowDelBtn = buildAdminDeleteButton(r.id, () => onDeleted?.());
+            if (rowDelBtn) tdUser.appendChild(rowDelBtn);
+
             tr.appendChild(tdUser);
 
             const tdRace = document.createElement('td');

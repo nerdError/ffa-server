@@ -33,6 +33,7 @@ export interface GameListItem {
   map_id: number | null;
   map_name: string | null;
   mod_name: string | null;
+  created_by: string | null;
   created_by_username: string | null;
   created_at: string | null;
   updated_at: string | null;

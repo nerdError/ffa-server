@@ -80,6 +80,89 @@
   flex-wrap: wrap;
 }
 
+.admin-user-card.is-banned {
+  border-color: rgba(231, 76, 60, 0.5);
+  background: rgba(231, 76, 60, 0.05);
+}
+
+.role-badge--banned {
+  align-self: flex-start;
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border: 1px solid #e74c3c;
+  border-radius: 3px;
+  background: rgba(231, 76, 60, 0.12);
+  color: #e74c3c;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.role-badge--excluded {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border: 1px solid var(--border-glow);
+  border-radius: 3px;
+  background: rgba(136, 153, 170, 0.12);
+  color: var(--text-secondary);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.admin-archive-total {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+}
+
+.admin-archive-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #11151c;
+  border: 1px solid var(--border-glow);
+  border-radius: 3px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-archive-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 200px;
+}
+
+.admin-archive-who {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.admin-archive-stats {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+}
+
+.admin-archive-when {
+  color: var(--text-muted, #5a6b7a);
+  font-size: 0.75rem;
+}
+
+.admin-archive-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .admin-user-info {
   flex: 1;
   min-width: 200px;
@@ -164,6 +247,28 @@
   background: rgba(127, 219, 255, 0.12);
   border-color: #7fdbff;
   color: #7fdbff;
+}
+
+.admin-role-btn--rate:hover {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+.admin-role-btn--rate.is-active {
+  background: rgba(231, 76, 60, 0.12);
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+.admin-role-btn--ban:hover {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+.admin-role-btn--ban.is-active {
+  background: rgba(241, 196, 15, 0.12);
+  border-color: var(--gold);
+  color: var(--gold);
 }
 
 /* =========================================

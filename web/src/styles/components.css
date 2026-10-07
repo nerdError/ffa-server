@@ -33,6 +33,12 @@
   margin-top: 16px;
 }
 
+.captcha-container {
+  display: flex;
+  justify-content: center;
+  min-height: 65px;
+}
+
 .form input,
 .inline-form input {
   padding: 12px 16px;

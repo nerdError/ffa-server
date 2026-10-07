@@ -38,6 +38,16 @@ export async function authenticate(req: {
     return { ok: false, status: 401, error: 'Invalid or expired token' };
   }
 
+  // Бан аккаунта: профиль с banned_at — отказываем во всех авторизованных запросах.
+  const { data: profile } = await client
+    .from('profiles')
+    .select('banned_at')
+    .eq('user_id', data.user.id)
+    .maybeSingle();
+  if (profile?.banned_at) {
+    return { ok: false, status: 403, error: 'Account is banned' };
+  }
+
   return { ok: true, user: data.user, client };
 }
 

@@ -76,6 +76,23 @@ export interface Rating {
     is_moderator: boolean;
     is_admin: boolean;
     is_ghost: boolean;
+    excluded?: boolean;
+    race: Race;
+    adaptiveness: number;
+    greed: number;
+    survival: number;
+    turtle: number;
+    aggression: number;
+    variety: number;
+    created_at: string;
+    updated_at: string;
+}
+
+/** Оценка, которую связанный с профилем игрок поставил другому игроку */
+export interface GivenRating {
+    id: number;
+    player_id: number;
+    player_name: string | null;
     race: Race;
     adaptiveness: number;
     greed: number;
@@ -120,6 +137,7 @@ export interface AuthUser {
     is_moderator?: boolean;
     is_admin?: boolean;
     is_ghost?: boolean;
+    can_rate?: boolean;
     player_id?: number | null;
     player_name?: string | null;
 }
@@ -152,6 +170,10 @@ export interface RatingsListResponse {
 
 export interface MyRatingResponse {
     rating: MyRating | null;
+}
+
+export interface GivenRatingsResponse {
+    ratings: GivenRating[];
 }
 
 export interface RatingResponse {

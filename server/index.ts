@@ -26,6 +26,10 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// Доверяем одному прокси (nginx): req.ip — реальный IP клиента
+// (нужно для rate-limit по IP).
+app.set('trust proxy', 1);
+
 // ============================================================
 // GitHub Webhook — ДО express.json(), потому что нужен raw body
 // ============================================================

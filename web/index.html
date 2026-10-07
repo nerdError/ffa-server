@@ -159,6 +159,7 @@
                         required />
                     <input type="password" name="password" data-i18n-placeholder="auth.password_placeholder_signup"
                         placeholder="Пароль (мин. 6)" required minlength="6" />
+                    <div id="captcha-container" class="captcha-container"></div>
                     <button type="submit" data-i18n="auth.signup_title">Создать аккаунт</button>
                 </form>
                 <p class="hint">
@@ -247,6 +248,8 @@
             <div id="player-games-container" class="player-games-pane"></div>
 
             <div id="ratings-list-container" class="player-ratings-pane"></div>
+
+            <div id="given-ratings-container" class="player-ratings-pane"></div>
         </section>
 
         <!-- ============================================ -->
@@ -471,6 +474,22 @@
                         </div>
                     </div>
                     <div id="admin-logs" class="admin-logs">
+                        <div class="skeleton skeleton-block"></div>
+                    </div>
+                </section>
+
+                <section class="admin-section">
+                    <div class="admin-section-header">
+                        <h2 data-i18n="admin.archive_title">Архив удалённых оценок</h2>
+                        <div class="admin-logs-controls">
+                            <input type="text" id="admin-archive-search" class="admin-search"
+                                data-i18n-placeholder="admin.archive_search" placeholder="Поиск по игроку или пользователю…"
+                                autocomplete="off" />
+                            <button type="button" id="btn-admin-archive-refresh" class="btn-secondary"
+                                data-i18n="admin.logs_refresh">Обновить</button>
+                        </div>
+                    </div>
+                    <div id="admin-ratings-archive" class="admin-archive">
                         <div class="skeleton skeleton-block"></div>
                     </div>
                 </section>

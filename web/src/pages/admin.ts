@@ -25,10 +25,34 @@ interface AdminUser {
     last_seen_at: string | null;
     roles: Role[];
     player_name: string | null;
+    can_rate: boolean;
+    banned_at: string | null;
 }
 
 interface AdminUsersResponse {
     users: AdminUser[];
+}
+
+interface AdminArchivedRating {
+    id: number;
+    original_id: number;
+    player_id: number;
+    user_id: string;
+    player_name: string | null;
+    user_name: string | null;
+    race: string;
+    adaptiveness: number;
+    greed: number;
+    survival: number;
+    turtle: number;
+    aggression: number;
+    variety: number;
+    deleted_at: string;
+}
+
+interface AdminArchiveResponse {
+    archived: AdminArchivedRating[];
+    total: number;
 }
 
 interface AdminRating {
@@ -86,6 +110,8 @@ const LOG_ACTIONS: { value: string; key: string }[] = [
     { value: 'role.grant', key: 'log.action.role_grant' },
     { value: 'role.revoke', key: 'log.action.role_revoke' },
     { value: 'user.delete', key: 'log.action.user_delete' },
+    { value: 'user.rate_allow', key: 'log.action.user_rate_allow' },
+    { value: 'user.rate_block', key: 'log.action.user_rate_block' },
 ];
 
 const LOG_ACTION_LABELS: Record<string, string> = {};
@@ -154,6 +180,8 @@ let playersSearchInput: HTMLInputElement | null = null;
 let logsBox: HTMLElement | null = null;
 let logsSearchInput: HTMLInputElement | null = null;
 let logsActionSelect: HTMLSelectElement | null = null;
+let archiveBox: HTMLElement | null = null;
+let archiveSearchInput: HTMLInputElement | null = null;
 
 const refsCache: Record<RefType, RefItem[]> = {
     formats: [],
@@ -189,6 +217,8 @@ export function mountAdmin(_params: URLSearchParams): void {
     logsBox = document.getElementById('admin-logs');
     logsSearchInput = document.getElementById('admin-logs-search') as HTMLInputElement | null;
     logsActionSelect = document.getElementById('admin-logs-action') as HTMLSelectElement | null;
+    archiveBox = document.getElementById('admin-ratings-archive');
+    archiveSearchInput = document.getElementById('admin-archive-search') as HTMLInputElement | null;
 
     searchInput?.addEventListener('input', () => {
         void loadUsers(searchInput!.value);
@@ -208,6 +238,12 @@ export function mountAdmin(_params: URLSearchParams): void {
     document.getElementById('btn-admin-logs-refresh')?.addEventListener('click', () => {
         void loadLogs(true);
     }, { signal });
+    archiveSearchInput?.addEventListener('input', () => {
+        void loadArchive();
+    }, { signal });
+    document.getElementById('btn-admin-archive-refresh')?.addEventListener('click', () => {
+        void loadArchive();
+    }, { signal });
 
     // Справочники: кнопки «+ Добавить»
     for (const config of REF_CONFIGS) {
@@ -220,6 +256,7 @@ export function mountAdmin(_params: URLSearchParams): void {
     void loadUsers();
     void loadPlayers();
     void loadLogs();
+    void loadArchive();
 
     for (const config of REF_CONFIGS) {
         void loadRefs(config);
@@ -272,7 +309,7 @@ function roleBadgeLabel(role: Role): string {
 
 function buildUserCard(u: AdminUser): HTMLElement {
     const card = document.createElement('div');
-    card.className = 'admin-user-card';
+    card.className = 'admin-user-card' + (u.banned_at ? ' is-banned' : '');
 
     const info = document.createElement('div');
     info.className = 'admin-user-info';
@@ -286,6 +323,13 @@ function buildUserCard(u: AdminUser): HTMLElement {
     username.textContent = u.username ?? t('admin.user_no_username');
 
     info.append(email, username);
+
+    if (u.banned_at) {
+        const bannedBadge = document.createElement('span');
+        bannedBadge.className = 'role-badge role-badge--banned';
+        bannedBadge.textContent = t('admin.user_banned');
+        info.appendChild(bannedBadge);
+    }
 
     if (u.player_name) {
         const linkedPlayer = document.createElement('div');
@@ -365,6 +409,34 @@ function buildUserCard(u: AdminUser): HTMLElement {
     ghostBtn.addEventListener('click', () => void toggleRole(u, 'ghost', isGhost));
     actions.appendChild(ghostBtn);
 
+    const rateBtn = document.createElement('button');
+    rateBtn.type = 'button';
+    rateBtn.className = u.can_rate
+        ? 'admin-role-btn admin-role-btn--rate'
+        : 'admin-role-btn admin-role-btn--rate is-active';
+    rateBtn.textContent = u.can_rate
+        ? `🚫 ${t('admin.disable_rate')}`
+        : `✓ ${t('admin.enable_rate')}`;
+    rateBtn.title = u.can_rate
+        ? t('admin.disable_rate_title')
+        : t('admin.enable_rate_title');
+    rateBtn.addEventListener('click', () => void toggleCanRate(u));
+    actions.appendChild(rateBtn);
+
+    const banBtn = document.createElement('button');
+    banBtn.type = 'button';
+    banBtn.className = u.banned_at
+        ? 'admin-role-btn admin-role-btn--ban is-active'
+        : 'admin-role-btn admin-role-btn--ban';
+    banBtn.textContent = u.banned_at
+        ? `🔓 ${t('admin.unban_user')}`
+        : `🔨 ${t('admin.ban_user')}`;
+    banBtn.title = u.banned_at
+        ? t('admin.unban_title')
+        : t('admin.ban_title');
+    banBtn.addEventListener('click', () => void toggleBan(u));
+    actions.appendChild(banBtn);
+
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.className = 'admin-user-delete-btn';
@@ -395,6 +467,42 @@ async function toggleRole(user: AdminUser, role: Role, currentlyHas: boolean): P
     }
 }
 
+async function toggleCanRate(user: AdminUser): Promise<void> {
+    const next = !user.can_rate;
+    const label = user.username || user.email;
+    const confirmText = next
+        ? t('admin.enable_rate_confirm', { user: label })
+        : t('admin.disable_rate_confirm', { user: label });
+    if (!confirm(confirmText)) return;
+
+    try {
+        await apiRequest(`/api/admin/users/${user.id}/can-rate`, {
+            method: 'POST',
+            token: state.token,
+            body: { canRate: next },
+        });
+        await loadUsers(searchInput?.value ?? '');
+    } catch (err) {
+        alert(t('admin.rate_toggle_error') + (err instanceof Error ? err.message : String(err)));
+    }
+}
+
+async function toggleBan(user: AdminUser): Promise<void> {
+    const label = user.username || user.email;
+    const banning = !user.banned_at;
+    if (!confirm(t(banning ? 'admin.ban_confirm' : 'admin.unban_confirm', { user: label }))) return;
+
+    try {
+        await apiRequest(`/api/admin/users/${user.id}/${banning ? 'ban' : 'unban'}`, {
+            method: 'POST',
+            token: state.token,
+        });
+        await loadUsers(searchInput?.value ?? '');
+    } catch (err) {
+        alert(t('admin.ban_error') + (err instanceof Error ? err.message : String(err)));
+    }
+}
+
 async function deleteUser(user: AdminUser): Promise<void> {
     const label = user.username || user.email;
     if (!confirm(t('admin.delete_user_confirm', { user: label }))) return;
@@ -407,6 +515,116 @@ async function deleteUser(user: AdminUser): Promise<void> {
         await loadUsers(searchInput?.value ?? '');
     } catch (err) {
         alert(t('admin.delete_user_error') + (err instanceof Error ? err.message : String(err)));
+    }
+}
+
+// ============================================================
+// Архив удалённых оценок
+// ============================================================
+async function loadArchive(): Promise<void> {
+    if (!archiveBox) return;
+    archiveBox.innerHTML = '<div class="skeleton skeleton-block"></div>';
+
+    const q = archiveSearchInput?.value.trim() ?? '';
+    const url = q
+        ? `/api/admin/ratings/archive?q=${encodeURIComponent(q)}&limit=200`
+        : '/api/admin/ratings/archive?limit=200';
+
+    try {
+        const res = await apiRequest<AdminArchiveResponse>(url, { token: state.token });
+        renderArchive(res.archived, res.total);
+    } catch (err) {
+        archiveBox.innerHTML = `<p class="error">${t('common.error')}: ${err instanceof Error ? err.message : String(err)
+            }</p>`;
+    }
+}
+
+function renderArchive(rows: AdminArchivedRating[], total: number): void {
+    if (!archiveBox) return;
+    archiveBox.innerHTML = '';
+
+    const head = document.createElement('div');
+    head.className = 'admin-archive-total';
+    head.textContent = t('admin.archive_total', { n: total });
+    archiveBox.appendChild(head);
+
+    if (rows.length === 0) {
+        const p = document.createElement('p');
+        p.className = 'hint';
+        p.textContent = t('admin.archive_empty');
+        archiveBox.appendChild(p);
+        return;
+    }
+
+    for (const r of rows) {
+        const row = document.createElement('div');
+        row.className = 'admin-archive-row';
+
+        const info = document.createElement('div');
+        info.className = 'admin-archive-info';
+
+        const who = document.createElement('div');
+        who.className = 'admin-archive-who';
+        who.textContent = `${r.user_name ?? r.user_id} → ${r.player_name ?? r.player_id}`;
+
+        const statLine = document.createElement('div');
+        statLine.className = 'admin-archive-stats';
+        statLine.textContent =
+            `${r.race} · A${r.adaptiveness} G${r.greed} S${r.survival} T${r.turtle} X${r.aggression} V${r.variety}`;
+
+        const when = document.createElement('div');
+        when.className = 'admin-archive-when';
+        when.textContent = `${t('admin.archive_deleted')}: ${new Date(r.deleted_at).toLocaleString()}`;
+
+        info.append(who, statLine, when);
+        row.appendChild(info);
+
+        const actions = document.createElement('div');
+        actions.className = 'admin-archive-actions';
+
+        const restoreBtn = document.createElement('button');
+        restoreBtn.type = 'button';
+        restoreBtn.className = 'btn-secondary';
+        restoreBtn.textContent = `↩ ${t('admin.archive_restore')}`;
+        restoreBtn.addEventListener('click', () => void restoreRating(r));
+        actions.appendChild(restoreBtn);
+
+        const restoreAllBtn = document.createElement('button');
+        restoreAllBtn.type = 'button';
+        restoreAllBtn.className = 'btn-secondary';
+        restoreAllBtn.textContent = `↩ ${t('admin.archive_restore_all')}`;
+        restoreAllBtn.title = t('admin.archive_restore_all_title');
+        restoreAllBtn.addEventListener('click', () => void restoreUserRatings(r.user_id));
+        actions.appendChild(restoreAllBtn);
+
+        row.appendChild(actions);
+        archiveBox.appendChild(row);
+    }
+}
+
+async function restoreRating(r: AdminArchivedRating): Promise<void> {
+    if (!confirm(t('admin.archive_restore_confirm'))) return;
+    try {
+        await apiRequest(`/api/admin/ratings/${r.id}/restore`, {
+            method: 'POST',
+            token: state.token,
+        });
+        await loadArchive();
+    } catch (err) {
+        alert(t('admin.archive_restore_error') + (err instanceof Error ? err.message : String(err)));
+    }
+}
+
+async function restoreUserRatings(userId: string): Promise<void> {
+    if (!confirm(t('admin.archive_restore_all_confirm'))) return;
+    try {
+        await apiRequest(`/api/admin/ratings/archive/restore-user/${encodeURIComponent(userId)}`, {
+            method: 'POST',
+            token: state.token,
+        });
+        await loadArchive();
+    } catch (err) {
+        alert(t('admin.archive_restore_error') + (err instanceof Error ? err.message : String(err)));
     }
 }
 

@@ -504,6 +504,7 @@ function gameFullToListItem(gf: GameFull): GameListItem {
         map_id: gf.map?.id ?? null,
         map_name: gf.map?.name ?? null,
         mod_name: gf.mod?.name ?? null,
+        created_by: gf.created_by,
         created_by_username: gf.created_by_username,
         created_at: gf.created_at,
         updated_at: gf.updated_at,
@@ -932,6 +933,13 @@ function buildGameCard(g: GameListItem): HTMLElement {
             void openEditGameModal(g.id);
         });
 
+        // Редактировать может админ или модератор, добавивший игру сам.
+        const isAdmin = Boolean(state.user?.is_admin);
+        const isOwner = state.user?.id && g.created_by === state.user.id;
+        if (isAdmin || isOwner) {
+            actions.appendChild(editBtn);
+        }
+
         const dupBtn = document.createElement('button');
         dupBtn.type = 'button';
         dupBtn.className = 'game-action-btn game-action-btn--duplicate';
@@ -942,7 +950,7 @@ function buildGameCard(g: GameListItem): HTMLElement {
             void openCreateFromGame(g.id);
         });
 
-        actions.append(editBtn, dupBtn);
+        actions.append(dupBtn);
 
         // Удалять игры может только админ.
         if (state.user?.is_admin) {

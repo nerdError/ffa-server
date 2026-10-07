@@ -21,7 +21,10 @@ export async function ensureRolesLoaded(): Promise<void> {
   if (!state.token || !state.user) return;
 
   // Если роли уже есть — не тратим запрос
-  if (typeof state.user.is_moderator === 'boolean') return;
+  if (
+    typeof state.user.is_moderator === 'boolean' &&
+    typeof state.user.can_rate === 'boolean'
+  ) return;
 
   // Если запрос уже идёт — ждём его
   if (rolesLoadingPromise) return rolesLoadingPromise;
@@ -36,6 +39,7 @@ export async function ensureRolesLoaded(): Promise<void> {
           is_moderator: boolean;
           is_admin: boolean;
           is_ghost: boolean;
+          can_rate: boolean;
         };
       }>('/api/auth/me', { token: state.token });
 
@@ -47,6 +51,7 @@ export async function ensureRolesLoaded(): Promise<void> {
           is_moderator: me.user.is_moderator,
           is_admin: me.user.is_admin,
           is_ghost: me.user.is_ghost,
+          can_rate: me.user.can_rate,
         },
         state.token!,
       );

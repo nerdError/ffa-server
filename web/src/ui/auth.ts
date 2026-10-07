@@ -8,6 +8,75 @@ interface AuthCallbacks {
     renderUserBox: () => void;
 }
 
+// Типы Turnstile (Cloudflare) — объявляем глобально, т.к. либы нет.
+declare global {
+    interface Window {
+        turnstile?: {
+            render: (el: HTMLElement, opts: Record<string, unknown>) => string;
+            getResponse: (widgetId?: string) => string | undefined;
+            reset: (widgetId?: string) => void;
+        };
+    }
+}
+
+interface CaptchaConfig {
+    enabled: boolean;
+    siteKey: string | null;
+}
+
+let captchaEnabled = false;
+let captchaWidget: string | undefined;
+let captchaInitPromise: Promise<void> | null = null;
+
+/** Загружает скрипт Turnstile один раз и инициализирует виджет. */
+function initCaptcha(container: HTMLElement): void {
+    if (captchaInitPromise) return;
+    captchaInitPromise = (async () => {
+        try {
+            const cfg = await apiRequest<CaptchaConfig>('/api/auth/captcha-config');
+            captchaEnabled = cfg.enabled && Boolean(cfg.siteKey);
+            if (!captchaEnabled) return;
+
+            if (!window.turnstile) await loadTurnstileScript();
+            if (window.turnstile && cfg.siteKey) {
+                captchaWidget = window.turnstile.render(container, {
+                    sitekey: cfg.siteKey,
+                    theme: 'dark',
+                });
+            }
+        } catch {
+            captchaEnabled = false;
+        }
+    })();
+}
+
+function loadTurnstileScript(): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const existing = document.querySelector(
+            'script[src*="challenges.cloudflare.com/turnstile"]'
+        );
+        if (existing) {
+            resolve();
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+        script.async = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('failed to load captcha'));
+        document.head.appendChild(script);
+    });
+}
+
+function getCaptchaToken(): string | undefined {
+    if (!captchaEnabled) return undefined;
+    return window.turnstile?.getResponse(captchaWidget);
+}
+
+function resetCaptcha(): void {
+    if (captchaEnabled && window.turnstile) window.turnstile.reset(captchaWidget);
+}
+
 /**
  * Догружает роли, username, привязанного игрока через /api/auth/me
  * и сохраняет всё в session. Возвращает обновлённого user или null.
@@ -67,6 +136,10 @@ export function bindAuth(cb: AuthCallbacks): void {
         e.preventDefault();
         loginCard.classList.add('hidden');
         cardSignup.classList.remove('hidden');
+
+        // Инициализируем CAPTCHA, когда карточка регистрации видна.
+        const captchaContainer = document.getElementById('captcha-container');
+        if (captchaContainer) initCaptcha(captchaContainer);
     });
 
     document.getElementById('link-to-login')?.addEventListener('click', (e) => {
@@ -138,10 +211,19 @@ export function bindAuth(cb: AuthCallbacks): void {
             return;
         }
 
+        // CAPTCHA: если включена — токен обязателен.
+        if (captchaEnabled) {
+            const token = getCaptchaToken();
+            if (!token) {
+                alert(t('auth.captcha_required'));
+                return;
+            }
+        }
+
         try {
             const res = await apiRequest<SignupResponse>('/api/auth/signup', {
                 method: 'POST',
-                body: { username, email, password },
+                body: { username, email, password, captchaToken: getCaptchaToken() },
             });
 
             if (res.session && res.user) {
@@ -159,6 +241,7 @@ export function bindAuth(cb: AuthCallbacks): void {
                 loginCard.classList.remove('hidden');
             }
         } catch (err) {
+            resetCaptcha();
             alert(t('auth.error_signup') + (err instanceof Error ? err.message : String(err)));
         }
     });

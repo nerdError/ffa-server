@@ -1,12 +1,13 @@
 import { apiRequest } from '../api';
 import { state } from '../state';
 import { buildPlayerCardElement } from '../card';
-import type { PlayerResponse, PlayerWithStats, Race, RatingInput } from '../types';
+import type { PlayerResponse, PlayerWithStats, Race, RatingInput, MyRating } from '../types';
 import terranIconUrl from '../../assets/race/terran.svg';
 import zergIconUrl from '../../assets/race/zerg.svg';
 import protossIconUrl from '../../assets/race/protoss.svg';
 import randomIconUrl from '../../assets/race/random.svg';
 import {
+    renderGivenRatingsList,
     renderRatingEditor,
     renderRatingsList,
 } from './ratings';
@@ -115,8 +116,9 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
     const editPane = document.getElementById('player-edit-pane');
     const actions = document.getElementById('player-actions');
     const ratingsContainer = document.getElementById('ratings-list-container');
+    const givenRatingsContainer = document.getElementById('given-ratings-container');
 
-    if (!pane || !editPane || !actions || !ratingsContainer) return;
+    if (!pane || !editPane || !actions || !ratingsContainer || !givenRatingsContainer) return;
 
     // ============================================================
     // Скелетоны — сразу, пока грузим данные
@@ -130,6 +132,7 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
     ratingsContainer.innerHTML = `
     <div class="skeleton skeleton-block"></div>
   `;
+    givenRatingsContainer.innerHTML = '';
 
     try {
         const { player } = await apiRequest<PlayerResponse>(
@@ -451,12 +454,15 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
         // ============================================================
         renderActions();
         await renderPlayerGames(playerId);   // ← НОВОЕ
-        await renderRatingsList(playerId);
+        const reload = (): void => void loadPlayerDetail(playerId);
+        await renderRatingsList(playerId, reload);
+        await renderGivenRatingsList(playerId, Boolean(player.user_id), reload);
     } catch (err) {
         pane.innerHTML = `<p class="error fade-in">${t('common.error')}: ${err instanceof Error ? err.message : String(err)
             }</p>`;
         actions.innerHTML = '';
         ratingsContainer.innerHTML = '';
+        givenRatingsContainer.innerHTML = '';
     }
 }
 
@@ -510,6 +516,47 @@ function buildCardModeToggle(): void {
     }
 }
 
+/**
+ * Shadow-ban: для пользователя, исключённого из расчёта средних, если на
+ * игроке нет ни одной учитываемой оценки, показываем ему его собственную
+ * оценку — чтобы карточка не была «пустой» (это выдало бы shadow-ban).
+ */
+async function applyShadowFallback(
+    base: PlayerWithStats,
+    playerId: number
+): Promise<PlayerWithStats> {
+    // Есть учитываемые оценки — показываем реальную среднюю.
+    if (base.vote_count !== 0) return base;
+    // Нужен токен, чтобы получить свою оценку.
+    if (!state.token) return base;
+
+    // Если на игроке нет учитываемых оценок (vote_count === 0) и у текущего
+    // пользователя есть своя оценка — он гарантированно исключён из средних
+    // (иначе его оценка была бы посчитана). Показываем ему его собственную
+    // оценку, чтобы карточка не была «пустой» (это выдало бы shadow-ban).
+    try {
+        const res = await apiRequest<{ rating: MyRating | null }>(
+            `/api/players/${playerId}/my-rating`,
+            { token: state.token }
+        );
+        if (!res.rating) return base;
+
+        return {
+            ...base,
+            races: [res.rating.race],
+            vote_count: 1,
+            adaptiveness: res.rating.adaptiveness,
+            greed: res.rating.greed,
+            survival: res.rating.survival,
+            turtle: res.rating.turtle,
+            aggression: res.rating.aggression,
+            variety: res.rating.variety,
+        };
+    } catch {
+        return base;
+    }
+}
+
 async function renderCardForMode(
     pane: HTMLElement,
     playerId: number,
@@ -521,17 +568,18 @@ async function renderCardForMode(
     }
 
     if (mode === 'average') {
-        if (lastBasePlayer) {
-            renderCard(pane, lastBasePlayer);
-            return;
+        let base = lastBasePlayer;
+        if (!base) {
+            try {
+                const { player } = await apiRequest<PlayerResponse>(`/api/players/${playerId}`);
+                base = player;
+                lastBasePlayer = player;
+            } catch {
+                return;
+            }
         }
-        try {
-            const { player } = await apiRequest<PlayerResponse>(`/api/players/${playerId}`);
-            lastBasePlayer = player;
-            renderCard(pane, player);
-        } catch {
-            /* оставляем как есть */
-        }
+        const shown = await applyShadowFallback(base, playerId);
+        renderCard(pane, shown);
         return;
     }
 

@@ -447,6 +447,19 @@ gamesRouter.patch('/:id', async (req, res) => {
         return res.status(403).json({ error: 'Moderator access required' });
     }
 
+    // Редактировать игру может админ (любые) или модератор, добавивший её сам.
+    const { data: isAdmin } = await auth.client.rpc('is_admin');
+    if (!isAdmin) {
+        const { data: game, error: fetchError } = await supabaseAdmin
+            .from('games')
+            .select('created_by')
+            .eq('id', id)
+            .maybeSingle();
+        if (fetchError || !game || game.created_by !== auth.user.id) {
+            return res.status(403).json({ error: 'You can only edit games you added' });
+        }
+    }
+
     const {
         played_at,
         format_id,

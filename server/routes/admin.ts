@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../../lib/auth.js';
 import { supabaseAdmin } from '../../lib/supabase-admin.js';
 import { logAction } from '../../lib/action-log.js';
+import { archiveRatings } from '../../lib/ratings-archive.js';
 
 export const adminRouter = Router();
 
@@ -77,7 +78,7 @@ adminRouter.get('/users', async (req, res) => {
     // Получаем пользователей и их профили
     const { data: users, error: usersErr } = await supabaseAdmin
         .from('profiles')
-        .select('user_id, username, created_at');
+        .select('user_id, username, created_at, can_rate, banned_at');
 
     if (usersErr) {
         console.error('[admin/users] profiles error:', usersErr);
@@ -129,11 +130,13 @@ adminRouter.get('/users', async (req, res) => {
     }
 
     // Собираем карту профилей
-    const profileByUser = new Map<string, { username: string | null; created_at: string }>();
+    const profileByUser = new Map<string, { username: string | null; created_at: string; can_rate: boolean; banned_at: string | null }>();
     for (const p of users ?? []) {
         profileByUser.set(p.user_id, {
             username: p.username,
             created_at: p.created_at,
+            can_rate: p.can_rate !== false,
+            banned_at: p.banned_at ?? null,
         });
     }
 
@@ -148,6 +151,8 @@ adminRouter.get('/users', async (req, res) => {
             last_seen_at: u.last_sign_in_at ?? null,
             roles: (rolesByUser.get(u.id) ?? []).map((r) => r.role),
             player_name: playerByUser.get(u.id) ?? null,
+            can_rate: profile?.can_rate ?? true,
+            banned_at: profile?.banned_at ?? null,
         };
     });
 
@@ -264,8 +269,148 @@ adminRouter.post('/roles/revoke', async (req, res) => {
 });
 
 // ============================================================
+// POST /api/admin/users/:id/can-rate
+// { canRate: boolean }
+// Выдать/запретить пользователю возможность ставить оценки
+// ============================================================
+adminRouter.post('/users/:id/can-rate', async (req, res) => {
+    const userId = req.params.id;
+    if (!userId || typeof userId !== 'string') {
+        return res.status(400).json({ error: 'Invalid user id' });
+    }
+
+    const canRate = req.body?.canRate;
+    if (typeof canRate !== 'boolean') {
+        return res.status(400).json({ error: 'canRate (boolean) is required' });
+    }
+
+    const actorId = (req as any).userId as string;
+
+    const { data, error } = await supabaseAdmin
+        .from('profiles')
+        .update({ can_rate: canRate })
+        .eq('user_id', userId)
+        .select('user_id, can_rate')
+        .maybeSingle();
+
+    if (error) {
+        console.error('[admin/users/can-rate] error:', error);
+        return res.status(500).json({ error: 'DB error' });
+    }
+    if (!data) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    const { data: targetProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('username')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    void logAction({
+        action: canRate ? 'user.rate_allow' : 'user.rate_block',
+        actorId,
+        entityType: 'user',
+        summary: `${canRate ? 'Оценки снова учитываются в средних' : 'Оценки исключены из средних'} пользователя ${targetProfile?.username ?? userId}`,
+        details: { targetUserId: userId, canRate },
+    });
+
+    res.json({ ok: true, can_rate: data.can_rate });
+});
+
+// ============================================================
+// POST /api/admin/users/:id/ban
+// Заблокировать аккаунт: ставит banned_at (блокирует вход и все
+// авторизованные запросы) и отключает право оценивать.
+// ============================================================
+adminRouter.post('/users/:id/ban', async (req, res) => {
+    const userId = req.params.id;
+    if (!userId || typeof userId !== 'string') {
+        return res.status(400).json({ error: 'Invalid user id' });
+    }
+
+    const actorId = (req as any).userId as string;
+
+    const { data, error } = await supabaseAdmin
+        .from('profiles')
+        .update({ banned_at: new Date().toISOString(), can_rate: false })
+        .eq('user_id', userId)
+        .select('user_id, banned_at')
+        .maybeSingle();
+
+    if (error) {
+        console.error('[admin/users/ban] error:', error);
+        return res.status(500).json({ error: 'DB error' });
+    }
+    if (!data) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    const { data: targetProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('username')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    void logAction({
+        action: 'user.ban',
+        actorId,
+        entityType: 'user',
+        summary: `Заблокирован пользователь ${targetProfile?.username ?? userId}`,
+        details: { targetUserId: userId },
+    });
+
+    res.json({ ok: true, banned_at: data.banned_at });
+});
+
+// ============================================================
+// POST /api/admin/users/:id/unban
+// Разблокировать аккаунт: снимает banned_at и восстанавливает
+// право оценивать.
+// ============================================================
+adminRouter.post('/users/:id/unban', async (req, res) => {
+    const userId = req.params.id;
+    if (!userId || typeof userId !== 'string') {
+        return res.status(400).json({ error: 'Invalid user id' });
+    }
+
+    const actorId = (req as any).userId as string;
+
+    const { data, error } = await supabaseAdmin
+        .from('profiles')
+        .update({ banned_at: null, can_rate: true })
+        .eq('user_id', userId)
+        .select('user_id, banned_at')
+        .maybeSingle();
+
+    if (error) {
+        console.error('[admin/users/unban] error:', error);
+        return res.status(500).json({ error: 'DB error' });
+    }
+    if (!data) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    const { data: targetProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('username')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    void logAction({
+        action: 'user.unban',
+        actorId,
+        entityType: 'user',
+        summary: `Разблокирован пользователь ${targetProfile?.username ?? userId}`,
+        details: { targetUserId: userId },
+    });
+
+    res.json({ ok: true, banned_at: data.banned_at });
+});
+
+// ============================================================
 // DELETE /api/admin/ratings/:id
-// Удалить любую оценку по ID
+// Удалить любую оценку по ID (с сохранением в архив)
 // ============================================================
 adminRouter.delete('/ratings/:id', async (req, res) => {
     const id = Number(req.params.id);
@@ -273,19 +418,30 @@ adminRouter.delete('/ratings/:id', async (req, res) => {
         return res.status(400).json({ error: 'Invalid rating id' });
     }
 
-    const { data, error } = await supabaseAdmin
+    const { data: row, error: selErr } = await supabaseAdmin
+        .from('ratings')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+    if (selErr) {
+        console.error('[admin/ratings/delete] select error:', selErr);
+        return res.status(500).json({ error: 'DB error' });
+    }
+    if (!row) {
+        return res.status(404).json({ error: 'Rating not found' });
+    }
+
+    await archiveRatings([row]);
+
+    const { error } = await supabaseAdmin
         .from('ratings')
         .delete()
-        .eq('id', id)
-        .select()
-        .maybeSingle();
+        .eq('id', id);
 
     if (error) {
         console.error('[admin/ratings/delete] error:', error);
         return res.status(500).json({ error: 'DB error' });
-    }
-    if (!data) {
-        return res.status(404).json({ error: 'Rating not found' });
     }
 
     void logAction({
@@ -293,12 +449,260 @@ adminRouter.delete('/ratings/:id', async (req, res) => {
         actorId: (req as any).userId,
         entityType: 'rating',
         entityId: id,
-        summary: `Удалена оценка #${id} (игрок #${data.player_id})`,
-        details: { playerId: data.player_id, targetUserId: data.user_id },
+        summary: `Удалена оценка #${id} (игрок #${row.player_id})`,
+        details: { playerId: row.player_id, targetUserId: row.user_id },
     });
 
-    res.json({ ok: true, deleted: data });
+    res.json({ ok: true, deleted: row });
 });
+
+// ============================================================
+// DELETE /api/admin/players/:id/ratings
+// Удалить все оценки игрока (поставленные другими пользователями),
+// с сохранением в архив
+// ============================================================
+adminRouter.delete('/players/:id/ratings', async (req, res) => {
+    const playerId = Number(req.params.id);
+    if (!Number.isInteger(playerId) || playerId <= 0) {
+        return res.status(400).json({ error: 'Invalid player id' });
+    }
+
+    const { data: rows, error: selErr } = await supabaseAdmin
+        .from('ratings')
+        .select('*')
+        .eq('player_id', playerId);
+
+    if (selErr) {
+        console.error('[admin/players/ratings/delete-all] select error:', selErr);
+        return res.status(500).json({ error: 'DB error' });
+    }
+
+    const deleted = (rows ?? []).length;
+
+    await archiveRatings(rows ?? []);
+
+    const { error } = await supabaseAdmin
+        .from('ratings')
+        .delete()
+        .eq('player_id', playerId);
+
+    if (error) {
+        console.error('[admin/players/ratings/delete-all] error:', error);
+        return res.status(500).json({ error: 'DB error' });
+    }
+
+    void logAction({
+        action: 'rating.delete',
+        actorId: (req as any).userId,
+        entityType: 'player',
+        entityId: playerId,
+        summary: `Удалены все оценки игрока #${playerId} (${deleted})`,
+        details: { playerId, deleted },
+    });
+
+    res.json({ ok: true, deleted });
+});
+
+// ============================================================
+// DELETE /api/admin/players/:id/given-ratings
+// Удалить все оценки, поставленные игроком (связанным с профилем),
+// с сохранением в архив
+// ============================================================
+adminRouter.delete('/players/:id/given-ratings', async (req, res) => {
+    const playerId = Number(req.params.id);
+    if (!Number.isInteger(playerId) || playerId <= 0) {
+        return res.status(400).json({ error: 'Invalid player id' });
+    }
+
+    const { data: player, error: playerErr } = await supabaseAdmin
+        .from('players')
+        .select('id, user_id')
+        .eq('id', playerId)
+        .maybeSingle();
+
+    if (playerErr) {
+        console.error('[admin/players/given-ratings/delete-all] error:', playerErr);
+        return res.status(500).json({ error: 'DB error' });
+    }
+    if (!player) return res.status(404).json({ error: 'Player not found' });
+    if (!player.user_id) return res.json({ ok: true, deleted: 0 });
+
+    const { data: rows, error: selErr } = await supabaseAdmin
+        .from('ratings')
+        .select('*')
+        .eq('user_id', player.user_id);
+
+    if (selErr) {
+        console.error('[admin/players/given-ratings/delete-all] select error:', selErr);
+        return res.status(500).json({ error: 'DB error' });
+    }
+
+    const deleted = (rows ?? []).length;
+
+    await archiveRatings(rows ?? []);
+
+    const { error } = await supabaseAdmin
+        .from('ratings')
+        .delete()
+        .eq('user_id', player.user_id);
+
+    if (error) {
+        console.error('[admin/players/given-ratings/delete-all] error:', error);
+        return res.status(500).json({ error: 'DB error' });
+    }
+
+    void logAction({
+        action: 'rating.delete',
+        actorId: (req as any).userId,
+        entityType: 'player',
+        entityId: playerId,
+        summary: `Удалены все оценки, поставленные игроком #${playerId} (${deleted})`,
+        details: { playerId, deleted },
+    });
+
+    res.json({ ok: true, deleted });
+});
+
+// ============================================================
+// GET /api/admin/ratings/archive?q=&userId=&limit=&offset=
+// Список удалённых оценок (из архива). Только для админов.
+// ============================================================
+adminRouter.get('/ratings/archive', async (req, res) => {
+    const q = String(req.query.q ?? '').trim();
+    const limit = Math.min(Math.max(Number(req.query.limit ?? 100) || 100, 1), 500);
+    const offset = Math.max(Number(req.query.offset ?? 0) || 0, 0);
+
+    let query = supabaseAdmin
+        .from('ratings_archive')
+        .select('*', { count: 'exact' })
+        .order('deleted_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+    if (q) {
+        const safe = q.replace(/[(),%*\\]/g, ' ').trim();
+        if (safe) query = query.or(`player_name.ilike.%${safe}%,user_name.ilike.%${safe}%`);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+        console.error('[admin/ratings/archive] error:', error);
+        return res.status(500).json({ error: `DB error: ${error.message}` });
+    }
+
+    res.json({ archived: data ?? [], total: count ?? 0 });
+});
+
+// ============================================================
+// POST /api/admin/ratings/:archiveId/restore
+// Восстановить одну оценку из архива в ratings.
+// ============================================================
+adminRouter.post('/ratings/:archiveId/restore', async (req, res) => {
+    const archiveId = Number(req.params.archiveId);
+    if (!Number.isInteger(archiveId) || archiveId <= 0) {
+        return res.status(400).json({ error: 'Invalid archive id' });
+    }
+
+    const { data: row, error: getErr } = await supabaseAdmin
+        .from('ratings_archive')
+        .select('*')
+        .eq('id', archiveId)
+        .maybeSingle();
+
+    if (getErr) {
+        console.error('[admin/ratings/restore] get error:', getErr);
+        return res.status(500).json({ error: 'DB error' });
+    }
+    if (!row) return res.status(404).json({ error: 'Archive entry not found' });
+
+    const restored = await restoreArchivedRows([row]);
+    if (restored.error) {
+        return res.status(500).json({ error: 'DB error' });
+    }
+
+    await supabaseAdmin.from('ratings_archive').delete().eq('id', archiveId);
+
+    void logAction({
+        action: 'rating.restore',
+        actorId: (req as any).userId,
+        entityType: 'rating',
+        entityId: row.original_id,
+        summary: `Восстановлена оценка #${row.original_id} (игрок #${row.player_id})`,
+        details: { playerId: row.player_id, targetUserId: row.user_id },
+    });
+
+    res.json({ ok: true });
+});
+
+// ============================================================
+// POST /api/admin/ratings/archive/restore-user/:userId
+// Восстановить все удалённые оценки конкретного пользователя.
+// ============================================================
+adminRouter.post('/ratings/archive/restore-user/:userId', async (req, res) => {
+    const userId = req.params.userId;
+    if (!userId || typeof userId !== 'string') {
+        return res.status(400).json({ error: 'Invalid user id' });
+    }
+
+    const { data: rows, error: getErr } = await supabaseAdmin
+        .from('ratings_archive')
+        .select('*')
+        .eq('user_id', userId);
+
+    if (getErr) {
+        console.error('[admin/ratings/restore-user] get error:', getErr);
+        return res.status(500).json({ error: 'DB error' });
+    }
+
+    const restored = await restoreArchivedRows(rows ?? []);
+    if (restored.error) {
+        return res.status(500).json({ error: 'DB error' });
+    }
+
+    const ids = (rows ?? []).map((r) => r.id);
+    if (ids.length > 0) {
+        await supabaseAdmin.from('ratings_archive').delete().in('id', ids);
+    }
+
+    void logAction({
+        action: 'rating.restore',
+        actorId: (req as any).userId,
+        entityType: 'user',
+        summary: `Восстановлены все удалённые оценки пользователя ${userId} (${ids.length})`,
+        details: { targetUserId: userId, restored: ids.length },
+    });
+
+    res.json({ ok: true, restored: ids.length });
+});
+
+/** Переносит строки архива обратно в ratings (upsert по player_id,user_id). */
+async function restoreArchivedRows(
+    rows: Array<Record<string, unknown>>
+): Promise<{ error?: boolean }> {
+    if (!rows || rows.length === 0) return {};
+
+    const payload = rows.map((r) => ({
+        player_id: r.player_id,
+        user_id: r.user_id,
+        race: r.race,
+        adaptiveness: r.adaptiveness,
+        greed: r.greed,
+        survival: r.survival,
+        turtle: r.turtle,
+        aggression: r.aggression,
+        variety: r.variety,
+    }));
+
+    const { error } = await supabaseAdmin
+        .from('ratings')
+        .upsert(payload, { onConflict: 'player_id,user_id' });
+
+    if (error) {
+        console.error('[admin/ratings/restore] upsert error:', error);
+        return { error: true };
+    }
+    return {};
+}
 
 // ============================================================
 // GET /api/admin/players/:id/ratings

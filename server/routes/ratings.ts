@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { anonClient, authenticate } from '../../lib/auth.js';
 import { supabaseAdmin } from '../../lib/supabase-admin.js';
 import { logAction } from '../../lib/action-log.js';
+import { archiveRatings } from '../../lib/ratings-archive.js';
 
 export const ratingsRouter = Router({ mergeParams: true });
 
@@ -75,6 +76,62 @@ ratingsRouter.get('/:id/ratings', async (req, res) => {
       for (const r of ratings) r.is_ghost = ghostSet.has(r.user_id);
     }
   }
+
+  return res.status(200).json({ ratings });
+});
+
+// GET /api/players/:id/given-ratings
+// Оценки, которые сам игрок (если связан с профилем) поставил другим игрокам.
+ratingsRouter.get('/:id/given-ratings', async (req, res) => {
+  const playerId = parseId(req.params.id);
+  if (playerId === null) return res.status(400).json({ error: 'Invalid player id' });
+
+  const { data: player, error: playerErr } = await supabaseAdmin
+    .from('players')
+    .select('id, user_id')
+    .eq('id', playerId)
+    .maybeSingle();
+  if (playerErr) return res.status(500).json({ error: playerErr.message });
+  if (!player) return res.status(404).json({ error: 'Player not found' });
+
+  // Игрок не связан с профилем — оценок от его имени быть не может.
+  if (!player.user_id) return res.status(200).json({ ratings: [] });
+
+  const { data, error } = await supabaseAdmin
+    .from('ratings')
+    .select(
+      'id, player_id, race, adaptiveness, greed, survival, turtle, aggression, variety, ' +
+        'created_at, updated_at',
+    )
+    .eq('user_id', player.user_id)
+    .order('created_at', { ascending: true });
+  if (error) return res.status(500).json({ error: error.message });
+
+  // Подтягиваем имена игроков, которых оценил пользователь.
+  const targetIds = [...new Set((data ?? []).map((r) => r.player_id))];
+  const nameById = new Map<number, string>();
+  if (targetIds.length > 0) {
+    const { data: targets } = await supabaseAdmin
+      .from('players')
+      .select('id, name')
+      .in('id', targetIds);
+    for (const t of targets ?? []) nameById.set(t.id, t.name);
+  }
+
+  const ratings = (data ?? []).map((r: any) => ({
+    id: r.id,
+    player_id: r.player_id,
+    player_name: nameById.get(r.player_id) ?? null,
+    race: r.race,
+    adaptiveness: r.adaptiveness,
+    greed: r.greed,
+    survival: r.survival,
+    turtle: r.turtle,
+    aggression: r.aggression,
+    variety: r.variety,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+  }));
 
   return res.status(200).json({ ratings });
 });
@@ -163,6 +220,19 @@ ratingsRouter.delete('/:id/my-rating', async (req, res) => {
   const auth = await authenticate(req);
   if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
 
+  // Сначала сохраняем в архив (обратимость), затем удаляем.
+  const { data: row, error: selErr } = await supabaseAdmin
+    .from('ratings')
+    .select('*')
+    .eq('player_id', playerId)
+    .eq('user_id', auth.user.id)
+    .maybeSingle();
+
+  if (selErr) return res.status(500).json({ error: selErr.message });
+  if (!row) return res.status(404).json({ error: 'Rating not found' });
+
+  await archiveRatings([row], { deletedBy: auth.user.id });
+
   const { data, error } = await auth.client
     .from('ratings')
     .delete()
@@ -172,13 +242,12 @@ ratingsRouter.delete('/:id/my-rating', async (req, res) => {
     .maybeSingle();
 
   if (error) return res.status(500).json({ error: error.message });
-  if (!data) return res.status(404).json({ error: 'Rating not found' });
 
   void logAction({
     action: 'rating.delete',
     actorId: auth.user.id,
     entityType: 'rating',
-    entityId: data.id,
+    entityId: row.id,
     summary: `Удалена своя оценка игрока #${playerId}`,
     details: { playerId },
   });

@@ -86,6 +86,28 @@ async function getGhostUserIds(): Promise<string[]> {
   return (data ?? []).map((r) => r.user_id);
 }
 
+/**
+ * Отсекает пользователей с can_rate=false — их оценки не должны
+ * влиять на среднюю (в гостевом режиме и в общих средних).
+ */
+async function filterEnabledUserIds(userIds: string[]): Promise<string[]> {
+  if (userIds.length === 0) return [];
+
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .select('user_id, can_rate')
+    .in('user_id', userIds);
+
+  if (error) {
+    console.error('[player-stats] profiles lookup failed:', error);
+    return userIds;
+  }
+
+  return (data ?? [])
+    .filter((p) => p.can_rate !== false)
+    .map((p) => p.user_id);
+}
+
 async function fetchRatings(
   playerId: number,
   userIds: string[]
@@ -140,6 +162,7 @@ export async function getPlayerWithStatsMode(
 
   // ghost
   const ghostIds = await getGhostUserIds();
-  const rows = await fetchRatings(playerId, ghostIds);
+  const enabledGhostIds = await filterEnabledUserIds(ghostIds);
+  const rows = await fetchRatings(playerId, enabledGhostIds);
   return { ...base, ...aggregate(rows) };
 }
