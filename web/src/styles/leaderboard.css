@@ -249,6 +249,37 @@
     text-shadow: 0 0 6px rgba(241, 196, 15, 0.4);
 }
 
+.lb-30d-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    margin-left: 4px;
+    border-left: 1px solid var(--border-glow);
+    color: var(--text-secondary);
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.lb-30d-filter input {
+    accent-color: var(--gold);
+    cursor: pointer;
+}
+
+.lb-30d-filter.is-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.lb-30d-filter.is-disabled input {
+    cursor: not-allowed;
+}
+
 .quality-cell {
     font-family: var(--font-mono);
     font-weight: 700;

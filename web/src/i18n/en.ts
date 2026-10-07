@@ -132,6 +132,8 @@ export const en: Record<TranslationKey, string> = {
     'auth.account_created_confirm': 'Account created. Check your email to confirm, then log in.',
     'auth.account_created': 'Account created',
     'auth.captcha_required': 'Please confirm you are not a robot',
+    'auth.email_note_title': 'Email tip',
+    'auth.email_note_text': 'Confirmation emails may not reach some email providers. We recommend registering with a foreign mailbox, e.g. Gmail.',
 
     'nav.leaderboard': 'Rating',
     'leaderboard.title': 'Rating',
@@ -233,6 +235,7 @@ export const en: Record<TranslationKey, string> = {
     'ratings.empty_anonymous': 'Log in to see who rated the player and how.',
     'ratings.empty': 'No one has rated this player yet.',
     'ratings.col.user': 'User',
+    'ratings.link_to_player_title': 'Go to player',
     'ratings.col.race': 'Race',
     'ratings.given_title': 'Ratings given by player',
     'ratings.given_empty': 'This player has not rated anyone yet.',
@@ -476,6 +479,7 @@ export const en: Record<TranslationKey, string> = {
     'leaderboard.help_quality': '"Quality" is the average activity points per game. It shows how effective each individual game is for you.',
 
     'leaderboard.mode_all': 'All',
+    'leaderboard.filter_30d': 'Last 30 days',
     'leaderboard.mode_solo': 'FFA',
     'leaderboard.mode_team': 'Team FFA',
     'leaderboard.mode_league_s3': 'FFA League (Season 3)',

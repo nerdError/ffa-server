@@ -10,6 +10,9 @@ const isSeasonMode = (mode: Mode): boolean => mode === 'ffa-league' || mode === 
 
 let currentMode: Mode = 'all';
 
+/** Отдельный фильтр: считать только игры за последние 30 дней (не для сезонных зачётов). */
+let last30d = false;
+
 type SortKey = 'name' | 'activity' | 'games' | 'days' | 'wins' | 'winrate' | 'quality' | 'avg_place' | 'elo';
 type SortDirection = 'asc' | 'desc';
 
@@ -123,6 +126,23 @@ function renderModeSwitch(): void {
         switcher.appendChild(btn);
     }
 
+    // Отдельный фильтр «последние 30 дней» — работает для all/solo/team, не для сезонных зачётов.
+    const disabled = isSeasonMode(currentMode);
+    const label = document.createElement('label');
+    label.className = 'lb-30d-filter' + (disabled ? ' is-disabled' : '');
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.checked = last30d;
+    box.disabled = disabled;
+    box.addEventListener('change', () => {
+        last30d = box.checked;
+        void loadLeaderboard(currentMode);
+    });
+    const span = document.createElement('span');
+    span.textContent = t('leaderboard.filter_30d');
+    label.append(box, span);
+    switcher.appendChild(label);
+
     // Ставим переключатель наверх
     if (switcher.parentElement !== container) {
         container.prepend(switcher);
@@ -186,7 +206,7 @@ async function loadLeaderboard(mode: Mode = 'all'): Promise<void> {
 
     try {
         const res = await apiRequest<{ players: LeaderboardEntry[] }>(
-            `/api/ratings/leaderboard?mode=${mode}`
+            `/api/ratings/leaderboard?mode=${mode}${last30d && !isSeasonMode(mode) ? '&days=30' : ''}`
         );
         cachedLeaderboard = res.players;
         renderLeaderboard(applySort(cachedLeaderboard), container);

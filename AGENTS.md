@@ -8,6 +8,7 @@
 - Плохо: «Let me implement the sorting. But wait — the remove handler…», Хорошо: [сразу diff или код]
 - Отвечай по-русски и кратко: код, diff или пояснение в 1–2 предложения (лучше комментарием в коде).
 - НЕ запускай сборку/проверку (`npm run build`, typecheck) — пользователь сам запускает `npm run dev`.
+- Кратко и по делу комментируй код, чтобы было понимание контекста проекта 
 - SQL для Supabase выдавай текстом — пользователь выполняет сам.
 - **Изменение функции в Supabase → сначала `DROP FUNCTION`**, затем `CREATE OR REPLACE` (иначе `cannot change return type of existing function`); для табличных функций под PostgREST/RPC — возможно `DROP ... CASCADE`.
 - **Новая таблица Supabase → гранты `service_role`** (по умолчанию не выдаются):

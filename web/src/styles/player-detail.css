@@ -55,9 +55,10 @@
    ========================================= */
 .player-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   margin: 0 auto 24px;
   min-height: 48px;              /* ← резервируем высоту, чтобы не «прыгало» */
   transition: opacity 0.25s ease;
@@ -66,12 +67,21 @@
 .player-actions .btn-primary,
 .player-actions .btn-secondary,
 .player-actions .btn-danger {
-  padding: 12px 24px;
-  font-size: 0.95rem;
-  letter-spacing: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 42px;
+  min-width: 120px;
+  padding: 0 18px;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   font-family: var(--font-ui);
   font-weight: 600;
+  white-space: nowrap;
+  line-height: 1;
+  box-sizing: border-box;
 }
 
 /* =========================================
@@ -337,9 +347,10 @@
    ========================================= */
 .player-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   margin: 0 auto 24px;
   min-height: 48px;
   transition: opacity 0.25s ease;
@@ -348,12 +359,21 @@
 .player-actions .btn-primary,
 .player-actions .btn-secondary,
 .player-actions .btn-danger {
-  padding: 12px 24px;
-  font-size: 0.95rem;
-  letter-spacing: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 42px;
+  min-width: 120px;
+  padding: 0 18px;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   font-family: var(--font-ui);
   font-weight: 600;
+  white-space: nowrap;
+  line-height: 1;
+  box-sizing: border-box;
 }
 
 .player-ratings-pane {
@@ -416,4 +436,85 @@
 .player-mode-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* =========================================
+   Мобильная адаптация списков оценок:
+   скрываем шапку, строку превращаем в карточку,
+   статы выстраиваем многострочной сеткой
+   ========================================= */
+@media (max-width: 700px) {
+  .ratings-list table {
+    display: block;
+    overflow: hidden;
+  }
+
+  .ratings-list thead {
+    display: none;
+  }
+
+  .ratings-list tbody {
+    display: block;
+  }
+
+  .ratings-list tbody tr {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-glow);
+    border-radius: 4px;
+  }
+
+  .ratings-list tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .ratings-list tbody td {
+    display: block;
+    border-bottom: none;
+    padding: 0;
+    text-align: left;
+  }
+
+  /* Имя пользователя / игрока — заголовок карточки на всю ширину */
+  .ratings-list tbody tr td:first-child {
+    grid-column: 1 / -1;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-glow);
+    margin-bottom: 4px;
+    font-size: 1.05rem;
+    text-align: left;
+  }
+
+  .ratings-list tbody tr td:first-child .role-badge,
+  .ratings-list tbody tr td:first-child .rating-admin-delete {
+    vertical-align: middle;
+  }
+
+  .ratings-list tbody td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+
+  .ratings-list td .stat-value {
+    font-size: 1.1rem;
+  }
+
+  .ratings-list--given .rating-player-link {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
 }

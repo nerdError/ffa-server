@@ -162,6 +162,8 @@ export type TranslationKey =
     | 'auth.account_created_confirm'
     | 'auth.account_created'
     | 'auth.captcha_required'
+    | 'auth.email_note_title'
+    | 'auth.email_note_text'
 
     // Список игроков
     | 'players.title'
@@ -232,6 +234,7 @@ export type TranslationKey =
     | 'ratings.empty_anonymous'
     | 'ratings.empty'
     | 'ratings.col.user'
+    | 'ratings.link_to_player_title'
     | 'ratings.col.race'
     | 'ratings.given_title'
     | 'ratings.given_empty'
@@ -445,6 +448,7 @@ export type TranslationKey =
     | 'leaderboard.help_outro'
 
     | 'leaderboard.mode_all'
+    | 'leaderboard.filter_30d'
     | 'leaderboard.mode_solo'
     | 'leaderboard.mode_team'
     | 'leaderboard.mode_league_s3'

@@ -103,7 +103,7 @@
     </div>
 
     <header class="topbar">
-        <h1>SC2 FFA LEAGUE</h1>
+        <h1><a href="/" class="topbar-title-link">SC2 FFA LEAGUE</a></h1>
         <div class="topbar-right">
             <div class="lang-switch" id="lang-switch">
                 <button type="button" class="lang-btn" data-lang="ru">RU</button>
@@ -151,17 +151,24 @@
 
             <div class="card hidden" id="card-signup">
                 <h2 data-i18n="auth.signup_title">Регистрация</h2>
-                <form id="form-signup" class="form">
-                    <input type="text" name="username" data-i18n-placeholder="auth.username_placeholder"
-                        placeholder="Никнейм (3-32 символа)" required minlength="3" maxlength="32"
-                        pattern="[a-zA-Z0-9_.\-]+" />
-                    <input type="email" name="email" data-i18n-placeholder="auth.email_placeholder" placeholder="Email"
-                        required />
-                    <input type="password" name="password" data-i18n-placeholder="auth.password_placeholder_signup"
-                        placeholder="Пароль (мин. 6)" required minlength="6" />
-                    <div id="captcha-container" class="captcha-container"></div>
-                    <button type="submit" data-i18n="auth.signup_title">Создать аккаунт</button>
-                </form>
+                <div class="signup-body">
+                    <form id="form-signup" class="form">
+                        <input type="text" name="username" data-i18n-placeholder="auth.username_placeholder"
+                            placeholder="Никнейм (3-32 символа)" required minlength="3" maxlength="32"
+                            pattern="[a-zA-Z0-9_.\-]+" />
+                        <input type="email" name="email" data-i18n-placeholder="auth.email_placeholder" placeholder="Email"
+                            required />
+                        <input type="password" name="password" data-i18n-placeholder="auth.password_placeholder_signup"
+                            placeholder="Пароль (мин. 6)" required minlength="6" />
+                        <div id="captcha-container" class="captcha-container"></div>
+                        <button type="submit" data-i18n="auth.signup_title">Создать аккаунт</button>
+                    </form>
+                    <aside class="email-note">
+                        <p class="email-note-title" data-i18n="auth.email_note_title">Совет по почте</p>
+                        <p class="email-note-text" data-i18n="auth.email_note_text">Письма для подтверждения могут не
+                            доходить на российские почтовые сервисы. Рекомендуем зарубежную почту — например, Gmail.</p>
+                    </aside>
+                </div>
                 <p class="hint">
                     <span data-i18n="auth.have_account">Уже есть аккаунт?</span>
                     <a href="#" id="link-to-login" data-i18n="auth.login_link">Войти</a>

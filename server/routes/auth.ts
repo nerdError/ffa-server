@@ -66,12 +66,6 @@ authRouter.get('/captcha-config', (_req, res) => {
 authRouter.post('/signup', signupLimiter, async (req, res) => {
   const { email, password, username, captchaToken } = req.body ?? {};
 
-  // CAPTCHA (если включена)
-  const captcha = await verifyCaptcha(captchaToken);
-  if (!captcha.ok) {
-    return res.status(400).json({ error: captcha.error });
-  }
-
   if (typeof email !== 'string' || typeof password !== 'string') {
     return res.status(400).json({ error: 'email and password are required' });
   }
@@ -102,6 +96,13 @@ authRouter.post('/signup', signupLimiter, async (req, res) => {
 
   if (existing) {
     return res.status(409).json({ error: 'username is already taken' });
+  }
+
+  // CAPTCHA (если включена). Проверяем в самом конце, чтобы не сжигать
+  // одноразовый Turnstile-токен на предотвратимых ошибках валидации выше.
+  const captcha = await verifyCaptcha(captchaToken);
+  if (!captcha.ok) {
+    return res.status(400).json({ error: captcha.error });
   }
 
   const { data, error } = await supabase.auth.signUp({

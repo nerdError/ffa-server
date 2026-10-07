@@ -6,6 +6,7 @@ export const leaderboardRouter = Router();
 // GET /api/ratings/leaderboard
 leaderboardRouter.get('/', async (req, res) => {
   const mode = (req.query.mode as string) || 'all';
+  const days = req.query.days ? Number(req.query.days) : null;
 
   const client = anonClient();
 
@@ -26,7 +27,10 @@ leaderboardRouter.get('/', async (req, res) => {
   }
 
   const validMode = ['all', 'solo', 'team'].includes(mode) ? mode : 'all';
-  const { data, error } = await client.rpc('get_leaderboard', { p_mode: validMode });
+  const { data, error } = await client.rpc('get_leaderboard', {
+    p_mode: validMode,
+    p_days: Number.isFinite(days) && days !== null ? days : null,
+  });
 
   if (error) {
     console.error('[leaderboard] error:', error);

@@ -132,6 +132,8 @@ export const ru: Record<TranslationKey, string> = {
     'auth.account_created_confirm': 'Аккаунт создан. Проверьте почту, чтобы подтвердить email, затем войдите.',
     'auth.account_created': 'Аккаунт создан',
     'auth.captcha_required': 'Пожалуйста, подтвердите, что вы не робот',
+    'auth.email_note_title': 'Совет по почте',
+    'auth.email_note_text': 'Письма для подтверждения могут не доходить на российские почтовые сервисы (Mail.ru, Yandex и т.п.). Рекомендуем регистрироваться на зарубежную почту — например, Gmail.',
 
     // Список игроков
     'players.title': 'Игроки',
@@ -233,6 +235,7 @@ export const ru: Record<TranslationKey, string> = {
     'ratings.empty_anonymous': 'Войдите, чтобы увидеть, кто и как оценил игрока.',
     'ratings.empty': 'Пока никто не оценил этого игрока.',
     'ratings.col.user': 'Пользователь',
+    'ratings.link_to_player_title': 'Перейти к игроку',
     'ratings.col.race': 'Раса',
     'ratings.given_title': 'Оценки, поставленные игроком',
     'ratings.given_empty': 'Игрок пока никого не оценил.',
@@ -477,6 +480,7 @@ export const ru: Record<TranslationKey, string> = {
     'leaderboard.help_outro': 'Проигрывать — не страшно. Главное — играть.',
 
     'leaderboard.mode_all': 'Все',
+    'leaderboard.filter_30d': 'Последние 30 дней',
     'leaderboard.mode_solo': 'FFA',
     'leaderboard.mode_team': 'Командные FFA',
     'leaderboard.mode_league_s3': 'FFA Лига (3 сезон)',

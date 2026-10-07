@@ -2,11 +2,13 @@ import { bindAuth } from '../ui/auth';
 import { renderUserBox } from '../app';
 import { navigateTo } from '../router';
 
+let cleanupAuth: (() => void) | null = null;
+
 export function mountAuth(_params: URLSearchParams): void {
   const screen = document.getElementById('screen-auth');
   if (screen) screen.classList.remove('hidden');
 
-  bindAuth({
+  cleanupAuth = bindAuth({
     renderUserBox,
     onLoginSuccess: () => {
       // Проверяем, был ли redirect (например, с /control или /admin)
@@ -23,7 +25,8 @@ export function mountAuth(_params: URLSearchParams): void {
 }
 
 export function unmountAuth(): void {
-  // Обработчики снимаются автоматически, потому что bindAuth использует
-  // addEventListener без долгоживущих эффектов. При следующем монтировании
-  // auth.ts всё равно перезагружается и заново вешает обработчики.
+  // Снимаем обработчики, чтобы при повторном заходе на /auth не копились
+  // дублирующиеся слушатели (иначе один сабмит шлёт несколько запросов).
+  cleanupAuth?.();
+  cleanupAuth = null;
 }

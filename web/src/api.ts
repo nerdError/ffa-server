@@ -164,7 +164,17 @@ async function refreshAccessToken(): Promise<string | null> {
             const data = await res.json();
             if (data.access_token && data.user) {
                 saveSession(
-                    { id: data.user.id, email: data.user.email },
+                    {
+                        id: data.user.id,
+                        email: data.user.email,
+                        username: state.user?.username ?? data.user.username ?? null,
+                        is_moderator: state.user?.is_moderator ?? false,
+                        is_admin: state.user?.is_admin ?? false,
+                        is_ghost: state.user?.is_ghost ?? false,
+                        can_rate: state.user?.can_rate ?? true,
+                        player_id: state.user?.player_id ?? null,
+                        player_name: state.user?.player_name ?? null,
+                    },
                     data.access_token,
                     data.refresh_token
                 );

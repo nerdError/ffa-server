@@ -40,6 +40,8 @@ export async function ensureRolesLoaded(): Promise<void> {
           is_admin: boolean;
           is_ghost: boolean;
           can_rate: boolean;
+          player_id: number | null;
+          player_name: string | null;
         };
       }>('/api/auth/me', { token: state.token });
 
@@ -52,6 +54,8 @@ export async function ensureRolesLoaded(): Promise<void> {
           is_admin: me.user.is_admin,
           is_ghost: me.user.is_ghost,
           can_rate: me.user.can_rate,
+          player_id: me.user.player_id ?? null,
+          player_name: me.user.player_name ?? null,
         },
         state.token!,
       );

@@ -1,6 +1,7 @@
 import { apiRequest, ApiRequestError } from '../api';
 import { STAT_ORDER } from '../radar';
 import { state } from '../state';
+import { navigateTo } from '../router';
 import {
     RACES,
     type GivenRating,
@@ -488,6 +489,7 @@ export async function renderGivenRatingsList(
         tr.appendChild(tdPlayer);
 
         const tdRace = document.createElement('td');
+        tdRace.dataset.label = t('ratings.col.race');
         const raceBadge = document.createElement('span');
         raceBadge.className = `race-badge race-${r.race}`;
         raceBadge.textContent = r.race;
@@ -496,6 +498,7 @@ export async function renderGivenRatingsList(
 
         for (const axis of STAT_ORDER) {
             const td = document.createElement('td');
+            td.dataset.label = axis.getStr();
             const span = document.createElement('span');
             span.className = 'stat-value';
             span.textContent = String(Number(r[axis.key]));
@@ -595,7 +598,20 @@ export async function renderRatingsList(
             const tdUser = document.createElement('td');
             const userWrap = document.createElement('span');
             userWrap.className = 'rating-user-cell';
-            userWrap.textContent = r.username;
+            if (r.rater_player_name) {
+                const link = document.createElement('a');
+                link.className = 'player-name-link';
+                link.href = `/?player=${encodeURIComponent(r.rater_player_name)}`;
+                link.textContent = r.username;
+                link.title = t('ratings.link_to_player_title');
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    navigateTo(`/?player=${encodeURIComponent(r.rater_player_name)}`);
+                });
+                userWrap.appendChild(link);
+            } else {
+                userWrap.textContent = r.username;
+            }
 
             if (r.is_admin) {
                 const badge = document.createElement('span');
@@ -631,6 +647,7 @@ export async function renderRatingsList(
             tr.appendChild(tdUser);
 
             const tdRace = document.createElement('td');
+            tdRace.dataset.label = t('ratings.col.race');
             const badge = document.createElement('span');
             badge.className = `race-badge race-${r.race}`;
             badge.textContent = r.race;
@@ -639,6 +656,7 @@ export async function renderRatingsList(
 
             for (const axis of STAT_ORDER) {
                 const td = document.createElement('td');
+                td.dataset.label = axis.getStr();
                 const value = r[axis.key];
                 const span = document.createElement('span');
                 span.className = 'stat-value';

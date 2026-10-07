@@ -73,6 +73,8 @@ export interface Rating {
     id: number;
     user_id: string;
     username: string;
+    rater_player_id?: number | null;
+    rater_player_name?: string | null;
     is_moderator: boolean;
     is_admin: boolean;
     is_ghost: boolean;

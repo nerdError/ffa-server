@@ -28,6 +28,18 @@
     min-width: 0;
 }
 
+.topbar-title-link {
+    color: inherit;
+    text-decoration: none;
+    outline: none;
+    transition: color 0.15s, text-shadow 0.15s;
+}
+
+.topbar-title-link:hover {
+    color: var(--gold);
+    text-shadow: 0 0 12px rgba(241, 196, 15, 0.5);
+}
+
 /* =========================================
    Правая часть шапки: переключатель языка + user-box
    ========================================= */
@@ -270,11 +282,12 @@ main {
     }
 
     .topbar h1 {
-        font-size: 1.15rem;
-        letter-spacing: 1.5px;
+        font-size: 1.35rem;
+        letter-spacing: 2px;
         text-align: center;
         width: 100%;
         margin: 0;
+        padding: 4px 0;
         white-space: normal;
         line-height: 1.2;
         overflow: visible;
@@ -302,22 +315,39 @@ main {
         min-width: 0;
     }
 
-    /* Иконки действий — крупные, удобные для тапа */
+    /* Действия в шапке — кнопки с текстом, одинакового размера, без переноса */
     .user-box .topbar-link {
-        font-size: 1.3rem;
-        padding: 12px 14px;
-        flex: 1 1 auto;
-        min-width: 44px;
+        display: inline-flex;
+        align-items: center;
         justify-content: center;
+        gap: 6px;
+        font-size: 0.78rem;
+        padding: 10px 14px;
+        flex: 1 1 0;
+        min-width: 44px;
     }
 
     .user-box .btn-label {
-        display: none;
+        display: inline;
     }
 
-    /* «Выйти» — обычная кнопка, не на всю ширину */
+    /* «Мой профиль» — отдельной строкой на всю ширину */
+    .user-box .topbar-link--profile {
+        order: 1;
+        flex: 1 1 100%;
+    }
+
+    /* «Режим стримера» и «Админ» — рядом */
+    .user-box .topbar-link--admin,
+    .user-box .topbar-link:not(.topbar-link--profile):not(.topbar-link--admin) {
+        order: 2;
+        flex: 1 1 0;
+    }
+
+    /* «Выйти» — обычная кнопка в той же строке */
     .user-box>.btn-secondary {
-        flex: 0 1 auto;
+        order: 3;
+        flex: 1 1 0;
         padding: 12px 20px;
         font-size: 0.85rem;
     }

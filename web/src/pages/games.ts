@@ -1910,6 +1910,14 @@ function emptyTeamSlot(team: number): GamePlayerDraft {
 
 /** Очищает слот от игрока, но сам слот (команду) сохраняет. */
 function clearDraftPlayer(draft: GamePlayerDraft): void {
+    // В командном режиме победа ставится на всю команду: если очищаем слот
+    // победителя, снимаем победителя со всей команды (как uncheck чекбокса),
+    // чтобы пустой слот не оставался победителем.
+    if (isTeamMode() && draft.is_winner && draft.team !== null) {
+        for (const d of drafts) {
+            if (d.team === draft.team) d.is_winner = false;
+        }
+    }
     draft.player_id = null;
     draft.raw_name = undefined;
     draft.race = 'T';

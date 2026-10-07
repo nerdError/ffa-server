@@ -121,18 +121,20 @@ async function fetchAndSaveFullUser(
     }
 }
 
-export function bindAuth(cb: AuthCallbacks): void {
+export function bindAuth(cb: AuthCallbacks): () => void {
     const formLogin = document.getElementById('form-login') as HTMLFormElement | null;
     const formSignup = document.getElementById('form-signup') as HTMLFormElement | null;
     const cardSignup = document.getElementById('card-signup');
     const screenAuth = document.getElementById('screen-auth');
-    if (!formLogin || !formSignup || !cardSignup || !screenAuth) return;
+    if (!formLogin || !formSignup || !cardSignup || !screenAuth) return () => {};
 
     const loginCard = screenAuth.querySelector('.card');
-    if (!loginCard) return;
+    if (!loginCard) return () => {};
+
+    const cleanup: Array<() => void> = [];
 
     // Ссылки переключения форм
-    document.getElementById('link-to-signup')?.addEventListener('click', (e) => {
+    const onSwitchToSignup = (e: Event) => {
         e.preventDefault();
         loginCard.classList.add('hidden');
         cardSignup.classList.remove('hidden');
@@ -140,33 +142,40 @@ export function bindAuth(cb: AuthCallbacks): void {
         // Инициализируем CAPTCHA, когда карточка регистрации видна.
         const captchaContainer = document.getElementById('captcha-container');
         if (captchaContainer) initCaptcha(captchaContainer);
-    });
+    };
+    document.getElementById('link-to-signup')?.addEventListener('click', onSwitchToSignup);
+    cleanup.push(() => document.getElementById('link-to-signup')?.removeEventListener('click', onSwitchToSignup));
 
-    document.getElementById('link-to-login')?.addEventListener('click', (e) => {
+    const onSwitchToLogin = (e: Event) => {
         e.preventDefault();
         cardSignup.classList.add('hidden');
         loginCard.classList.remove('hidden');
-    });
+    };
+    document.getElementById('link-to-login')?.addEventListener('click', onSwitchToLogin);
+    cleanup.push(() => document.getElementById('link-to-login')?.removeEventListener('click', onSwitchToLogin));
 
     // ============================================================
     // Логин
     // ============================================================
-    formLogin.addEventListener('submit', async (e) => {
+    let loginSubmitting = false;
+    const onLoginSubmit = async (e: Event) => {
         e.preventDefault();
-        const fd = new FormData(formLogin);
-        const identifier = String(fd.get('identifier') ?? '').trim();
-        const password = String(fd.get('password') ?? '');
-
-        if (!identifier) {
-            alert(t('auth.error_identifier_required'));
-            return;
-        }
-        if (!password) {
-            alert(t('auth.error_password_required'));
-            return;
-        }
-
+        if (loginSubmitting) return;
+        loginSubmitting = true;
         try {
+            const fd = new FormData(formLogin);
+            const identifier = String(fd.get('identifier') ?? '').trim();
+            const password = String(fd.get('password') ?? '');
+
+            if (!identifier) {
+                alert(t('auth.error_identifier_required'));
+                return;
+            }
+            if (!password) {
+                alert(t('auth.error_password_required'));
+                return;
+            }
+
             const res = await apiRequest<LoginResponse>('/api/auth/login', {
                 method: 'POST',
                 body: { identifier, password },
@@ -183,44 +192,55 @@ export function bindAuth(cb: AuthCallbacks): void {
             cb.onLoginSuccess();
         } catch (err) {
             alert(t('auth.error_login') + (err instanceof Error ? err.message : String(err)));
+        } finally {
+            loginSubmitting = false;
         }
-    });
+    };
+    formLogin.addEventListener('submit', onLoginSubmit);
+    cleanup.push(() => formLogin.removeEventListener('submit', onLoginSubmit));
 
     // ============================================================
     // Регистрация
     // ============================================================
-    formSignup.addEventListener('submit', async (e) => {
+    let signupSubmitting = false;
+    const onSignupSubmit = async (e: Event) => {
         e.preventDefault();
-        const fd = new FormData(formSignup);
+        if (signupSubmitting) return;
+        signupSubmitting = true;
+        try {
+            const fd = new FormData(formSignup);
 
-        const username = String(fd.get('username') ?? '').trim();
-        const email = String(fd.get('email') ?? '').trim();
-        const password = String(fd.get('password') ?? '');
+            const username = String(fd.get('username') ?? '').trim();
+            const email = String(fd.get('email') ?? '').trim();
+            const password = String(fd.get('password') ?? '');
 
-        // Клиентская валидация
-        if (username.length < 3) {
-            alert(t('auth.error_username_short'));
-            return;
-        }
-        if (!email.includes('@')) {
-            alert(t('auth.error_email_invalid'));
-            return;
-        }
-        if (password.length < 6) {
-            alert(t('auth.error_password_short'));
-            return;
-        }
-
-        // CAPTCHA: если включена — токен обязателен.
-        if (captchaEnabled) {
-            const token = getCaptchaToken();
-            if (!token) {
-                alert(t('auth.captcha_required'));
+            // Клиентская валидация
+            if (username.length < 3) {
+                alert(t('auth.error_username_short'));
                 return;
             }
-        }
+            if (!email.includes('@')) {
+                alert(t('auth.error_email_invalid'));
+                return;
+            }
+            if (password.length < 6) {
+                alert(t('auth.error_password_short'));
+                return;
+            }
 
-        try {
+            // Дожидаемся инициализации CAPTCHA, чтобы captchaEnabled был финальным.
+            if (captchaInitPromise) await captchaInitPromise;
+
+            // CAPTCHA: если включена — токен обязателен.
+            if (captchaEnabled) {
+                const token = getCaptchaToken();
+                if (!token) {
+                    resetCaptcha();
+                    alert(t('auth.captcha_required'));
+                    return;
+                }
+            }
+
             const res = await apiRequest<SignupResponse>('/api/auth/signup', {
                 method: 'POST',
                 body: { username, email, password, captchaToken: getCaptchaToken() },
@@ -243,6 +263,15 @@ export function bindAuth(cb: AuthCallbacks): void {
         } catch (err) {
             resetCaptcha();
             alert(t('auth.error_signup') + (err instanceof Error ? err.message : String(err)));
+        } finally {
+            signupSubmitting = false;
         }
-    });
+    };
+    formSignup.addEventListener('submit', onSignupSubmit);
+    cleanup.push(() => formSignup.removeEventListener('submit', onSignupSubmit));
+
+    return () => {
+        cleanup.forEach((fn) => fn());
+        resetCaptcha();
+    };
 }
