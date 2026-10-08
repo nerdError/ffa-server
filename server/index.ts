@@ -17,6 +17,7 @@ import { adminRouter } from './routes/admin';
 import { gameRefsRouter } from './routes/game-refs';
 import { gamesRouter } from './routes/games';
 import { leaderboardRouter } from './routes/leaderboard';
+import { titlesRouter } from './routes/titles';
 
 const execFileAsync = promisify(execFile);
 
@@ -124,6 +125,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/game-refs', gameRefsRouter);   // ← НОВОЕ
 app.use('/api/games', gamesRouter);   // ← НОВОЕ
 app.use('/api/ratings/leaderboard', leaderboardRouter);
+app.use('/api/titles', titlesRouter);
 
 // Health-check
 app.get('/api/health', (_req, res) => {

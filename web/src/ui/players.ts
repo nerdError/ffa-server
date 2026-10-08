@@ -39,16 +39,17 @@ const RACE_LABELS: Record<Race, string> = {
 };
 
 type SortDirection = 'asc' | 'desc';
-type SortKey = 'name' | 'total' | 'races' | 'elo' | StatKey;
+type SortKey = 'name' | 'total' | 'races' | 'elo' | 'activity' | StatKey;
 
-let sortKey: SortKey = 'name';
-let sortDirection: SortDirection = 'asc';
+let sortKey: SortKey = 'activity';
+let sortDirection: SortDirection = 'desc';
 
 /**
  * Ключи сортировки, доступные в режиме «карточки» — те же, что и колонки
  * таблицы (совпадают с th[data-sort-key]).
  */
 const WALL_SORT_KEYS: SortKey[] = [
+    'activity',
     'name',
     'races',
     'adaptiveness',
@@ -64,6 +65,7 @@ function sortKeyLabel(key: SortKey): string {
     if (key === 'races') return t('players.col.races');
     if (key === 'total') return t('players.col.total');
     if (key === 'elo') return t('players.col.elo');
+    if (key === 'activity') return t('players.col.activity');
     return t(`stat.${key}` as TranslationKey);
 }
 
@@ -115,7 +117,7 @@ export async function loadPlayers(cb: PlayersCallbacks): Promise<void> {
     if (!tbody || !errBox) return;
 
     errBox.classList.add('hidden');
-    tbody.innerHTML = `<tr><td colspan="8">${t("common.loading")}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9">${t("common.loading")}</td></tr>`;
 
     const searchInput = document.getElementById('players-search') as HTMLInputElement | null;
 
@@ -195,7 +197,7 @@ function renderPlayersTable(
 
     if (filtered.length === 0) {
         tbody.innerHTML =
-            `<tr><td colspan="8" class="hint">${t("players.no_players")}.</td></tr>`;
+            `<tr><td colspan="9" class="hint">${t("players.no_players")}.</td></tr>`;
         return;
     }
 
@@ -241,6 +243,12 @@ function renderPlayersTable(
         const tdRaces = fmtRaceCells(p.races);
         tdRaces.classList.add('col-mobile-hide');
         tr.appendChild(tdRaces);
+
+        // Активность
+        const tdActivity = document.createElement('td');
+        tdActivity.className = 'col-desktop activity-cell';
+        tdActivity.textContent = p.activity_score > 0 ? p.activity_score.toFixed(1) : '—';
+        tr.appendChild(tdActivity);
 
         // Статы — в порядке STAT_ORDER
         for (const axis of STAT_ORDER) {
@@ -384,6 +392,7 @@ function getSortValue(p: PlayerWithStats, key: SimpleSortKey): string | number |
     if (key === 'name') return p.name.toLowerCase();
     if (key === 'total') return calcTotal(p);
     if (key === 'elo') return p.elo;
+    if (key === 'activity') return p.activity_score;
     return p[key];
 }
 

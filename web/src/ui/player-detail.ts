@@ -117,6 +117,7 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
     const actions = document.getElementById('player-actions');
     const ratingsContainer = document.getElementById('ratings-list-container');
     const givenRatingsContainer = document.getElementById('given-ratings-container');
+    const hostContainer = document.getElementById('player-host-container');
 
     if (!pane || !editPane || !actions || !ratingsContainer || !givenRatingsContainer) return;
 
@@ -133,6 +134,7 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
     <div class="skeleton skeleton-block"></div>
   `;
     givenRatingsContainer.innerHTML = '';
+    if (hostContainer) hostContainer.innerHTML = '';
 
     try {
         const { player } = await apiRequest<PlayerResponse>(
@@ -453,6 +455,7 @@ export async function loadPlayerDetail(playerId: number): Promise<void> {
         // Первичный рендер
         // ============================================================
         renderActions();
+        await renderPlayerHost(playerId);   // панель ведущего (если игрок — стример)
         await renderPlayerGames(playerId);   // ← НОВОЕ
         const reload = (): void => void loadPlayerDetail(playerId);
         await renderRatingsList(playerId, reload);
@@ -643,6 +646,144 @@ import type { PlayerGameStats, RaceStat, GameListItem, GamesListResponse } from 
 import { navigateTo } from '../router';
 
 // ============================================================
+// Секция «Ведущий игр» (стример)
+// ============================================================
+interface HostTopItem {
+    name: string;
+    count: number;
+}
+
+interface PlayerHostResponse {
+    host: { id: number; name: string; aka: string | null } | null;
+    stats: {
+        total_games: number;
+        total_players: number;
+        avg_players: number;
+        last_played_at: string | null;
+        top_maps: HostTopItem[];
+        top_mods: HostTopItem[];
+        top_players: HostTopItem[];
+    };
+}
+
+async function renderPlayerHost(playerId: number): Promise<void> {
+    const container = document.getElementById('player-host-container');
+    if (!container) return;
+
+    let res: PlayerHostResponse;
+    try {
+        res = await apiRequest<PlayerHostResponse>(`/api/players/${playerId}/host-stats`);
+    } catch {
+        container.innerHTML = `<p class="hint">${t('player.host_load_error')}</p>`;
+        return;
+    }
+
+    // Игрок не привязан к ведущему — панель не показываем
+    if (!res.host) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = '';
+    const card = document.createElement('div');
+    card.className = 'card player-host-card';
+
+    // Заголовок
+    const header = document.createElement('div');
+    header.className = 'player-games-header';
+
+    const title = document.createElement('h3');
+    title.textContent = `🎙 ${res.host.name} · ${t('player.host_title')}`;
+
+    const allLink = document.createElement('a');
+    allLink.href = `/games?host=${res.host.id}`;
+    allLink.className = 'player-games-all-link';
+    allLink.textContent = t('player.games_all') + ' →';
+
+    header.append(title, allLink);
+    card.appendChild(header);
+
+    const s = res.stats;
+
+    if (s.total_games === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'hint';
+        empty.textContent = t('player.host_games_empty');
+        card.appendChild(empty);
+        container.appendChild(card);
+        return;
+    }
+
+    // Сводка
+    const summary = document.createElement('div');
+    summary.className = 'player-games-summary';
+
+    summary.appendChild(buildStatBlock(t('player.host_games_total'), String(s.total_games)));
+    summary.appendChild(buildStatBlock(t('player.host_total_players'), String(s.total_players)));
+    summary.appendChild(buildStatBlock(t('player.host_avg_players'), String(s.avg_players)));
+
+    if (s.last_played_at) {
+        const d = new Date(s.last_played_at);
+        const date = d.toLocaleDateString(getLocale() === 'ru' ? 'ru-RU' : 'en-US', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+        });
+        summary.appendChild(buildStatBlock(t('player.host_last_game'), date));
+    }
+
+    card.appendChild(summary);
+
+    // Топ-5: карты, моды, игроки
+    const tops = document.createElement('div');
+    tops.className = 'player-host-tops';
+    tops.appendChild(buildTopList(t('player.host_top_maps'), s.top_maps));
+    tops.appendChild(buildTopList(t('player.host_top_mods'), s.top_mods));
+    tops.appendChild(buildTopList(t('player.host_top_players'), s.top_players));
+    card.appendChild(tops);
+
+    container.appendChild(card);
+}
+
+/** Секция «Топ-5»: столбик из имён с количеством появлений. */
+function buildTopList(title: string, items: HostTopItem[]): HTMLElement {
+    const section = document.createElement('div');
+    section.className = 'player-host-top';
+
+    const heading = document.createElement('h4');
+    heading.className = 'player-host-top-title';
+    heading.textContent = title;
+    section.appendChild(heading);
+
+    const list = document.createElement('div');
+    list.className = 'player-host-top-list';
+
+    if (items.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'hint';
+        empty.textContent = '—';
+        list.appendChild(empty);
+    } else {
+        for (const item of items) {
+            const row = document.createElement('div');
+            row.className = 'player-host-top-row';
+
+            const name = document.createElement('span');
+            name.className = 'player-host-top-name';
+            name.textContent = item.name;
+
+            const count = document.createElement('span');
+            count.className = 'player-host-top-count';
+            count.textContent = `${item.count} ×`;
+
+            row.append(name, count);
+            list.appendChild(row);
+        }
+    }
+
+    section.appendChild(list);
+    return section;
+}
+
+// ============================================================
 // Секция «Игры игрока»
 // ============================================================
 async function renderPlayerGames(playerId: number): Promise<void> {
@@ -654,7 +795,7 @@ async function renderPlayerGames(playerId: number): Promise<void> {
     try {
         const [statsRes, gamesRes] = await Promise.all([
             apiRequest<{ stats: PlayerGameStats }>(`/api/players/${playerId}/game-stats`),
-            apiRequest<GamesListResponse>(`/api/games?player_id=${playerId}&limit=10`),
+            apiRequest<GamesListResponse>(`/api/games?player_id=${playerId}`),
         ]);
 
         const stats = statsRes.stats;

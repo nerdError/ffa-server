@@ -271,6 +271,17 @@
   color: var(--gold);
 }
 
+.admin-role-btn--impersonate:hover {
+  border-color: #4cd964;
+  color: #4cd964;
+}
+
+.admin-role-btn--impersonate.is-active {
+  background: rgba(76, 217, 100, 0.12);
+  border-color: #4cd964;
+  color: #4cd964;
+}
+
 /* =========================================
    Таблица игроков
    ========================================= */
@@ -849,4 +860,110 @@
 
 .admin-ref-btn--restore {
   color: #2ecc71;
+}
+
+/* =========================================
+   Титулы (админ-панель)
+   ========================================= */
+.admin-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-title-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px;
+  background: #11151c;
+  border: 1px solid var(--border-glow);
+  border-radius: 3px;
+}
+
+.title-swatches {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.title-swatch {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 2px solid #2a3a4a;
+  border-radius: 4px;
+  background: var(--swatch);
+  cursor: pointer;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--swatch) 45%, transparent);
+  transition: transform 0.1s;
+}
+
+.title-swatch:hover {
+  transform: scale(1.1);
+}
+
+.title-swatch.is-active {
+  border-color: #fff;
+  box-shadow: 0 0 10px var(--swatch);
+}
+
+.title-players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.title-player-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-glow);
+  border-radius: 3px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.title-player-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.title-player-remove:hover {
+  color: #e74c3c;
+}
+
+.title-add-player {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.title-add-player select {
+  max-width: 260px;
+}
+
+.title-size-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.title-size-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+.title-size-row select {
+  max-width: 200px;
 }

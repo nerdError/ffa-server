@@ -331,22 +331,22 @@ main {
         display: inline;
     }
 
-    /* «Мой профиль» — отдельной строкой на всю ширину */
-    .user-box .topbar-link--profile {
+    /* «Мой профиль» и «Режим стримера» — верхний ряд */
+    .user-box .topbar-link--profile,
+    .user-box .topbar-link:not(.topbar-link--profile):not(.topbar-link--admin) {
         order: 1;
-        flex: 1 1 100%;
+        flex: 1 1 0;
     }
 
-    /* «Режим стримера» и «Админ» — рядом */
-    .user-box .topbar-link--admin,
-    .user-box .topbar-link:not(.topbar-link--profile):not(.topbar-link--admin) {
+    /* «Админ» — нижний ряд вместе с «Выйти» */
+    .user-box .topbar-link--admin {
         order: 2;
         flex: 1 1 0;
     }
 
-    /* «Выйти» — обычная кнопка в той же строке */
+    /* «Выйти» — та же нижняя строка (2 сверху / 2 снизу у админа) */
     .user-box>.btn-secondary {
-        order: 3;
+        order: 2;
         flex: 1 1 0;
         padding: 12px 20px;
         font-size: 0.85rem;

@@ -210,6 +210,7 @@
                             <th data-sort-key="name" data-i18n="players.col.name">Игрок</th>
                             <!-- <th data-sort-key="elo" data-i18n="players.col.elo">Elo</th> -->
                             <th data-sort-key="races" data-i18n="players.col.races" class="col-mobile-hide">Расы</th>
+                            <th class="col-desktop" data-sort-key="activity" data-i18n="players.col.activity">Активность</th>
                             <th class="col-desktop" data-sort-key="adaptiveness" data-i18n="stat.adaptiveness">
                                 Адаптивность</th>
                             <th class="col-desktop" data-sort-key="aggression" data-i18n="stat.aggression">Агрессия</th>
@@ -251,6 +252,8 @@
             </div>
 
             <div class="player-actions" id="player-actions"></div>
+
+            <div id="player-host-container" class="player-host-pane"></div>
 
             <div id="player-games-container" class="player-games-pane"></div>
 
@@ -464,6 +467,17 @@
                         </button>
                     </div>
                     <div id="admin-mods" class="admin-refs-list"></div>
+                </section>
+
+                <section class="admin-section">
+                    <div class="admin-section-header">
+                        <h2 data-i18n="admin.titles_title">Титулы</h2>
+                        <button type="button" id="btn-add-title" class="btn-primary" data-i18n="admin.add_title">
+                            + Добавить титул
+                        </button>
+                    </div>
+                    <p class="hint" data-i18n="admin.titles_hint">Титул показывается в карточке игрока справа сверху и в оверлее.</p>
+                    <div id="admin-titles" class="admin-titles"></div>
                 </section>
 
                 <section class="admin-section">

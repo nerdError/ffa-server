@@ -99,6 +99,23 @@ export function buildPlayerCardElement(
     titleBlock.append(nameEl, raceEl);
     header.appendChild(titleBlock);
 
+    // Титулы — справа сверху. Сортируем по длине (самый длинный сверху).
+    const titles = (player.titles ?? [])
+        .slice()
+        .sort((a, b) => b.name.length - a.name.length);
+    if (titles.length > 0) {
+        const titlesEl = document.createElement('div');
+        titlesEl.className = 'pc-titles';
+        for (const title of titles) {
+            const badge = document.createElement('span');
+            badge.className = `pc-title pc-title--${title.size ?? 'small'}`;
+            badge.style.setProperty('--title-color', title.color);
+            badge.textContent = title.name;
+            titlesEl.appendChild(badge);
+        }
+        header.appendChild(titlesEl);
+    }
+
     card.appendChild(header);
 
     // ============================================================

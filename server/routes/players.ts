@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import { anonClient, authenticate } from '../../lib/auth.js';
 import { logAction } from '../../lib/action-log.js';
+import { supabaseAdmin } from '../../lib/supabase-admin.js';
 import { getPlayerWithStatsMode, type StatsMode } from '../player-stats.js';
+import { attachTitles } from '../../lib/titles.js';
 
 export const playersRouter = Router();
 
@@ -125,7 +127,9 @@ playersRouter.get('/:id', async (req, res) => {
   if (!data || data.length === 0) {
     return res.status(404).json({ error: 'Player not found' });
   }
-  return res.status(200).json({ player: data[0] });
+  const player = data[0];
+  await attachTitles([player]);
+  return res.status(200).json({ player });
 });
 
 // DELETE /api/players/:id — только модераторы (RLS проверит)
@@ -277,6 +281,96 @@ playersRouter.patch('/:id/name', async (req, res) => {
   });
 
   res.json({ ok: true, player: data });
+});
+
+// ============================================================
+// GET /api/players/:id/host-stats
+// Статистика ведущего: если игрок привязан к ведущему (game_hosts.player_id),
+// отдаём данные о проведённых им играх. Иначе { host: null }.
+// ============================================================
+playersRouter.get('/:id/host-stats', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid player id' });
+  }
+
+  // Ищем ведущего, привязанного к этому игроку
+  const { data: hosts, error: hostsError } = await supabaseAdmin
+    .from('game_hosts')
+    .select('id, name, aka')
+    .eq('player_id', id)
+    .limit(1);
+  if (hostsError) {
+    console.error('[players/host-stats] hosts error:', hostsError);
+    return res.status(500).json({ error: 'DB error' });
+  }
+  const host = hosts?.[0] ?? null;
+  if (!host) return res.json({ host: null });
+
+  const { data: games, error: gamesError } = await supabaseAdmin
+    .from('games')
+    .select('id, played_at, game_formats(name), game_maps(name), game_mods(name), game_players(player_id, players(name))')
+    .eq('host_id', host.id)
+    .order('played_at', { ascending: false })
+    .limit(100);
+  if (gamesError) {
+    console.error('[players/host-stats] games error:', gamesError);
+    return res.status(500).json({ error: 'DB error' });
+  }
+
+  const hosted = (games ?? []).map((g: any) => ({
+    id: g.id,
+    played_at: g.played_at,
+    format_name: g.game_formats?.name ?? null,
+    map_name: g.game_maps?.name ?? null,
+    mod_name: g.game_mods?.name ?? null,
+    player_names: (g.game_players ?? [])
+      .map((p: any) => p.players?.name ?? null)
+      .filter((n: unknown): n is string => typeof n === 'string'),
+  }));
+
+  const totalGames = hosted.length;
+  const totalPlayers = hosted.reduce((sum, g) => sum + g.player_names.length, 0);
+  const avgPlayers = totalGames ? Math.round((totalPlayers / totalGames) * 10) / 10 : 0;
+
+  // Топ-5 карт/модов по встречаемости среди проведённых игр
+  const topByCount = (key: (g: typeof hosted[number]) => string | null): { name: string; count: number }[] => {
+    const counts = new Map<string, number>();
+    for (const g of hosted) {
+      const v = key(g);
+      if (!v) continue;
+      counts.set(v, (counts.get(v) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  };
+
+  // Топ-5 игроков: считаем каждое участие в проведённых играх
+  const playerCounts = new Map<string, number>();
+  for (const g of hosted) {
+    for (const name of g.player_names) {
+      playerCounts.set(name, (playerCounts.get(name) ?? 0) + 1);
+    }
+  }
+  const topPlayers = [...playerCounts.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  res.json({
+    host,
+    stats: {
+      total_games: totalGames,
+      total_players: totalPlayers,
+      avg_players: avgPlayers,
+      last_played_at: hosted[0]?.played_at ?? null,
+      top_maps: topByCount((g) => g.map_name),
+      top_mods: topByCount((g) => g.mod_name),
+      top_players: topPlayers,
+    },
+  });
 });
 
 // ============================================================

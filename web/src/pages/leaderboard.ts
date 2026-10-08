@@ -331,7 +331,7 @@ function columnsFor(mode: Mode): Array<{ label: string; key: SortKey }> {
     return [
         { label: t('players.col.name'), key: 'name' },
         { label: t('leaderboard.activity'), key: 'activity' },
-        { label: "SKILL " + t('players.col.elo') + "", key: 'elo' },
+        { label: "" + t('players.col.elo') + "", key: 'elo' },
         { label: t('leaderboard.games'), key: 'games' },
         { label: t('leaderboard.days'), key: 'days' },
         { label: t('leaderboard.wins'), key: 'wins' },

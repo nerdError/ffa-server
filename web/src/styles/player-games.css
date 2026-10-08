@@ -1,6 +1,71 @@
 /* =========================================
    Секция «Игры игрока» в карточке
    ========================================= */
+.player-host-pane {
+  max-width: 900px;
+  margin: 24px auto 0;
+  padding: 0 16px;
+}
+
+.player-host-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Топ-5 секции в панели ведущего */
+.player-host-tops {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-glow);
+}
+
+.player-host-top {
+  display: flex;
+  flex-direction: column;
+}
+
+.player-host-top-title {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.player-host-top-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.player-host-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 3px;
+}
+
+.player-host-top-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.player-host-top-count {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
 .player-games-pane {
   max-width: 900px;
   margin: 24px auto;

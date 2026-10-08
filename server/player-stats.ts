@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../lib/supabase-admin.js';
+import { attachTitles } from '../lib/titles.js';
 
 export type StatsMode = 'average' | 'personal' | 'ghost';
 
@@ -152,17 +153,25 @@ export async function getPlayerWithStatsMode(
   const base = (data?.[0] ?? null) as Record<string, unknown> | null;
   if (!base) return null;
 
-  if (mode === 'average') return base;
-
-  if (mode === 'personal') {
-    if (!userId) return { ...base, ...EMPTY_STYLE };
-    const rows = await fetchRatings(playerId, [userId]);
-    return { ...base, ...aggregate(rows) };
+  let result: Record<string, unknown>;
+  if (mode === 'average') {
+    result = base;
+  } else if (mode === 'personal') {
+    if (!userId) {
+      result = { ...base, ...EMPTY_STYLE };
+    } else {
+      const rows = await fetchRatings(playerId, [userId]);
+      result = { ...base, ...aggregate(rows) };
+    }
+  } else {
+    // ghost
+    const ghostIds = await getGhostUserIds();
+    const enabledGhostIds = await filterEnabledUserIds(ghostIds);
+    const rows = await fetchRatings(playerId, enabledGhostIds);
+    result = { ...base, ...aggregate(rows) };
   }
 
-  // ghost
-  const ghostIds = await getGhostUserIds();
-  const enabledGhostIds = await filterEnabledUserIds(ghostIds);
-  const rows = await fetchRatings(playerId, enabledGhostIds);
-  return { ...base, ...aggregate(rows) };
+  // Титулы игрока — одинаковы во всех режимах (карточка сайта и оверлей)
+  await attachTitles([result]);
+  return result;
 }

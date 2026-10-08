@@ -1,8 +1,9 @@
 import { apiRequest } from '../api';
-import { state } from '../state';
+import { state, saveSession } from '../state';
 import { t, getLocale } from '../i18n';
 import { navigateTo } from '../router';
-import type { PlayerWithStats, PlayersListResponse } from '../types';
+import type { PlayerWithStats, PlayersListResponse, TitleSize } from '../types';
+import { TITLE_SIZES } from '../types';
 import {
     listRefs,
     createRef,
@@ -14,6 +15,7 @@ import {
     type GameHost,
     type GameMap,
 } from '../api/game-refs';
+import { TITLE_COLORS } from '../titles';
 
 type Role = 'moderator' | 'admin' | 'ghost';
 
@@ -88,6 +90,14 @@ interface AdminLogsResponse {
     total: number;
 }
 
+interface AdminTitle {
+    id: number;
+    name: string;
+    color: string;
+    size?: TitleSize;
+    player_ids: number[];
+}
+
 const LOG_ACTIONS: { value: string; key: string }[] = [
     { value: 'auth.signup', key: 'log.action.signup' },
     { value: 'auth.login', key: 'log.action.login' },
@@ -112,6 +122,12 @@ const LOG_ACTIONS: { value: string; key: string }[] = [
     { value: 'user.delete', key: 'log.action.user_delete' },
     { value: 'user.rate_allow', key: 'log.action.user_rate_allow' },
     { value: 'user.rate_block', key: 'log.action.user_rate_block' },
+    { value: 'user.impersonate', key: 'log.action.user_impersonate' },
+    { value: 'title.create', key: 'log.action.title_create' },
+    { value: 'title.update', key: 'log.action.title_update' },
+    { value: 'title.delete', key: 'log.action.title_delete' },
+    { value: 'title.assign', key: 'log.action.title_assign' },
+    { value: 'title.unassign', key: 'log.action.title_unassign' },
 ];
 
 const LOG_ACTION_LABELS: Record<string, string> = {};
@@ -125,7 +141,7 @@ interface RefConfig {
     newPromptKey: string;
     newErrorKey: string;
     deleteConfirmKey: string;
-    editableFields: ('slug' | 'elo_weight' | 'aka' | 'alt_name')[];
+    editableFields: ('slug' | 'elo_weight' | 'aka' | 'alt_name' | 'player_id')[];
 }
 
 const REF_CONFIGS: RefConfig[] = [
@@ -147,7 +163,7 @@ const REF_CONFIGS: RefConfig[] = [
         newPromptKey: 'admin.new_host_prompt',
         newErrorKey: 'admin.new_host_error',
         deleteConfirmKey: 'admin.delete_host_confirm',
-        editableFields: ['aka'],
+        editableFields: ['aka', 'player_id'],
     },
     {
         type: 'maps',
@@ -182,6 +198,7 @@ let logsSearchInput: HTMLInputElement | null = null;
 let logsActionSelect: HTMLSelectElement | null = null;
 let archiveBox: HTMLElement | null = null;
 let archiveSearchInput: HTMLInputElement | null = null;
+let titlesBox: HTMLElement | null = null;
 
 const refsCache: Record<RefType, RefItem[]> = {
     formats: [],
@@ -219,6 +236,7 @@ export function mountAdmin(_params: URLSearchParams): void {
     logsActionSelect = document.getElementById('admin-logs-action') as HTMLSelectElement | null;
     archiveBox = document.getElementById('admin-ratings-archive');
     archiveSearchInput = document.getElementById('admin-archive-search') as HTMLInputElement | null;
+    titlesBox = document.getElementById('admin-titles');
 
     searchInput?.addEventListener('input', () => {
         void loadUsers(searchInput!.value);
@@ -253,14 +271,22 @@ export function mountAdmin(_params: URLSearchParams): void {
         }, { signal });
     }
 
+    // Титулы
+    document.getElementById('btn-add-title')?.addEventListener('click', () => {
+        void createTitle();
+    }, { signal });
+
     void loadUsers();
-    void loadPlayers();
     void loadLogs();
     void loadArchive();
 
-    for (const config of REF_CONFIGS) {
-        void loadRefs(config);
-    }
+    // Игроки грузим раньше справочников, чтобы в карточках ведущих был список игроков.
+    void loadPlayers().then(() => {
+        for (const config of REF_CONFIGS) {
+            void loadRefs(config);
+        }
+        void loadTitles();
+    });
 }
 
 export function unmountAdmin(): void {
@@ -445,8 +471,61 @@ function buildUserCard(u: AdminUser): HTMLElement {
     delBtn.addEventListener('click', () => void deleteUser(u));
     actions.appendChild(delBtn);
 
+    const impBtn = document.createElement('button');
+    impBtn.type = 'button';
+    impBtn.className = 'admin-role-btn admin-role-btn--impersonate';
+    impBtn.textContent = `↬ ${t('admin.impersonate')}`;
+    impBtn.title = t('admin.impersonate_title');
+    impBtn.addEventListener('click', () => void impersonateUser(u));
+    actions.appendChild(impBtn);
+
     card.appendChild(actions);
     return card;
+}
+
+/**
+ * Имперсонация: выпускаем токен целевого пользователя на сервере,
+ * сохраняем его сессию и догружаем роли через /me, затем уходим домой.
+ */
+async function impersonateUser(u: AdminUser): Promise<void> {
+    const label = u.username || u.email;
+    if (!confirm(t('admin.impersonate_confirm', { user: label }))) return;
+
+    try {
+        const res = await apiRequest<{ access_token: string; refresh_token: string }>(
+            `/api/admin/users/${u.id}/impersonate`,
+            { method: 'POST', token: state.token }
+        );
+
+        // Догружаем роли/username через /me новым токеном
+        const me = await apiRequest<{
+            user: {
+                id: string; email: string; username: string | null;
+                is_moderator: boolean; is_admin: boolean; is_ghost: boolean;
+                can_rate: boolean; player_id: number | null; player_name: string | null;
+            };
+        }>('/api/auth/me', { token: res.access_token });
+
+        saveSession(
+            {
+                id: me.user.id,
+                email: me.user.email,
+                username: me.user.username,
+                is_moderator: me.user.is_moderator,
+                is_admin: me.user.is_admin,
+                is_ghost: me.user.is_ghost,
+                can_rate: me.user.can_rate,
+                player_id: me.user.player_id ?? null,
+                player_name: me.user.player_name ?? null,
+            },
+            res.access_token,
+            res.refresh_token
+        );
+
+        navigateTo('/', true);
+    } catch (err) {
+        alert(t('admin.impersonate_error') + (err instanceof Error ? err.message : String(err)));
+    }
 }
 
 async function toggleRole(user: AdminUser, role: Role, currentlyHas: boolean): Promise<void> {
@@ -998,7 +1077,7 @@ function buildRefCard(config: RefConfig, item: RefItem): HTMLElement {
     }
 
     // --- Доп. поля ---
-    const extraInputs: Record<string, HTMLInputElement> = {};
+    const extraInputs: Record<string, HTMLInputElement | HTMLSelectElement> = {};
 
     for (const field of config.editableFields) {
         const input = document.createElement('input');
@@ -1024,6 +1103,28 @@ function buildRefCard(config: RefConfig, item: RefItem): HTMLElement {
             input.type = 'text';
             input.value = (item as GameMap).alt_name ?? '';
             input.placeholder = t('admin.alt_name_placeholder');
+        } else if (field === 'player_id') {
+            // Ведущий → привязка к игроку (стример): выбор из списка игроков
+            const select = document.createElement('select');
+            select.className = 'admin-ref-input';
+            select.title = t('admin.host_player_title');
+
+            const none = document.createElement('option');
+            none.value = '';
+            none.textContent = t('admin.host_player_none');
+            select.appendChild(none);
+
+            for (const p of cachedPlayers) {
+                const opt = document.createElement('option');
+                opt.value = String(p.id);
+                opt.textContent = p.name;
+                if (p.id === (item as GameHost).player_id) opt.selected = true;
+                select.appendChild(opt);
+            }
+
+            extraInputs[field] = select;
+            card.appendChild(select);
+            continue;
         }
 
         extraInputs[field] = input;
@@ -1097,7 +1198,7 @@ async function saveRef(
     config: RefConfig,
     item: RefItem,
     newName: string,
-    extraInputs: Record<string, HTMLInputElement>
+    extraInputs: Record<string, HTMLInputElement | HTMLSelectElement>
 ): Promise<void> {
     const trimmedName = newName.trim();
     if (!trimmedName) {
@@ -1112,6 +1213,9 @@ async function saveRef(
         else if (field === 'elo_weight') payload.elo_weight = Number(input.value);
         else if (field === 'aka') payload.aka = input.value.trim() || null;
         else if (field === 'alt_name') payload.alt_name = input.value.trim() || null;
+        else if (field === 'player_id') {
+            payload.player_id = input.value ? Number(input.value) : null;
+        }
     }
 
     try {
@@ -1137,6 +1241,248 @@ async function restoreRefItem(config: RefConfig, item: RefItem): Promise<void> {
     try {
         await updateRef(config.type, item.id, { deleted_at: null }, state.token);
         await loadRefs(config);
+    } catch (err) {
+        alert(t('common.error') + ': ' + (err instanceof Error ? err.message : String(err)));
+    }
+}
+
+// ============================================================
+// Титулы
+// ============================================================
+async function loadTitles(): Promise<void> {
+    if (!titlesBox) return;
+    titlesBox.innerHTML = '<div class="skeleton skeleton-block"></div>';
+
+    try {
+        const res = await apiRequest<{ items: AdminTitle[] }>('/api/titles');
+        renderTitles(res.items);
+    } catch (err) {
+        titlesBox.innerHTML = `<p class="error">${t('common.error')}: ${err instanceof Error ? err.message : String(err)
+            }</p>`;
+    }
+}
+
+function renderTitles(titles: AdminTitle[]): void {
+    if (!titlesBox) return;
+
+    if (titles.length === 0) {
+        titlesBox.innerHTML = `<p class="hint">${t('admin.titles_empty')}</p>`;
+        return;
+    }
+
+    titlesBox.innerHTML = '';
+    for (const title of titles) {
+        titlesBox.appendChild(buildTitleCard(title));
+    }
+}
+
+function buildTitleCard(title: AdminTitle): HTMLElement {
+    const card = document.createElement('div');
+    card.className = 'admin-title-card';
+
+    // --- Текст титула ---
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.className = 'admin-ref-input';
+    nameInput.value = title.name;
+    card.appendChild(nameInput);
+
+    // --- Палитра цветов ---
+    let selectedColor = title.color;
+    const swatches = document.createElement('div');
+    swatches.className = 'title-swatches';
+    for (const c of TITLE_COLORS) {
+        const sw = document.createElement('button');
+        sw.type = 'button';
+        sw.className = 'title-swatch' + (c.value.toLowerCase() === selectedColor.toLowerCase() ? ' is-active' : '');
+        sw.style.setProperty('--swatch', c.value);
+        sw.title = t(c.nameKey as any);
+        sw.addEventListener('click', () => {
+            selectedColor = c.value;
+            for (const s of swatches.querySelectorAll('.title-swatch')) s.classList.remove('is-active');
+            sw.classList.add('is-active');
+        });
+        swatches.appendChild(sw);
+    }
+    card.appendChild(swatches);
+
+    // --- Размер бейджа ---
+    let selectedSize = title.size ?? 'small';
+    const sizeRow = document.createElement('div');
+    sizeRow.className = 'title-size-row';
+    const sizeLabel = document.createElement('span');
+    sizeLabel.className = 'title-size-label';
+    sizeLabel.textContent = t('title.size_label');
+    const sizeSelect = document.createElement('select');
+    sizeSelect.className = 'admin-ref-input';
+    for (const s of TITLE_SIZES) {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = t(`title.size_${s}` as any);
+        if (s === selectedSize) opt.selected = true;
+        sizeSelect.appendChild(opt);
+    }
+    sizeSelect.addEventListener('change', () => { selectedSize = sizeSelect.value as TitleSize; });
+    sizeRow.append(sizeLabel, sizeSelect);
+    card.appendChild(sizeRow);
+
+    // --- Назначенные игроки ---
+    const playersEl = document.createElement('div');
+    playersEl.className = 'title-players';
+
+    const assigned = title.player_ids
+        .map((id) => cachedPlayers.find((p) => p.id === id))
+        .filter((p): p is PlayerWithStats => !!p);
+
+    if (assigned.length > 0) {
+        for (const p of assigned) {
+            const chip = document.createElement('span');
+            chip.className = 'title-player-chip';
+            chip.textContent = p.name;
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'title-player-remove';
+            removeBtn.textContent = '×';
+            removeBtn.title = t('admin.title_unassign');
+            removeBtn.addEventListener('click', () => {
+                void unassignPlayerFromTitle(title.id, p.id);
+            });
+            chip.appendChild(removeBtn);
+            playersEl.appendChild(chip);
+        }
+    }
+
+    // --- Добавить игрока ---
+    const addRow = document.createElement('div');
+    addRow.className = 'title-add-player';
+
+    const select = document.createElement('select');
+    select.className = 'admin-ref-input';
+    const none = document.createElement('option');
+    none.value = '';
+    none.textContent = t('admin.title_select_player');
+    select.appendChild(none);
+    for (const p of cachedPlayers) {
+        if (title.player_ids.includes(p.id)) continue;
+        const opt = document.createElement('option');
+        opt.value = String(p.id);
+        opt.textContent = p.name;
+        select.appendChild(opt);
+    }
+    addRow.appendChild(select);
+
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'btn-secondary';
+    addBtn.textContent = t('admin.title_add_player');
+    addBtn.addEventListener('click', () => {
+        const pid = Number(select.value);
+        if (!pid) return;
+        void assignPlayerToTitle(title.id, pid);
+    });
+    addRow.appendChild(addBtn);
+    playersEl.appendChild(addRow);
+
+    card.appendChild(playersEl);
+
+    // --- Кнопки: сохранить / удалить ---
+    const actions = document.createElement('div');
+    actions.className = 'admin-ref-actions';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.className = 'admin-ref-btn admin-ref-btn--save';
+    saveBtn.textContent = '✓';
+    saveBtn.title = t('common.save');
+    saveBtn.addEventListener('click', () => {
+        void saveTitle(title.id, nameInput.value, selectedColor, selectedSize);
+    });
+    actions.appendChild(saveBtn);
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'admin-ref-btn admin-ref-btn--delete';
+    delBtn.textContent = '🗑';
+    delBtn.title = t('common.delete');
+    delBtn.addEventListener('click', () => {
+        void deleteTitle(title);
+    });
+    actions.appendChild(delBtn);
+
+    card.appendChild(actions);
+    return card;
+}
+
+async function createTitle(): Promise<void> {
+    const name = prompt(t('admin.new_title_prompt'));
+    if (name === null) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
+    try {
+        await apiRequest('/api/titles', {
+            method: 'POST',
+            token: state.token,
+            body: { name: trimmed, color: TITLE_COLORS[0].value },
+        });
+        await loadTitles();
+    } catch (err) {
+        alert(t('admin.new_title_error') + (err instanceof Error ? err.message : String(err)));
+    }
+}
+
+async function saveTitle(id: number, name: string, color: string, size: TitleSize): Promise<void> {
+    const trimmed = name.trim();
+    if (!trimmed) {
+        alert(t('common.error') + ': name is empty');
+        return;
+    }
+    try {
+        await apiRequest(`/api/titles/${id}`, {
+            method: 'PATCH',
+            token: state.token,
+            body: { name: trimmed, color, size },
+        });
+        await loadTitles();
+    } catch (err) {
+        alert(t('common.error') + ': ' + (err instanceof Error ? err.message : String(err)));
+    }
+}
+
+async function deleteTitle(title: AdminTitle): Promise<void> {
+    if (!confirm(t('admin.delete_title_confirm', { name: title.name }))) return;
+    try {
+        await apiRequest(`/api/titles/${title.id}`, {
+            method: 'DELETE',
+            token: state.token,
+        });
+        await loadTitles();
+    } catch (err) {
+        alert(t('common.error') + ': ' + (err instanceof Error ? err.message : String(err)));
+    }
+}
+
+async function assignPlayerToTitle(titleId: number, playerId: number): Promise<void> {
+    try {
+        await apiRequest(`/api/titles/${titleId}/players`, {
+            method: 'POST',
+            token: state.token,
+            body: { playerId },
+        });
+        await loadTitles();
+    } catch (err) {
+        alert(t('common.error') + ': ' + (err instanceof Error ? err.message : String(err)));
+    }
+}
+
+async function unassignPlayerFromTitle(titleId: number, playerId: number): Promise<void> {
+    try {
+        await apiRequest(`/api/titles/${titleId}/players/${playerId}`, {
+            method: 'DELETE',
+            token: state.token,
+        });
+        await loadTitles();
     } catch (err) {
         alert(t('common.error') + ': ' + (err instanceof Error ? err.message : String(err)));
     }

@@ -178,6 +178,24 @@
   .control-players { grid-template-columns: 1fr; }
 }
 
+/* Заголовок подраздела списка игроков — на всю ширину сетки */
+.control-group-title {
+  grid-column: 1 / -1;
+  margin: 6px 0 2px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-glow);
+  color: #8a94a6;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.control-group-title:first-child {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
 .control-player-btn {
   --race-color: #8899aa;
 

@@ -46,12 +46,36 @@ export function mountControl(_params: URLSearchParams): void {
   const delayInput = document.getElementById('setting-delay') as HTMLInputElement | null;
   const viewModeSelect = document.getElementById('setting-view-mode') as HTMLSelectElement | null;
 
+  // Кнопка игрока (общая для обеих групп)
+  function buildPlayerBtn(p: PlayerWithStats): HTMLButtonElement {
+    const color = getRaceColor(p.races);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'control-player-btn';
+    btn.textContent = p.name;
+    btn.style.setProperty('--race-color', color);
+    if (currentState?.currentPlayerId === p.id) btn.classList.add('is-active');
+    btn.addEventListener('click', () => void showPlayer(p.id), { signal });
+    return btn;
+  }
+
+  // Строит подраздел: заголовок + кнопки игроков
+  function appendGroup(box: HTMLElement, title: string, players: PlayerWithStats[]): void {
+    if (players.length === 0) return;
+    const header = document.createElement('div');
+    header.className = 'control-group-title';
+    header.textContent = title;
+    box.appendChild(header);
+    for (const p of players) box.appendChild(buildPlayerBtn(p));
+  }
+
   function renderPlayers(filter: string): void {
     if (!playersBox) return;
     playersBox.innerHTML = '';
 
+    const q = filter.toLowerCase();
     const filtered = cachedPlayers.filter((p) =>
-      p.name.toLowerCase().includes(filter.toLowerCase())
+      p.name.toLowerCase().includes(q) || (p.aka ?? '').toLowerCase().includes(q)
     );
 
     if (filtered.length === 0) {
@@ -62,17 +86,12 @@ export function mountControl(_params: URLSearchParams): void {
       return;
     }
 
-    for (const p of filtered) {
-      const color = getRaceColor(p.races);
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'control-player-btn';
-      btn.textContent = p.name;
-      btn.style.setProperty('--race-color', color);
-      if (currentState?.currentPlayerId === p.id) btn.classList.add('is-active');
-      btn.addEventListener('click', () => void showPlayer(p.id), { signal });
-      playersBox.appendChild(btn);
-    }
+    // Первый подраздел — игроки с оценками; второй — без оценок, но с играми
+    const rated = filtered.filter((p) => p.vote_count > 0);
+    const unratedWithGames = filtered.filter((p) => p.vote_count === 0 && p.games_played > 0);
+
+    appendGroup(playersBox, t('control.rated_players'), rated);
+    appendGroup(playersBox, t('control.unrated_players'), unratedWithGames);
   }
 
   function renderState(s: OverlayState): void {
@@ -244,7 +263,8 @@ export function mountControl(_params: URLSearchParams): void {
   void (async () => {
     try {
       const res = await apiRequest<PlayersListResponse>('/api/players');
-      cachedPlayers = res.players.filter((p) => p.vote_count > 0);
+      // Показываем игроков с оценками и без оценок, но с хотя бы одной игрой
+      cachedPlayers = res.players.filter((p) => p.vote_count > 0 || p.games_played > 0);
       renderPlayers('');
     } catch {
       if (playersBox) playersBox.innerHTML = `<p class="hint">${t('control.no_players')}</p>`;

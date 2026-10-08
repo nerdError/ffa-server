@@ -107,6 +107,16 @@ export type TranslationKey =
     | 'player.games_load_error'
     | 'player.games_show_all'
     | 'player.games_hide_all'
+    | 'player.host_title'
+    | 'player.host_games_total'
+    | 'player.host_total_players'
+    | 'player.host_avg_players'
+    | 'player.host_last_game'
+    | 'player.host_games_empty'
+    | 'player.host_load_error'
+    | 'player.host_top_maps'
+    | 'player.host_top_mods'
+    | 'player.host_top_players'
 
     | 'players.col.elo'
 
@@ -188,6 +198,7 @@ export type TranslationKey =
     | 'players.col.races'
     | 'players.col.stats'
     | 'players.col.total'
+    | 'players.col.activity'
 
     // Параметры
     | 'stat.adaptiveness'
@@ -365,6 +376,8 @@ export type TranslationKey =
     | 'admin.new_host_error'
     | 'admin.delete_format_confirm'
     | 'admin.delete_host_confirm'
+    | 'admin.host_player_none'
+    | 'admin.host_player_title'
     | 'admin.elo_weight'
 
     | 'admin.maps_title'
@@ -380,6 +393,35 @@ export type TranslationKey =
     | 'admin.new_mod_prompt'
     | 'admin.new_mod_error'
     | 'admin.delete_mod_confirm'
+    | 'admin.titles_title'
+    | 'admin.add_title'
+    | 'admin.titles_hint'
+    | 'admin.titles_empty'
+    | 'admin.new_title_prompt'
+    | 'admin.new_title_error'
+    | 'admin.delete_title_confirm'
+    | 'admin.title_select_player'
+    | 'admin.title_add_player'
+    | 'admin.title_unassign'
+
+    // Цвета титулов
+    | 'title.color_gold'
+    | 'title.color_blue'
+    | 'title.color_purple'
+    | 'title.color_yellow'
+    | 'title.color_gray'
+    | 'title.color_red'
+    | 'title.color_green'
+    | 'title.color_cyan'
+    | 'title.color_orange'
+    | 'title.color_pink'
+
+    // Размеры титулов
+    | 'title.size_label'
+    | 'title.size_small'
+    | 'title.size_medium'
+    | 'title.size_large'
+    | 'title.size_xlarge'
     | 'common.empty'
     | 'common.save'
     | 'common.delete'
@@ -499,6 +541,11 @@ export type TranslationKey =
     | 'log.action.user_delete'
     | 'log.action.user_rate_allow'
     | 'log.action.user_rate_block'
+    | 'log.action.title_create'
+    | 'log.action.title_update'
+    | 'log.action.title_delete'
+    | 'log.action.title_assign'
+    | 'log.action.title_unassign'
 
     // Экран загрузки
     | 'loading.text'

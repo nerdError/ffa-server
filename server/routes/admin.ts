@@ -409,6 +409,103 @@ adminRouter.post('/users/:id/unban', async (req, res) => {
 });
 
 // ============================================================
+// POST /api/admin/users/:id/impersonate
+// Войти под любым пользователем (имперсонация). В GoTrue нет готового
+// «создать сессию» эндпоинта, поэтому:
+//   1) генерируем magiclink через admin API (generate_link — email НЕ шлёт);
+//   2) переходим по action_link (verify) с redirect:manual — сессия
+//      (access/refresh токен) возвращается во фрагменте Location.
+// ============================================================
+adminRouter.post('/users/:id/impersonate', async (req, res) => {
+    const userId = req.params.id;
+    if (!userId || typeof userId !== 'string') {
+        return res.status(400).json({ error: 'Invalid user id' });
+    }
+
+    const actorId = (req as any).userId as string;
+
+    // Забаненного нельзя брать в имперсонацию — вход ему закрыт.
+    const { data: prof } = await supabaseAdmin
+        .from('profiles')
+        .select('username, banned_at')
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (prof?.banned_at) {
+        return res.status(400).json({ error: 'User is banned' });
+    }
+
+    const url = process.env.SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const headers = {
+        'Content-Type': 'application/json',
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+    };
+
+    try {
+        // Нужен email целевого пользователя для magiclink.
+        const { data: authUser, error: auErr } =
+            await supabaseAdmin.auth.admin.getUserById(userId);
+        const email = authUser?.user?.email;
+        if (auErr || !email) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // 1. Генерируем magiclink (email не отправляется).
+        const glRes = await fetch(`${url}/auth/v1/admin/generate_link`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ type: 'magiclink', email }),
+        });
+        const glBody = await glRes.json();
+        if (!glRes.ok || !glBody?.action_link) {
+            console.error('[admin/users/impersonate] generate_link error:', glBody);
+            return res.status(glRes.status || 500).json({
+                error: glBody?.msg || 'Failed to create session',
+            });
+        }
+
+        // 2. «Проверяем» ссылку — в Location-фрагменте лежат токены.
+        const verifyRes = await fetch(glBody.action_link, {
+            headers: { ...headers, Accept: 'application/json' },
+            redirect: 'manual',
+        });
+        const location = verifyRes.headers.get('location') ?? '';
+        const hash = location.includes('#') ? location.split('#')[1] : '';
+        const params = new URLSearchParams(hash);
+        const access_token = params.get('access_token');
+        const refresh_token = params.get('refresh_token');
+
+        if (!access_token || !refresh_token) {
+            console.error(
+                '[admin/users/impersonate] verify failed, status=',
+                verifyRes.status,
+                'loc=',
+                location.slice(0, 200)
+            );
+            return res.status(500).json({ error: 'Failed to create session' });
+        }
+
+        void logAction({
+            action: 'user.impersonate',
+            actorId,
+            entityType: 'user',
+            summary: `Имперсонация: админ вошёл под ${prof?.username ?? userId}`,
+            details: { targetUserId: userId },
+        });
+
+        return res.json({
+            access_token,
+            refresh_token,
+            expires_at: params.get('expires_at'),
+        });
+    } catch (err) {
+        console.error('[admin/users/impersonate] fetch error:', err);
+        return res.status(500).json({ error: 'Failed to create session' });
+    }
+});
+
+// ============================================================
 // DELETE /api/admin/ratings/:id
 // Удалить любую оценку по ID (с сохранением в архив)
 // ============================================================

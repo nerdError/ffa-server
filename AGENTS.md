@@ -61,6 +61,7 @@ web/
 
 - `players` (id, name UNIQUE, aka, user_id→auth.users UNIQUE); `ratings` (player_id, user_id, race T/Z/P/R, 6 статов 1–5, UNIQUE(player_id,user_id)); `profiles` (user_id PK, username UNIQUE; создаёт триггер `handle_new_user`); `user_roles` (user_id, role moderator|admin|ghost); `overlay_tokens` (user_id, token)
 - `game_formats` (name, slug, elo_weight, is_team, team_size, color, sort_order); `game_hosts`; `game_mods`; `game_maps` (name UNIQUE, alt_name, deleted_at — мягкое удаление)
+- `titles` (name, color — фиксированная палитра); `player_titles` (title_id, player_id, UNIQUE(title_id,player_id)) — титулы игроков (карточка справа сверху + оверлей)
 - `games` (played_at, format_id, host_id, map_id, mod_id, duration_min, notes, track_elim, created_by); `game_players` (game_id, player_id, race, team, is_winner, eliminated_at; UNIQUE(game_id,player_id))
 - `player_ratings` (player_id PK, elo 1500, games_played, wins, activity_score, avg_place, game_days, team/solo_games_played); `rating_history`; `action_log` (actor_id, actor_username, action, entity_type, entity_id, summary, details jsonb)
 
@@ -87,6 +88,7 @@ RLS: публичное чтение players/ratings/profiles/games/game_players
 - `/api/players` GET list, POST, GET/:id, DELETE/:id, PATCH/:id/name, PATCH/:id/aka, GET/:id/game-stats; вложенные `/api/players/:id/ratings`, `/my-rating`
 - `/api/games` GET list?player_id, GET/:id, POST, PATCH/:id, DELETE/:id; `POST /api/games/parse-replay` (модератор; raw `application/octet-stream` ≤25 МБ → `.SC2Replay`)
 - `/api/game-refs/:type` (formats|hosts|maps|mods) CRUD
+- `/api/titles` GET список, POST, PATCH/:id, DELETE/:id; `/api/titles/:id/players` POST (выдать), `/api/titles/:id/players/:playerId` DELETE (снять). Запись — админ. Титулы прикрепляются к PlayerWithStats в `lib/titles.ts attachTitles()` (используется в `players.ts` GET /:id и `player-stats.ts` — значит и в оверлее)
 - `/api/ratings/leaderboard?mode=`
 - `/api/control` state|show|hide|settings|token|token/regenerate
 - `/api/overlay` state|stream|player/:id (SSE)
@@ -112,3 +114,4 @@ RLS: публичное чтение players/ratings/profiles/games/game_players
 - Бан аккаунта: `profiles.banned_at` (nullable). Проверяется в `lib/auth.ts` `authenticate()` (все авторизованные запросы) и в login/refresh (`server/routes/auth.ts`). Админ-эндпоинты `POST /api/admin/users/:id/ban|unban`; бан ставит `can_rate=false`, анбан — `can_rate=true`. Rate-limit signup по IP — `lib/rate-limit.ts` (in-memory, 3/10 мин); `app.set('trust proxy', 1)` в `server/index.ts`. CAPTCHA — Cloudflare Turnstile, `GET /api/auth/captcha-config`, проверка в signup через siteverify.
 - `can_rate=false` = «shadow ban»: пользователь может ставить/видеть свои оценки, но они не идут в средние (RPC `get_players_with_stats`/`get_player_with_stats` фильтруют `can_rate=false`; ghost-режим — `player-stats.ts filterEnabledUserIds`). Если на игроке нет учитываемых оценок, исключённому юзеру в режиме «средняя» его собственная оценка показывается через `applyShadowFallback` в `player-detail.ts` (чтобы не выдавать shadow-ban). В списке оценок исключённые помечаются бейджем `excluded` (флаг в `get_ratings_for_player`).
 - Архив удалённых оценок: таблица `ratings_archive` (нужны гранты `service_role` + на sequence). Все удаления оценок (админ: одиночное и «удалить все»; юзер: своя оценка) сначала копируют строки в архив через `lib/ratings-archive.ts archiveRatings()`. Восстановление — `POST /api/admin/ratings/:id/restore` и `POST /api/admin/ratings/archive/restore-user/:userId` (upsert в `ratings` по `player_id,user_id`), список — `GET /api/admin/ratings/archive`. UI — секция «Архив удалённых оценок» в админке.
+- Имперсонация («войти как», `POST /api/admin/users/:id/impersonate`): в GoTrue **нет** эндпоинта `admin/tokens` (404). Рабочий путь: `POST /auth/v1/admin/generate_link` `{type:'magiclink', email}` (email НЕ шлёт) → перейти по `action_link` с `redirect:'manual'` + `Accept: application/json` → токены (`access_token`/`refresh_token`) лежат во фрагменте `Location` (`#...`). Одноразово, поэтому генерировать ссылку заново на каждую имперсонацию.

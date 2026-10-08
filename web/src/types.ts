@@ -66,7 +66,20 @@ export interface PlayerWithStats {
     game_days: number;
     activity_rank: number | null;   // ← НОВОЕ
     elo_rank: number | null;        // ← НОВОЕ
+    titles?: PlayerTitle[];
 }
+
+/** Титул игрока (показывается в карточке справа сверху) */
+export interface PlayerTitle {
+    id: number;
+    name: string;
+    color: string;
+    size?: TitleSize;
+}
+
+export type TitleSize = 'small' | 'medium' | 'large' | 'xlarge';
+
+export const TITLE_SIZES: readonly TitleSize[] = ['small', 'medium', 'large', 'xlarge'] as const;
 
 /** Оценка в публичном списке — теперь с username */
 export interface Rating {

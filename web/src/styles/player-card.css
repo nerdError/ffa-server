@@ -128,6 +128,54 @@
 }
 
 /* =========================================
+   Титулы игрока (справа сверху)
+   ========================================= */
+.pc-titles {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+    margin-left: 12px;
+    max-width: 320px;
+}
+
+.pc-title {
+    --title-color: var(--gold);
+    font-family: var(--font-ui);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--title-color);
+    background: color-mix(in srgb, var(--title-color) 14%, #11151c);
+    border: 1px solid color-mix(in srgb, var(--title-color) 55%, transparent);
+    border-radius: 3px;
+    padding: 2px 8px;
+    white-space: nowrap;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--title-color) 55%, transparent);
+}
+
+/* Размеры титулов: small — текущий (по умолчанию), дальше крупнее */
+.pc-title--medium {
+    font-size: 14px;
+    letter-spacing: 2px;
+    padding: 3px 10px;
+}
+
+.pc-title--large {
+    font-size: 17px;
+    letter-spacing: 2.5px;
+    padding: 4px 12px;
+}
+
+.pc-title--xlarge {
+    font-size: 20px;
+    letter-spacing: 3px;
+    padding: 5px 14px;
+}
+
+/* =========================================
    Тело: радар + легенда
    ========================================= */
 .pc-body {
