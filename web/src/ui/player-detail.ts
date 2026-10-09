@@ -811,6 +811,50 @@ function buildTopList(
 }
 
 // ============================================================
+// Топ-5 карт/модов/тиммейтов по уже загруженному списку игр.
+// Тиммейты считаются только в командных играх (та же команда).
+// ============================================================
+function computePlayerTops(
+    games: GameListItem[],
+    playerId: number
+): { top_maps: HostTopItem[]; top_mods: HostTopItem[]; top_teammates: HostTopItem[] } {
+    const mapCounts = new Map<number, HostTopItem>();
+    const modCounts = new Map<string, HostTopItem>();
+    const mateCounts = new Map<number, HostTopItem>();
+
+    for (const g of games) {
+        if (g.map_id != null && g.map_name) {
+            const c = mapCounts.get(g.map_id) ?? { id: g.map_id, name: g.map_name, count: 0 };
+            c.count += 1;
+            mapCounts.set(g.map_id, c);
+        }
+        if (g.mod_name) {
+            const c = modCounts.get(g.mod_name) ?? { name: g.mod_name, count: 0 };
+            c.count += 1;
+            modCounts.set(g.mod_name, c);
+        }
+        if (g.is_team) {
+            const myTeam = g.participants.find((p) => p.player_id === playerId)?.team ?? null;
+            if (myTeam != null) {
+                for (const p of g.participants) {
+                    if (p.player_id === playerId || p.team !== myTeam) continue;
+                    const c = mateCounts.get(p.player_id) ?? { id: p.player_id, name: p.player_name, count: 0 };
+                    c.count += 1;
+                    mateCounts.set(p.player_id, c);
+                }
+            }
+        }
+    }
+
+    const sortDesc = (a: HostTopItem, b: HostTopItem): number => b.count - a.count;
+    return {
+        top_maps: [...mapCounts.values()].sort(sortDesc).slice(0, 5),
+        top_mods: [...modCounts.values()].sort(sortDesc).slice(0, 5),
+        top_teammates: [...mateCounts.values()].sort(sortDesc).slice(0, 5),
+    };
+}
+
+// ============================================================
 // Секция «Игры игрока»
 // ============================================================
 async function renderPlayerGames(playerId: number): Promise<void> {
@@ -822,7 +866,7 @@ async function renderPlayerGames(playerId: number): Promise<void> {
     try {
         const [statsRes, gamesRes] = await Promise.all([
             apiRequest<{ stats: PlayerGameStats }>(`/api/players/${playerId}/game-stats`),
-            apiRequest<GamesListResponse>(`/api/games?player_id=${playerId}`),
+            apiRequest<GamesListResponse>(`/api/games?player_id=${playerId}&limit=200`),
         ]);
 
         const stats = statsRes.stats;
@@ -926,6 +970,38 @@ function renderPlayerGamesContent(
 
         card.appendChild(racesSection);
     }
+
+    // ============================================================
+    // Топ-5: карты, моды, тиммейты — по сыгранным играм игрока
+    // ============================================================
+    const topsSection = document.createElement('div');
+    topsSection.className = 'player-games-tops-section';
+
+    const topsTitle = document.createElement('h4');
+    topsTitle.className = 'player-games-races-title';
+    topsTitle.textContent = t('player.games_tops_title');
+
+    const tops = computePlayerTops(games, playerId);
+    const topsGrid = document.createElement('div');
+    topsGrid.className = 'player-host-tops';
+    topsGrid.appendChild(buildTopList(
+        t('player.games_top_maps'),
+        tops.top_maps,
+        (m) => (m.id != null ? `/games?map=${m.id}` : null)
+    ));
+    topsGrid.appendChild(buildTopList(
+        t('player.games_top_mods'),
+        tops.top_mods,
+        (m) => `/games?mod=${encodeURIComponent(m.name)}`
+    ));
+    topsGrid.appendChild(buildTopList(
+        t('player.games_top_teammates'),
+        tops.top_teammates,
+        (p) => `/?player=${encodeURIComponent(p.name)}`
+    ));
+
+    topsSection.append(topsTitle, topsGrid);
+    card.appendChild(topsSection);
 
     // Список последних игр: показываем 3, остальные — раскрываются по кнопке
     const VISIBLE_GAMES = 3;

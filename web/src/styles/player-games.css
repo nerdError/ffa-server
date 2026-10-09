@@ -185,6 +185,14 @@
   gap: 10px;
 }
 
+/* Топ-5 карт/модов/тиммейтов внутри блока игр */
+.player-games-tops-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 0;
+}
+
 .race-stat-block {
   display: flex;
   align-items: center;

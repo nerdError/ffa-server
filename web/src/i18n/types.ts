@@ -117,6 +117,10 @@ export type TranslationKey =
     | 'player.host_top_maps'
     | 'player.host_top_mods'
     | 'player.host_top_players'
+    | 'player.games_tops_title'
+    | 'player.games_top_maps'
+    | 'player.games_top_mods'
+    | 'player.games_top_teammates'
 
     | 'players.col.elo'
 
