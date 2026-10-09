@@ -1,8 +1,9 @@
 import { apiRequest } from '../api';
 import { state } from '../state';
 import { t, onLocaleChange } from '../i18n';
-import type { PlayerWithStats, PlayersListResponse } from '../types';
+import type { PlayerWithStats, PlayersListResponse, PlayerResponse } from '../types';
 import { navigateTo } from '../router';
+import { buildPlayerCardElement } from '../card';
 
 interface OverlaySettings {
   animation: 'fade' | 'slide-left' | 'slide-right' | 'slide-up' | 'slide-down' | 'none';
@@ -94,6 +95,52 @@ export function mountControl(_params: URLSearchParams): void {
     appendGroup(playersBox, t('control.unrated_players'), unratedWithGames);
   }
 
+  // ---- Превью карточки (как в оверлее, в уменьшенном виде) ----
+  const previewBox = document.getElementById('control-preview');
+  const previewCache = new Map<string, PlayerWithStats>();
+  let previewKey: string | null = null;
+
+  async function renderPreview(playerId: number | null): Promise<void> {
+    if (!previewBox) return;
+
+    const viewMode = currentState?.settings.viewMode ?? 'average';
+    const key = playerId === null ? null : `${playerId}:${viewMode}`;
+
+    if (playerId === null) {
+      previewKey = null;
+      previewBox.innerHTML = `<p class="hint">${t('control.preview_empty')}</p>`;
+      return;
+    }
+
+    // Токен оверлея ещё не загружен — обновимся после его получения
+    if (!currentToken) {
+      previewBox.innerHTML = `<p class="hint">${t('common.loading')}</p>`;
+      return;
+    }
+
+    // Ничего не изменилось — не перерисовываем заново
+    if (previewKey === key) return;
+    previewKey = key;
+
+    const cached = previewCache.get(key!);
+    if (cached) {
+      previewBox.replaceChildren(buildPlayerCardElement(cached, { compact: false }));
+      return;
+    }
+
+    try {
+      const res = await apiRequest<PlayerResponse>(
+        `/api/overlay/player/${playerId}?token=${encodeURIComponent(currentToken)}`
+      );
+      // Пока грузили — мог поменяться показываемый игрок/режим
+      if (previewKey !== key) return;
+      previewCache.set(key!, res.player);
+      previewBox.replaceChildren(buildPlayerCardElement(res.player, { compact: false }));
+    } catch {
+      previewBox.innerHTML = `<p class="hint">${t('control.preview_error')}</p>`;
+    }
+  }
+
   function renderState(s: OverlayState): void {
     currentState = s;
 
@@ -116,6 +163,7 @@ export function mountControl(_params: URLSearchParams): void {
     if (viewModeSelect) viewModeSelect.value = s.settings.viewMode ?? 'average';
 
     renderPlayers(searchInput?.value ?? '');
+    void renderPreview(s.currentPlayerId);
   }
 
   async function fetchState(): Promise<void> {
@@ -192,6 +240,8 @@ export function mountControl(_params: URLSearchParams): void {
       currentToken = res.token;
       updateUrl(res.token);
       connectSSE(res.token);
+      // Токен получен — можно подгрузить превью текущей карточки
+      void renderPreview(currentState?.currentPlayerId ?? null);
     } catch (err) {
       console.error('[control] failed to fetch overlay token:', err);
       urlInput.value = t('control.token_error');

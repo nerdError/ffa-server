@@ -95,6 +95,11 @@
     min-width: 0;
 }
 
+/* Резервируем место справа, чтобы ник не заходил под титулы */
+.player-card.has-titles .pc-title-block {
+    padding-right: 336px;
+}
+
 .pc-name {
     font-size: 28px;
     font-weight: 700;
@@ -131,13 +136,16 @@
    Титулы игрока (справа сверху)
    ========================================= */
 .pc-titles {
+    position: absolute;
+    top: 20px;
+    right: 24px;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     gap: 4px;
     flex-shrink: 0;
-    margin-left: 12px;
     max-width: 320px;
+    z-index: 3;
 }
 
 .pc-title {
@@ -486,6 +494,43 @@
     /* Список характеристик не помещается на телефоне — прячем */
     .pc-legend {
         display: none;
+    }
+
+    /* Титулы: выносим из шапки — показываем под радаром по центру */
+    .pc-titles {
+        position: static;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        max-width: 100%;
+        margin: -8px 0 0;
+        gap: 4px 8px;
+    }
+
+    /* На мобилках титулы уже не справа — убираем резерв под ник */
+    .player-card.has-titles .pc-title-block {
+        padding-right: 0;
+    }
+
+    /* На мобилках уменьшаем размеры плашек, чтобы не занимали весь экран */
+    .pc-title--medium {
+        font-size: 14px;
+        letter-spacing: 1.5px;
+        padding: 2px 8px;
+    }
+
+    .pc-title--large {
+        font-size: 16px;
+        letter-spacing: 2px;
+        padding: 3px 9px;
+    }
+
+    .pc-title--xlarge {
+        font-size: 18px;
+        letter-spacing: 2px;
+        padding: 4px 11px;
     }
 
     .pc-radar {
