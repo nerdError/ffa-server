@@ -168,19 +168,15 @@
    Список игроков (мобильный)
    ========================================= */
 .control-players {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   width: 100%;
 }
 
-@media (max-width: 480px) {
-  .control-players { grid-template-columns: 1fr; }
-}
-
-/* Заголовок подраздела списка игроков — на всю ширину сетки */
+/* Заголовок подраздела списка игроков — на всю ширину */
 .control-group-title {
-  grid-column: 1 / -1;
+  flex: 1 0 100%;
   margin: 6px 0 2px;
   padding-top: 10px;
   border-top: 1px solid var(--border-glow);
@@ -200,22 +196,38 @@
   --race-color: #8899aa;
 
   appearance: none;
-  padding: 16px 14px;
+  padding: 8px 10px;
   background: #1a2029;
   border: 1.5px solid var(--border-glow);
-  border-left: 4px solid var(--race-color);   /* ← акцентная полоска слева */
+  border-left: 3px solid var(--race-color);   /* ← акцентная полоска слева */
   border-radius: 4px;
   color: var(--race-color);                   /* ← ник в цвет расы */
   font-family: var(--font-ui);
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   text-align: left;
   cursor: pointer;
   transition: all 0.15s;
-  min-height: 56px;
+  flex: 0 1 auto;                             /* ширина по тексту */
+  max-width: 100%;
+  min-height: 0;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   text-shadow: 0 0 8px color-mix(in srgb, var(--race-color) 40%, transparent);
+}
+
+/* На телефоне — ещё компактнее, чтобы влезало больше кнопок */
+@media (max-width: 480px) {
+  .control-players { gap: 6px; }
+  .control-player-btn {
+    padding: 6px 8px;
+    font-size: 0.75rem;
+    letter-spacing: 0.3px;
+  }
 }
 
 .control-player-btn:hover,
