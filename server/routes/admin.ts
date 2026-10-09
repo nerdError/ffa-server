@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '../../lib/auth.js';
+import { authenticate, clearAuthCache } from '../../lib/auth.js';
 import { supabaseAdmin } from '../../lib/supabase-admin.js';
 import { logAction } from '../../lib/action-log.js';
 import { archiveRatings } from '../../lib/ratings-archive.js';
@@ -346,6 +346,9 @@ adminRouter.post('/users/:id/ban', async (req, res) => {
         return res.status(404).json({ error: 'User not found' });
     }
 
+    // Сбрасываем кэш авторизации, чтобы бан вступил в силу немедленно.
+    clearAuthCache();
+
     const { data: targetProfile } = await supabaseAdmin
         .from('profiles')
         .select('username')
@@ -390,6 +393,9 @@ adminRouter.post('/users/:id/unban', async (req, res) => {
     if (!data) {
         return res.status(404).json({ error: 'User not found' });
     }
+
+    // Сбрасываем кэш авторизации, чтобы разбан вступил в силу немедленно.
+    clearAuthCache();
 
     const { data: targetProfile } = await supabaseAdmin
         .from('profiles')

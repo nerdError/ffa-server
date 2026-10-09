@@ -3,7 +3,7 @@ import { anonClient, authenticate } from '../../lib/auth.js';
 import { logAction } from '../../lib/action-log.js';
 import { supabaseAdmin } from '../../lib/supabase-admin.js';
 import { getPlayerWithStatsMode, type StatsMode } from '../player-stats.js';
-import { attachTitles } from '../../lib/titles.js';
+import { cached } from '../../lib/cache.js';
 
 export const playersRouter = Router();
 
@@ -11,37 +11,48 @@ function parseStatsMode(raw: unknown): StatsMode {
   return raw === 'ghost' || raw === 'personal' ? raw : 'average';
 }
 
+// TTL публичных списков: короткий, чтобы данные не «залипали»,
+// но достаточный, чтобы снять нагрузку с пула соединений Supabase.
+const PUBLIC_TTL_MS = 15_000;
+
 // GET /api/players — список со средними (публичный)
 playersRouter.get('/', async (_req, res) => {
-  const client = anonClient();
-  const { data, error } = await client.rpc('get_players_with_stats');
-  if (error) return res.status(500).json({ error: error.message });
+  try {
+    const players = await cached('pub:players-stats', PUBLIC_TTL_MS, async () => {
+      const client = anonClient();
+      const { data, error } = await client.rpc('get_players_with_stats');
+      if (error) throw error;
 
-  const userIds = [
-    ...new Set(
-      (data ?? [])
-        .map((p: { user_id: string | null }) => p.user_id)
-        .filter((id): id is string => !!id),
-    ),
-  ];
+      const userIds = [
+        ...new Set(
+          (data ?? [])
+            .map((p: { user_id: string | null }) => p.user_id)
+            .filter((id): id is string => !!id),
+        ),
+      ];
 
-  const nameByUser = new Map<string, string>();
-  if (userIds.length > 0) {
-    const { data: profiles } = await client
-      .from('profiles')
-      .select('user_id, username')
-      .in('user_id', userIds);
-    for (const p of profiles ?? []) {
-      if (p.username) nameByUser.set(p.user_id, p.username);
-    }
+      const nameByUser = new Map<string, string>();
+      if (userIds.length > 0) {
+        const { data: profiles } = await client
+          .from('profiles')
+          .select('user_id, username')
+          .in('user_id', userIds);
+        for (const p of profiles ?? []) {
+          if (p.username) nameByUser.set(p.user_id, p.username);
+        }
+      }
+
+      return (data ?? []).map((p: { user_id: string | null }) => ({
+        ...p,
+        username: p.user_id ? nameByUser.get(p.user_id) ?? null : null,
+      }));
+    });
+
+    return res.status(200).json({ players });
+  } catch (err) {
+    console.error('[players] list error:', err);
+    return res.status(500).json({ error: 'DB error' });
   }
-
-  const players = (data ?? []).map((p: { user_id: string | null }) => ({
-    ...p,
-    username: p.user_id ? nameByUser.get(p.user_id) ?? null : null,
-  }));
-
-  return res.status(200).json({ players });
 });
 
 // POST /api/players — создание (только авторизованные)
@@ -119,17 +130,16 @@ playersRouter.get('/:id', async (req, res) => {
     return res.status(400).json({ error: 'Invalid id' });
   }
 
-  const client = anonClient();
-  const { data, error } = await client.rpc('get_player_with_stats', {
-    p_id: id,
-  });
-  if (error) return res.status(500).json({ error: error.message });
-  if (!data || data.length === 0) {
-    return res.status(404).json({ error: 'Player not found' });
+  try {
+    // Тот же путь, что и карточка/оверлей: базовая статистика кэшируется,
+    // титулы прикрепляются к копии результата.
+    const player = await getPlayerWithStatsMode(id, 'average');
+    if (!player) return res.status(404).json({ error: 'Player not found' });
+    return res.status(200).json({ player });
+  } catch (err) {
+    console.error('[players/:id] error:', err);
+    return res.status(500).json({ error: 'DB error' });
   }
-  const player = data[0];
-  await attachTitles([player]);
-  return res.status(200).json({ player });
 });
 
 // DELETE /api/players/:id — только модераторы (RLS проверит)

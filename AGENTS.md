@@ -99,6 +99,15 @@ RLS: публичное чтение players/ratings/profiles/games/game_players
 
 Таблица `action_log` (гранты service_role), запись через `lib/action-log.ts` → `logAction()` (best-effort, не ломает запрос). Логируются signup/login/logout, player create/rename/aka/delete/link/unlink, rating create/update/delete, game create/update/delete, ref create/update/delete, role grant/revoke, user delete. UI — секция «Лог действий» в админке (фильтр по типу, поиск, обновить).
 
+## Производительность / устойчивость Supabase
+
+- Причина «висяков» и `terminated` — ограниченный пул соединений PostgREST: тяжёлые запросы держат слоты, остальные ждут. Без смены хостинга лечится таймаутами, кэшем и меньшим числом round-trip.
+- `lib/fetch-timeout.ts` — все клиенты (`lib/supabase.ts`, `lib/supabase-admin.ts`, `lib/auth.ts`) создаются с `global.fetch = timeoutFetch(...)`. Таймаут `SUPABASE_FETCH_TIMEOUT_MS` (по умолч. 15с), для service_role — `SUPABASE_ADMIN_FETCH_TIMEOUT_MS` (по умолч. 60с, т.к. тяжёлый `auth.admin.listUsers`), для пересчёта Elo — `SUPABASE_RECALC_TIMEOUT_MS` (120с).
+- `lib/cache.ts` — in-memory TTL-кэш (`cached(key, ttl, loader)`, дедуп параллельных промахов). Публичные GET кэшируются под префиксом `pub:` (списки игроков/игр, лидерборд, титулы, справочники, оценки игрока, базовая карточка игрока, ghost-роли). Любая успешная запись на «данные»-эндпоинтах сбрасывает `clearCache('pub:')` (middleware в `server/index.ts`; `/api/control`, `/api/overlay` исключены). Сброс инвалидирует и незавершённые загрузки (счётчик поколения), чтобы устаревший результат не попал в кэш. Кэш валиден только для одиночного pm2-инстанса.
+- `lib/auth.ts` кэширует `getUser(token)` (30с, не дольше exp JWT) и бан-статус (15с). Бан/разбан вызывают `clearAuthCache()`. `/api/auth/me` выполняет независимые проверки параллельно.
+- `lib/recalc.ts` `recalculateAllRatings()` — вызовы `recalculate_all_ratings` «склеиваются»: параллельные запросы ждут текущий пересчёт (и при необходимости инициируют ещё один проход), чтобы не забивать пул. Используется в games и game-refs вместо прямого RPC.
+- Кэшировать можно только viewer-независимые RPC (проверено: `get_ratings_for_player` — `STABLE SECURITY DEFINER` без `auth.uid()`). `player_titles`/`titles` имеют FK (`player_titles_title_id_fkey`), поэтому `attachTitles` использует embedded-select.
+
 ## Грабки / правила, выученные на практике
 
 - `web/src/overlay.ts` должен импортировать `player-card.css` **и** `card.css` (иначе пропадают правая колонка статов и метрики внизу).

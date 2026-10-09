@@ -7,8 +7,13 @@ import { createRequire } from 'node:module';
 import { authenticate, anonClient } from '../../lib/auth.js';
 import { logAction } from '../../lib/action-log.js';
 import { supabaseAdmin } from '../../lib/supabase-admin.js';
+import { cached } from '../../lib/cache.js';
+import { recalculateAllRatings } from '../../lib/recalc.js';
 
 export const gamesRouter = Router();
+
+// TTL публичных данных игр (список/карточка). Сбрасывается при любой записи.
+const GAMES_TTL_MS = 15_000;
 
 // ============================================================
 // Валидация участников
@@ -264,24 +269,31 @@ gamesRouter.post(
 // GET /api/games — список игр (публичный)
 // ============================================================
 gamesRouter.get('/', async (req, res) => {
-    const client = anonClient();
-
     const playerId = req.query.player_id ? Number(req.query.player_id) : null;
     const limit = Math.min(Number(req.query.limit ?? 50) || 50, 200);
     const offset = Math.max(Number(req.query.offset ?? 0) || 0, 0);
 
-    const { data, error } = await client.rpc('get_games_list', {
-        p_player_id: playerId,
-        p_limit: limit,
-        p_offset: offset,
-    });
+    try {
+        const games = await cached(
+            `pub:games:${playerId ?? 'all'}:${limit}:${offset}`,
+            GAMES_TTL_MS,
+            async () => {
+                const client = anonClient();
+                const { data, error } = await client.rpc('get_games_list', {
+                    p_player_id: playerId,
+                    p_limit: limit,
+                    p_offset: offset,
+                });
+                if (error) throw error;
+                return data ?? [];
+            }
+        );
 
-    if (error) {
+        res.json({ games });
+    } catch (error) {
         console.error('[games] list error:', error);
-        return res.status(500).json({ error: 'DB error' });
+        res.status(500).json({ error: 'DB error' });
     }
-
-    res.json({ games: data ?? [] });
 });
 
 // ============================================================
@@ -293,18 +305,23 @@ gamesRouter.get('/:id', async (req, res) => {
         return res.status(400).json({ error: 'Invalid game id' });
     }
 
-    const client = anonClient();
-    const { data, error } = await client.rpc('get_game_with_players', { p_id: id });
+    try {
+        const game = await cached(`pub:game:${id}`, GAMES_TTL_MS, async () => {
+            const client = anonClient();
+            const { data, error } = await client.rpc('get_game_with_players', { p_id: id });
+            if (error) throw error;
+            return data;
+        });
 
-    if (error) {
+        if (!game) {
+            return res.status(404).json({ error: 'Game not found' });
+        }
+
+        res.json({ game });
+    } catch (error) {
         console.error('[games] get error:', error);
-        return res.status(500).json({ error: 'DB error' });
+        res.status(500).json({ error: 'DB error' });
     }
-    if (!data) {
-        return res.status(404).json({ error: 'Game not found' });
-    }
-
-    res.json({ game: data });
 });
 
 // ============================================================
@@ -397,12 +414,8 @@ gamesRouter.post('/', async (req, res) => {
         return res.status(500).json({ error: 'DB error', details: error.message });
     }
 
-    // Пересчитываем Elo после создания игры
-    const { error: recalcError } = await supabaseAdmin.rpc('recalculate_all_ratings');
-    if (recalcError) {
-        console.error('[games] recalculate after create failed:', recalcError);
-        // Не возвращаем ошибку — игра создана, рейтинг можно пересчитать позже
-    }
+    // Пересчитываем Elo после создания игры (вызовы склеиваются, ошибки логируются)
+    await recalculateAllRatings();
 
     void logAction({
         action: 'game.create',
@@ -504,11 +517,8 @@ gamesRouter.patch('/:id', async (req, res) => {
         return res.status(500).json({ error: 'DB error', details: error.message });
     }
 
-    // Пересчитываем Elo после обновления игры
-    const { error: recalcError } = await supabaseAdmin.rpc('recalculate_all_ratings');
-    if (recalcError) {
-        console.error('[games] recalculate after update failed:', recalcError);
-    }
+    // Пересчитываем Elo после обновления игры (вызовы склеиваются)
+    await recalculateAllRatings();
 
     void logAction({
         action: 'game.update',
@@ -567,16 +577,8 @@ gamesRouter.delete('/:id', async (req, res) => {
         summary: `Удалена игра #${id}`,
     });
 
-    // Пересчитываем Elo после удаления игры
-    const { error: recalcError } = await supabaseAdmin.rpc('recalculate_all_ratings');
-    if (recalcError) {
-        console.error('[games] recalculate after delete failed:', recalcError);
-        // Возвращаем success, но с предупреждением — если хочешь
-        return res.json({
-            deleted: data,
-            warning: 'Game deleted, but Elo recalc failed',
-        });
-    }
+    // Пересчитываем Elo после удаления игры (вызовы склеиваются)
+    await recalculateAllRatings();
 
     res.json({ deleted: data });
 });

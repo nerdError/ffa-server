@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { supabase } from '../../lib/supabase.js';
-import { authenticate } from '../../lib/auth.js';
+import { authenticate, isUserBanned } from '../../lib/auth.js';
 import { logAction } from '../../lib/action-log.js';
 import { createIpRateLimiter } from '../../lib/rate-limit.js';
 
@@ -14,16 +14,6 @@ const signupLimiter = createIpRateLimiter({
   windowMs: 10 * 60 * 1000,
   max: 3,
 });
-
-/** Проверяет, не забанен ли аккаунт (profiles.banned_at). */
-async function isBanned(userId: string): Promise<boolean> {
-  const { data } = await supabase
-    .from('profiles')
-    .select('banned_at')
-    .eq('user_id', userId)
-    .maybeSingle();
-  return Boolean(data?.banned_at);
-}
 
 /**
  * Проверяет Turnstile-токен, если CAPTCHA включена (есть секрет).
@@ -181,7 +171,7 @@ authRouter.post('/login', async (req, res) => {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
-  if (await isBanned(data.user.id)) {
+  if (await isUserBanned(data.user.id)) {
     return res.status(403).json({ error: 'Account is banned' });
   }
 
@@ -223,31 +213,35 @@ authRouter.get('/me', async (req, res) => {
   const auth = await authenticate(req);
   if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
 
-  const { data: profile } = await auth.client
-    .from('profiles')
-    .select('username, can_rate')
-    .eq('user_id', auth.user.id)
-    .maybeSingle();
+  // Все проверки независимы — выполняем параллельно, чтобы не плодить
+  // последовательные походы в БД и не держать соединения дольше нужного.
+  const [profileRes, linkedRes, modRes, adminRes, ghostRes] = await Promise.all([
+    auth.client
+      .from('profiles')
+      .select('username, can_rate')
+      .eq('user_id', auth.user.id)
+      .maybeSingle(),
+    auth.client
+      .from('players')
+      .select('id, name')
+      .eq('user_id', auth.user.id)
+      .maybeSingle(),
+    auth.client.rpc('is_moderator'),
+    auth.client.rpc('is_admin'),
+    auth.client.rpc('is_ghost'),
+  ]);
 
-  // Ищем связанного игрока
-  const { data: linkedPlayer } = await auth.client
-    .from('players')
-    .select('id, name')
-    .eq('user_id', auth.user.id)
-    .maybeSingle();
-
-  const { data: isMod } = await auth.client.rpc('is_moderator');
-  const { data: isAdmin } = await auth.client.rpc('is_admin');
-  const { data: isGhost } = await auth.client.rpc('is_ghost');
+  const profile = profileRes.data;
+  const linkedPlayer = linkedRes.data;
 
   return res.status(200).json({
     user: {
       id: auth.user.id,
       email: auth.user.email,
       username: profile?.username ?? null,
-      is_moderator: Boolean(isMod),
-      is_admin: Boolean(isAdmin),
-      is_ghost: Boolean(isGhost),
+      is_moderator: Boolean(modRes.data),
+      is_admin: Boolean(adminRes.data),
+      is_ghost: Boolean(ghostRes.data),
       can_rate: profile?.can_rate !== false,
       player_id: linkedPlayer?.id ?? null,
       player_name: linkedPlayer?.name ?? null,
@@ -270,7 +264,7 @@ authRouter.post('/refresh', async (req, res) => {
     return res.status(401).json({ error: 'Invalid refresh token' });
   }
 
-  if (data.user && (await isBanned(data.user.id))) {
+  if (data.user && (await isUserBanned(data.user.id))) {
     return res.status(403).json({ error: 'Account is banned' });
   }
 

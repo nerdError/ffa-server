@@ -3,8 +3,12 @@ import { anonClient, authenticate } from '../../lib/auth.js';
 import { supabaseAdmin } from '../../lib/supabase-admin.js';
 import { logAction } from '../../lib/action-log.js';
 import { archiveRatings } from '../../lib/ratings-archive.js';
+import { cached } from '../../lib/cache.js';
 
 export const ratingsRouter = Router({ mergeParams: true });
+
+// TTL публичных данных оценок (список оценок игрока).
+const RATINGS_TTL_MS = 15_000;
 
 const RACES = ['T', 'Z', 'P', 'R'] as const;
 const STATS = [
@@ -56,28 +60,36 @@ ratingsRouter.get('/:id/ratings', async (req, res) => {
     if (auth.ok) client = auth.client;
   }
 
-  const { data, error } = await client.rpc('get_ratings_for_player', {
-    p_id: playerId,
-  });
-  if (error) return res.status(500).json({ error: error.message });
+  try {
+    const ratings = await cached(`pub:ratings:${playerId}`, RATINGS_TTL_MS, async () => {
+      const { data, error } = await client.rpc('get_ratings_for_player', {
+        p_id: playerId,
+      });
+      if (error) throw error;
 
-  const ratings = (data ?? []) as Record<string, any>[];
+      const rows = (data ?? []) as Record<string, any>[];
 
-  // Проставляем признак роли GHOST для бейджей в списке оценок.
-  const userIds = [...new Set(ratings.map((r) => r.user_id).filter(Boolean))];
-  if (userIds.length > 0) {
-    const { data: ghostRows, error: ghostErr } = await supabaseAdmin
-      .from('user_roles')
-      .select('user_id')
-      .eq('role', 'ghost')
-      .in('user_id', userIds);
-    if (!ghostErr) {
-      const ghostSet = new Set((ghostRows ?? []).map((r) => r.user_id));
-      for (const r of ratings) r.is_ghost = ghostSet.has(r.user_id);
-    }
+      // Проставляем признак роли GHOST для бейджей в списке оценок.
+      const userIds = [...new Set(rows.map((r) => r.user_id).filter(Boolean))];
+      if (userIds.length > 0) {
+        const { data: ghostRows, error: ghostErr } = await supabaseAdmin
+          .from('user_roles')
+          .select('user_id')
+          .eq('role', 'ghost')
+          .in('user_id', userIds);
+        if (!ghostErr) {
+          const ghostSet = new Set((ghostRows ?? []).map((r) => r.user_id));
+          for (const r of rows) r.is_ghost = ghostSet.has(r.user_id);
+        }
+      }
+
+      return rows;
+    });
+
+    return res.status(200).json({ ratings });
+  } catch (err: any) {
+    return res.status(500).json({ error: err?.message ?? 'DB error' });
   }
-
-  return res.status(200).json({ ratings });
 });
 
 // GET /api/players/:id/given-ratings

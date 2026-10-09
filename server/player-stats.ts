@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../lib/supabase-admin.js';
 import { attachTitles } from '../lib/titles.js';
+import { cached } from '../lib/cache.js';
 
 export type StatsMode = 'average' | 'personal' | 'ghost';
 
@@ -72,19 +73,22 @@ function aggregate(rows: RatingRow[]): StyleOverride {
 
 /**
  * Пользователи с ролью GHOST — их оценки формируют отдельную среднюю.
+ * Список меняется редко, поэтому кэшируем его на короткий TTL.
  */
 async function getGhostUserIds(): Promise<string[]> {
-  const { data, error } = await supabaseAdmin
-    .from('user_roles')
-    .select('user_id')
-    .eq('role', 'ghost');
+  return cached('pub:ghost-user-ids', 30_000, async () => {
+    const { data, error } = await supabaseAdmin
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'ghost');
 
-  if (error) {
-    console.error('[player-stats] ghost users lookup failed:', error);
-    return [];
-  }
+    if (error) {
+      console.error('[player-stats] ghost users lookup failed:', error);
+      return [];
+    }
 
-  return (data ?? []).map((r) => r.user_id);
+    return (data ?? []).map((r) => r.user_id) as string[];
+  });
 }
 
 /**
@@ -94,19 +98,22 @@ async function getGhostUserIds(): Promise<string[]> {
 async function filterEnabledUserIds(userIds: string[]): Promise<string[]> {
   if (userIds.length === 0) return [];
 
-  const { data, error } = await supabaseAdmin
-    .from('profiles')
-    .select('user_id, can_rate')
-    .in('user_id', userIds);
+  const key = `pub:enabled-users:${[...userIds].sort().join(',')}`;
+  return cached(key, 15_000, async () => {
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .select('user_id, can_rate')
+      .in('user_id', userIds);
 
-  if (error) {
-    console.error('[player-stats] profiles lookup failed:', error);
-    return userIds;
-  }
+    if (error) {
+      console.error('[player-stats] profiles lookup failed:', error);
+      return userIds;
+    }
 
-  return (data ?? [])
-    .filter((p) => p.can_rate !== false)
-    .map((p) => p.user_id);
+    return (data ?? [])
+      .filter((p) => p.can_rate !== false)
+      .map((p) => p.user_id);
+  });
 }
 
 async function fetchRatings(
@@ -131,6 +138,22 @@ async function fetchRatings(
 }
 
 /**
+ * Базовая карточка игрока (RPC get_player_with_stats) с коротким кэшем.
+ * Возвращаемый объект не мутируем — режимы клонируют его перед правками.
+ */
+async function getBasePlayer(
+  playerId: number
+): Promise<Record<string, unknown> | null> {
+  return cached(`pub:player-stats:${playerId}`, 15_000, async () => {
+    const { data, error } = await supabaseAdmin.rpc('get_player_with_stats', {
+      p_id: playerId,
+    });
+    if (error) throw error;
+    return (data?.[0] ?? null) as Record<string, unknown> | null;
+  });
+}
+
+/**
  * Возвращает карточку игрока (полный PlayerWithStats) с учётом режима:
  *  - average  — глобальная средняя (RPC get_player_with_stats);
  *  - personal — оценка конкретного пользователя (userId);
@@ -144,18 +167,12 @@ export async function getPlayerWithStatsMode(
   mode: StatsMode,
   userId?: string | null
 ): Promise<Record<string, unknown> | null> {
-  const { data, error } = await supabaseAdmin.rpc('get_player_with_stats', {
-    p_id: playerId,
-  });
-
-  if (error) throw error;
-
-  const base = (data?.[0] ?? null) as Record<string, unknown> | null;
+  const base = await getBasePlayer(playerId);
   if (!base) return null;
 
   let result: Record<string, unknown>;
   if (mode === 'average') {
-    result = base;
+    result = { ...base };
   } else if (mode === 'personal') {
     if (!userId) {
       result = { ...base, ...EMPTY_STYLE };

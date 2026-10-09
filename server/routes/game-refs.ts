@@ -2,8 +2,13 @@ import { Router } from 'express';
 import { authenticate } from '../../lib/auth.js';
 import { supabaseAdmin } from '../../lib/supabase-admin.js';
 import { logAction } from '../../lib/action-log.js';
+import { cached } from '../../lib/cache.js';
+import { recalculateAllRatings } from '../../lib/recalc.js';
 
 export const gameRefsRouter = Router();
+
+// TTL справочников: меняются редко, сбрасываются при любой записи.
+const REFS_TTL_MS = 30_000;
 
 const REF_LABELS: Record<string, string> = {
   formats: 'формат',
@@ -128,17 +133,21 @@ function normalizeAltName(payload: Record<string, unknown>): void {
 gameRefsRouter.get('/:refType', async (req, res) => {
   const config: RefConfig = (req as any).refConfig;
 
-  const { data, error } = await supabaseAdmin
-    .from(config.table)
-    .select('*')
-    .order(config.orderBy, { ascending: true });
+  try {
+    const items = await cached(`pub:refs:${config.table}`, REFS_TTL_MS, async () => {
+      const { data, error } = await supabaseAdmin
+        .from(config.table)
+        .select('*')
+        .order(config.orderBy, { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    });
 
-  if (error) {
+    res.json({ items });
+  } catch (error) {
     console.error(`[game-refs] ${config.table} list error:`, error);
-    return res.status(500).json({ error: 'DB error' });
+    res.status(500).json({ error: 'DB error' });
   }
-
-  res.json({ items: data ?? [] });
 });
 
 // ============================================================
@@ -274,12 +283,8 @@ gameRefsRouter.patch('/:refType/:id', async (req, res) => {
 
   // Если обновили формат (например, elo_weight) — пересчитываем Elo
   if (refType === 'formats') {
-    const { error: recalcError } = await supabaseAdmin.rpc('recalculate_all_ratings');
-    if (recalcError) {
-      console.error('[game-refs] recalculate after format update failed:', recalcError);
-      // Не возвращаем ошибку клиенту — формат обновлён успешно.
-      // Просто логируем.
-    }
+    // Ошибки логируются внутри; формат уже обновлён успешно.
+    await recalculateAllRatings();
   }
 
   void logAction({
@@ -336,10 +341,7 @@ gameRefsRouter.delete('/:refType/:id', async (req, res) => {
 
   // Если удалили формат — пересчитываем Elo
   if (refType === 'formats') {
-    const { error: recalcError } = await supabaseAdmin.rpc('recalculate_all_ratings');
-    if (recalcError) {
-      console.error('[game-refs] recalculate after format delete failed:', recalcError);
-    }
+    await recalculateAllRatings();
   }
 
   void logAction({

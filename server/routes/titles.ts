@@ -2,8 +2,12 @@ import { Router } from 'express';
 import { authenticate } from '../../lib/auth.js';
 import { supabaseAdmin } from '../../lib/supabase-admin.js';
 import { logAction } from '../../lib/action-log.js';
+import { cached } from '../../lib/cache.js';
 
 export const titlesRouter = Router();
+
+// TTL списка титулов (публичный справочник, меняется редко).
+const TITLES_TTL_MS = 20_000;
 
 const TITLE_SIZES = ['small', 'medium', 'large', 'xlarge'] as const;
 type TitleSize = (typeof TITLE_SIZES)[number];
@@ -33,43 +37,49 @@ async function requireAdmin(req: any, res: any): Promise<{ ok: true; userId: str
 // GET /api/titles — список титулов (публичный)
 // ============================================================
 titlesRouter.get('/', async (_req, res) => {
-  const { data, error } = await supabaseAdmin
-    .from('titles')
-    .select('*')
-    .order('name', { ascending: true });
+  try {
+    const items = await cached('pub:titles', TITLES_TTL_MS, async () => {
+      const { data, error } = await supabaseAdmin
+        .from('titles')
+        .select('*')
+        .order('name', { ascending: true });
 
-  if (error) {
-    console.error('[titles] list error:', error);
-    return res.status(500).json({ error: 'DB error' });
-  }
+      if (error) throw error;
 
-  const titles = data ?? [];
-  const ids = titles.map((t) => t.id);
+      const titles = data ?? [];
+      const ids = titles.map((t) => t.id);
 
-  // Для админки: какие игроки имеют каждый титул
-  const byTitle = new Map<number, number[]>();
-  if (ids.length > 0) {
-    const { data: links, error: linksErr } = await supabaseAdmin
-      .from('player_titles')
-      .select('title_id, player_id')
-      .in('title_id', ids);
-    if (linksErr) {
-      console.error('[titles] links error:', linksErr);
-    } else {
-      for (const row of links ?? []) {
-        const list = byTitle.get(row.title_id) ?? [];
-        list.push(row.player_id);
-        byTitle.set(row.title_id, list);
+      // Для админки: какие игроки имеют каждый титул
+      const byTitle = new Map<number, number[]>();
+      if (ids.length > 0) {
+        const { data: links, error: linksErr } = await supabaseAdmin
+          .from('player_titles')
+          .select('title_id, player_id')
+          .in('title_id', ids);
+        if (linksErr) {
+          // Не кэшируем деградированный результат (титулы без привязок):
+          // при временной ошибке отдаём 500, а не «пустые» player_ids на весь TTL.
+          console.error('[titles] links error:', linksErr);
+          throw linksErr;
+        }
+        for (const row of links ?? []) {
+          const list = byTitle.get(row.title_id) ?? [];
+          list.push(row.player_id);
+          byTitle.set(row.title_id, list);
+        }
       }
-    }
+
+      return titles.map((t) => ({
+        ...t,
+        player_ids: byTitle.get(t.id) ?? [],
+      }));
+    });
+
+    res.json({ items });
+  } catch (err) {
+    console.error('[titles] list error:', err);
+    res.status(500).json({ error: 'DB error' });
   }
-
-  const items = titles.map((t) => ({
-    ...t,
-    player_ids: byTitle.get(t.id) ?? [],
-  }));
-
-  res.json({ items });
 });
 
 // ============================================================

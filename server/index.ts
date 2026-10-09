@@ -18,6 +18,7 @@ import { gameRefsRouter } from './routes/game-refs';
 import { gamesRouter } from './routes/games';
 import { leaderboardRouter } from './routes/leaderboard';
 import { titlesRouter } from './routes/titles';
+import { clearCache } from '../lib/cache';
 
 const execFileAsync = promisify(execFile);
 
@@ -107,6 +108,34 @@ app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 
 // ============================================================
+// Инвалидация публичного кэша при записи.
+// Любая успешная запись через «данные»-эндпоинты сбрасывает кэшированные
+// публичные списки, чтобы чтения сразу отдавали актуальные данные.
+// Управление оверлеем (/api/control, /api/overlay) не трогаем — оно не
+// меняет данные БД, а его POST-запросы частые.
+// ============================================================
+const CACHE_BUSTING_PREFIXES = [
+  '/api/auth',
+  '/api/players',
+  '/api/games',
+  '/api/game-refs',
+  '/api/titles',
+  '/api/admin',
+  '/api/ratings',
+];
+app.use((req, res, next) => {
+  const busts =
+    req.method !== 'GET' &&
+    CACHE_BUSTING_PREFIXES.some((p) => req.path.startsWith(p));
+  if (busts) {
+    res.on('finish', () => {
+      if (res.statusCode < 400) clearCache('pub:');
+    });
+  }
+  next();
+});
+
+// ============================================================
 // API-роуты
 // ============================================================
 app.use('/api/auth', authRouter);
@@ -115,15 +144,8 @@ app.use('/api/players', ratingsRouter); // ratings вложены в players
 app.use('/api/control', controlRouter);
 app.use('/api/overlay', overlayRouter);
 app.use('/api/admin', adminRouter);
-
-app.use('/api/auth', authRouter);
-app.use('/api/players', playersRouter);
-app.use('/api/players', ratingsRouter);
-app.use('/api/overlay', overlayRouter);
-app.use('/api/control', controlRouter);
-app.use('/api/admin', adminRouter);
-app.use('/api/game-refs', gameRefsRouter);   // ← НОВОЕ
-app.use('/api/games', gamesRouter);   // ← НОВОЕ
+app.use('/api/game-refs', gameRefsRouter);
+app.use('/api/games', gamesRouter);
 app.use('/api/ratings/leaderboard', leaderboardRouter);
 app.use('/api/titles', titlesRouter);
 
