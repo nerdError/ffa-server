@@ -97,35 +97,7 @@ export function buildPlayerCardElement(
         (player.races.length > 1 ? ` · ${player.races.join(' / ')}` : '');
 
     titleBlock.append(nameEl, raceEl);
-    header.appendChild(titleBlock);
-
-// Титулы — справа сверху. При EN-локали показываем английский перевод.
-    // Сортируем: сначала по размеру плашки (крупнее выше), затем по длине имени.
-    const locale = getLocale();
-    const titleLabel = (t: { name: string; name_en?: string | null }): string =>
-        locale === 'en' && t.name_en ? t.name_en : t.name;
-    const SIZE_RANK: Record<string, number> = {
-        small: 0, medium: 1, large: 2, xlarge: 3,
-    };
-    const titles = (player.titles ?? [])
-        .slice()
-        .sort((a, b) => {
-            const rankDiff = (SIZE_RANK[b.size ?? 'small'] ?? 0) - (SIZE_RANK[a.size ?? 'small'] ?? 0);
-            if (rankDiff !== 0) return rankDiff;
-            return titleLabel(b).length - titleLabel(a).length;
-        });
-    if (titles.length > 0) {
-        const titlesEl = document.createElement('div');
-        titlesEl.className = 'pc-titles';
-        for (const title of titles) {
-            const badge = document.createElement('span');
-            badge.className = `pc-title pc-title--${title.size ?? 'small'}`;
-            badge.style.setProperty('--title-color', title.color);
-            badge.textContent = titleLabel(title);
-            titlesEl.appendChild(badge);
-        }
-        header.appendChild(titlesEl);
-    }
+header.appendChild(titleBlock);
 
     card.appendChild(header);
 
@@ -185,6 +157,39 @@ export function buildPlayerCardElement(
     body.appendChild(legend);
 
     card.appendChild(body);
+
+    // ============================================================
+    // Титулы — при EN-локали показываем английский перевод.
+    // Сортируем: сначала по размеру плашки (крупнее выше), затем по длине имени.
+    // Блок стоит ПОСЛЕ тела (радара): на десктопе прижмётся к правому верхнему
+    // углу через CSS, на мобилках встанет под радар по центру.
+    // ============================================================
+    const locale = getLocale();
+    const titleLabel = (t: { name: string; name_en?: string | null }): string =>
+        locale === 'en' && t.name_en ? t.name_en : t.name;
+    const SIZE_RANK: Record<string, number> = {
+        small: 0, medium: 1, large: 2, xlarge: 3,
+    };
+    const titles = (player.titles ?? [])
+        .slice()
+        .sort((a, b) => {
+            const rankDiff = (SIZE_RANK[b.size ?? 'small'] ?? 0) - (SIZE_RANK[a.size ?? 'small'] ?? 0);
+            if (rankDiff !== 0) return rankDiff;
+            return titleLabel(b).length - titleLabel(a).length;
+        });
+    if (titles.length > 0) {
+        card.classList.add('has-titles');
+        const titlesEl = document.createElement('div');
+        titlesEl.className = 'pc-titles';
+        for (const title of titles) {
+            const badge = document.createElement('span');
+            badge.className = `pc-title pc-title--${title.size ?? 'small'}`;
+            badge.style.setProperty('--title-color', title.color);
+            badge.textContent = titleLabel(title);
+            titlesEl.appendChild(badge);
+        }
+        card.appendChild(titlesEl);
+    }
 
     // ============================================================
     // Нижняя панель метрик
