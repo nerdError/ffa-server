@@ -879,6 +879,29 @@
   background: #11151c;
   border: 1px solid var(--border-glow);
   border-radius: 3px;
+  position: relative;
+}
+
+.title-save-status {
+  position: absolute;
+  top: 12px;
+  right: 44px;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.title-save-status.is-saving {
+  color: var(--text-secondary);
+}
+
+.title-save-status.is-saved {
+  color: #2ecc71;
+}
+
+.title-save-status.is-error {
+  color: #e74c3c;
 }
 
 .title-swatches {

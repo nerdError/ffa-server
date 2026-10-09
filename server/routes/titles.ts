@@ -83,15 +83,17 @@ titlesRouter.post('/', async (req, res) => {
   const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
   const color = typeof req.body?.color === 'string' ? req.body.color.trim() : '';
   const size = req.body?.size ?? 'small';
+  const nameEn = typeof req.body?.name_en === 'string' ? req.body.name_en.trim() : null;
 
   if (!name) return res.status(400).json({ error: 'name is required' });
   if (name.length > 60) return res.status(400).json({ error: 'name is too long (max 60)' });
+  if (nameEn && nameEn.length > 60) return res.status(400).json({ error: 'name_en is too long (max 60)' });
   if (!color) return res.status(400).json({ error: 'color is required' });
   if (!isTitleSize(size)) return res.status(400).json({ error: 'invalid size' });
 
   const { data, error } = await supabaseAdmin
     .from('titles')
-    .insert({ name, color, size })
+    .insert({ name, name_en: nameEn, color, size })
     .select()
     .single();
 
@@ -140,6 +142,11 @@ titlesRouter.patch('/:id', async (req, res) => {
   if (req.body?.size !== undefined) {
     if (!isTitleSize(req.body.size)) return res.status(400).json({ error: 'invalid size' });
     payload.size = req.body.size;
+  }
+  if (req.body?.name_en !== undefined) {
+    const v = typeof req.body.name_en === 'string' ? req.body.name_en.trim() : '';
+    if (v && v.length > 60) return res.status(400).json({ error: 'name_en is too long (max 60)' });
+    payload.name_en = v || null;
   }
 
   if (Object.keys(payload).length === 0) {

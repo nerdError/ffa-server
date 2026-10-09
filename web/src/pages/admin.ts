@@ -93,6 +93,7 @@ interface AdminLogsResponse {
 interface AdminTitle {
     id: number;
     name: string;
+    name_en?: string | null;
     color: string;
     size?: TitleSize;
     player_ids: number[];
@@ -292,6 +293,12 @@ export function mountAdmin(_params: URLSearchParams): void {
 export function unmountAdmin(): void {
     abortController?.abort();
     abortController = null;
+    // Сбрасываем отложенные автocохранения титулов, чтобы не терять правки
+    for (const [id, timer] of titleDebounce) {
+        clearTimeout(timer);
+        void saveTitle(id);
+    }
+    titleDebounce.clear();
 }
 
 // ============================================================
@@ -1248,66 +1255,145 @@ async function restoreRefItem(config: RefConfig, item: RefItem): Promise<void> {
 
 // ============================================================
 // Титулы
+// Автocохранение: правки коммитятся в titlesCache сразу и уходят на сервер
+// с дебаунсом — кнопку «Сохранить» жать не нужно. Обновляется только
+// затронутая карточка, поэтому правки других титулов не теряются.
 // ============================================================
+let titlesCache: AdminTitle[] = [];
+const titleDebounce = new Map<number, ReturnType<typeof setTimeout>>();
+const AUTOSAVE_DELAY = 600;
+
+function getTitle(id: number): AdminTitle | undefined {
+    return titlesCache.find((t) => t.id === id);
+}
+
+function setTitleStatus(id: number, status: 'idle' | 'saving' | 'saved' | 'error'): void {
+    const card = titlesBox?.querySelector(`[data-title-id="${id}"]`);
+    const el = card?.querySelector('.title-save-status') as HTMLElement | null;
+    if (!el) return;
+    el.classList.remove('is-saving', 'is-saved', 'is-error');
+    if (status === 'saving') {
+        el.classList.add('is-saving');
+        el.textContent = '…';
+        el.title = t('common.saving');
+    } else if (status === 'saved') {
+        el.classList.add('is-saved');
+        el.textContent = '✓';
+        el.title = t('common.saved');
+    } else if (status === 'error') {
+        el.classList.add('is-error');
+        el.textContent = '✗';
+        el.title = t('common.error');
+    } else {
+        el.textContent = '';
+        el.title = '';
+    }
+}
+
+function scheduleSave(id: number): void {
+    const prev = titleDebounce.get(id);
+    if (prev) clearTimeout(prev);
+    titleDebounce.set(id, setTimeout(() => void saveTitle(id), AUTOSAVE_DELAY));
+    setTitleStatus(id, 'saving');
+}
+
+function patchTitle(id: number, patch: Partial<AdminTitle>): void {
+    const t = getTitle(id);
+    if (!t) return;
+    Object.assign(t, patch);
+    scheduleSave(id);
+}
+
 async function loadTitles(): Promise<void> {
     if (!titlesBox) return;
     titlesBox.innerHTML = '<div class="skeleton skeleton-block"></div>';
 
     try {
         const res = await apiRequest<{ items: AdminTitle[] }>('/api/titles');
-        renderTitles(res.items);
+        titlesCache = res.items;
+        renderTitles();
     } catch (err) {
         titlesBox.innerHTML = `<p class="error">${t('common.error')}: ${err instanceof Error ? err.message : String(err)
             }</p>`;
     }
 }
 
-function renderTitles(titles: AdminTitle[]): void {
+function renderTitles(): void {
     if (!titlesBox) return;
 
-    if (titles.length === 0) {
+    if (titlesCache.length === 0) {
         titlesBox.innerHTML = `<p class="hint">${t('admin.titles_empty')}</p>`;
         return;
     }
 
     titlesBox.innerHTML = '';
-    for (const title of titles) {
+    for (const title of titlesCache) {
         titlesBox.appendChild(buildTitleCard(title));
     }
+}
+
+/** Пересобирает только одну карточку из кэша (правки соседних не трогает). */
+function replaceTitleCard(id: number): void {
+    if (!titlesBox) return;
+    const old = titlesBox.querySelector(`[data-title-id="${id}"]`);
+    const t = getTitle(id);
+    if (!t) return;
+    const fresh = buildTitleCard(t);
+    if (old) old.replaceWith(fresh);
+    else titlesBox.appendChild(fresh);
 }
 
 function buildTitleCard(title: AdminTitle): HTMLElement {
     const card = document.createElement('div');
     card.className = 'admin-title-card';
+    card.dataset.titleId = String(title.id);
+
+    // Индикатор сохранения
+    const status = document.createElement('span');
+    status.className = 'title-save-status';
+    card.appendChild(status);
 
     // --- Текст титула ---
     const nameInput = document.createElement('input');
     nameInput.type = 'text';
     nameInput.className = 'admin-ref-input';
     nameInput.value = title.name;
+    nameInput.addEventListener('input', () => {
+        patchTitle(title.id, { name: nameInput.value });
+    });
     card.appendChild(nameInput);
 
+    // --- Перевод на английский ---
+    const nameEnInput = document.createElement('input');
+    nameEnInput.type = 'text';
+    nameEnInput.className = 'admin-ref-input';
+    nameEnInput.value = title.name_en ?? '';
+    nameEnInput.placeholder = t('admin.title_name_en_placeholder');
+    nameEnInput.title = t('admin.title_name_en_title');
+    nameEnInput.addEventListener('input', () => {
+        patchTitle(title.id, { name_en: nameEnInput.value });
+    });
+    card.appendChild(nameEnInput);
+
     // --- Палитра цветов ---
-    let selectedColor = title.color;
     const swatches = document.createElement('div');
     swatches.className = 'title-swatches';
     for (const c of TITLE_COLORS) {
         const sw = document.createElement('button');
         sw.type = 'button';
-        sw.className = 'title-swatch' + (c.value.toLowerCase() === selectedColor.toLowerCase() ? ' is-active' : '');
+        sw.className = 'title-swatch' + (c.value.toLowerCase() === title.color.toLowerCase() ? ' is-active' : '');
         sw.style.setProperty('--swatch', c.value);
         sw.title = t(c.nameKey as any);
         sw.addEventListener('click', () => {
-            selectedColor = c.value;
             for (const s of swatches.querySelectorAll('.title-swatch')) s.classList.remove('is-active');
             sw.classList.add('is-active');
+            patchTitle(title.id, { color: c.value });
         });
         swatches.appendChild(sw);
     }
     card.appendChild(swatches);
 
     // --- Размер бейджа ---
-    let selectedSize = title.size ?? 'small';
     const sizeRow = document.createElement('div');
     sizeRow.className = 'title-size-row';
     const sizeLabel = document.createElement('span');
@@ -1319,10 +1405,12 @@ function buildTitleCard(title: AdminTitle): HTMLElement {
         const opt = document.createElement('option');
         opt.value = s;
         opt.textContent = t(`title.size_${s}` as any);
-        if (s === selectedSize) opt.selected = true;
+        if (s === (title.size ?? 'small')) opt.selected = true;
         sizeSelect.appendChild(opt);
     }
-    sizeSelect.addEventListener('change', () => { selectedSize = sizeSelect.value as TitleSize; });
+    sizeSelect.addEventListener('change', () => {
+        patchTitle(title.id, { size: sizeSelect.value as TitleSize });
+    });
     sizeRow.append(sizeLabel, sizeSelect);
     card.appendChild(sizeRow);
 
@@ -1386,19 +1474,9 @@ function buildTitleCard(title: AdminTitle): HTMLElement {
 
     card.appendChild(playersEl);
 
-    // --- Кнопки: сохранить / удалить ---
+    // --- Кнопка удаления ---
     const actions = document.createElement('div');
     actions.className = 'admin-ref-actions';
-
-    const saveBtn = document.createElement('button');
-    saveBtn.type = 'button';
-    saveBtn.className = 'admin-ref-btn admin-ref-btn--save';
-    saveBtn.textContent = '✓';
-    saveBtn.title = t('common.save');
-    saveBtn.addEventListener('click', () => {
-        void saveTitle(title.id, nameInput.value, selectedColor, selectedSize);
-    });
-    actions.appendChild(saveBtn);
 
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
@@ -1421,43 +1499,72 @@ async function createTitle(): Promise<void> {
     if (!trimmed) return;
 
     try {
-        await apiRequest('/api/titles', {
+        const res = await apiRequest<{ item: AdminTitle }>('/api/titles', {
             method: 'POST',
             token: state.token,
-            body: { name: trimmed, color: TITLE_COLORS[0].value },
+            body: { name: trimmed, color: TITLE_COLORS[0].value, size: 'small' },
         });
-        await loadTitles();
+        res.item.player_ids = [];
+        titlesCache.unshift(res.item);
+        // Добавляем только новую карточку — остальные не трогаем
+        if (titlesBox) {
+            const emptyHint = titlesBox.querySelector('.hint');
+            if (emptyHint) titlesBox.innerHTML = '';
+            titlesBox.prepend(buildTitleCard(res.item));
+        }
     } catch (err) {
         alert(t('admin.new_title_error') + (err instanceof Error ? err.message : String(err)));
     }
 }
 
-async function saveTitle(id: number, name: string, color: string, size: TitleSize): Promise<void> {
-    const trimmed = name.trim();
-    if (!trimmed) {
-        alert(t('common.error') + ': name is empty');
-        return;
-    }
+/** Отправляет текущие поля титула на сервер (автocохранение). */
+async function saveTitle(id: number): Promise<void> {
+    const t = getTitle(id);
+    if (!t) return;
+    const name = t.name.trim();
+    if (!name) return; // пустое имя — ждём, пока пользователь введёт
+
     try {
-        await apiRequest(`/api/titles/${id}`, {
-            method: 'PATCH',
-            token: state.token,
-            body: { name: trimmed, color, size },
-        });
-        await loadTitles();
+        const res = await apiRequest<{ item: { name: string; name_en: string | null; color: string; size: TitleSize } }>(
+            `/api/titles/${id}`,
+            {
+                method: 'PATCH',
+                token: state.token,
+                body: { name, name_en: (t.name_en ?? '').trim() || null, color: t.color, size: t.size ?? 'small' },
+            }
+        );
+        // Синхронизируем кэш с ответом сервера (player_ids сохраняем локально)
+        const t2 = getTitle(id);
+        if (t2) {
+            t2.name = res.item.name;
+            t2.name_en = res.item.name_en;
+            t2.color = res.item.color;
+            t2.size = res.item.size;
+        }
+        setTitleStatus(id, 'saved');
     } catch (err) {
-        alert(t('common.error') + ': ' + (err instanceof Error ? err.message : String(err)));
+        setTitleStatus(id, 'error');
+        console.error('[admin/titles] save error:', err);
     }
 }
 
 async function deleteTitle(title: AdminTitle): Promise<void> {
     if (!confirm(t('admin.delete_title_confirm', { name: title.name }))) return;
+    const timer = titleDebounce.get(title.id);
+    if (timer) {
+        clearTimeout(timer);
+        titleDebounce.delete(title.id);
+    }
     try {
         await apiRequest(`/api/titles/${title.id}`, {
             method: 'DELETE',
             token: state.token,
         });
-        await loadTitles();
+        titlesCache = titlesCache.filter((x) => x.id !== title.id);
+        titlesBox?.querySelector(`[data-title-id="${title.id}"]`)?.remove();
+        if (titlesCache.length === 0 && titlesBox) {
+            titlesBox.innerHTML = `<p class="hint">${t('admin.titles_empty')}</p>`;
+        }
     } catch (err) {
         alert(t('common.error') + ': ' + (err instanceof Error ? err.message : String(err)));
     }
@@ -1470,7 +1577,9 @@ async function assignPlayerToTitle(titleId: number, playerId: number): Promise<v
             token: state.token,
             body: { playerId },
         });
-        await loadTitles();
+        const t = getTitle(titleId);
+        if (t && !t.player_ids.includes(playerId)) t.player_ids.push(playerId);
+        replaceTitleCard(titleId);
     } catch (err) {
         alert(t('common.error') + ': ' + (err instanceof Error ? err.message : String(err)));
     }
@@ -1482,7 +1591,9 @@ async function unassignPlayerFromTitle(titleId: number, playerId: number): Promi
             method: 'DELETE',
             token: state.token,
         });
-        await loadTitles();
+        const t = getTitle(titleId);
+        if (t) t.player_ids = t.player_ids.filter((x) => x !== playerId);
+        replaceTitleCard(titleId);
     } catch (err) {
         alert(t('common.error') + ': ' + (err instanceof Error ? err.message : String(err)));
     }

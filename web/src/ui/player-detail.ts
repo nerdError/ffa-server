@@ -649,6 +649,7 @@ import { navigateTo } from '../router';
 // Секция «Ведущий игр» (стример)
 // ============================================================
 interface HostTopItem {
+    id?: number;
     name: string;
     count: number;
 }
@@ -735,16 +736,32 @@ async function renderPlayerHost(playerId: number): Promise<void> {
     // Топ-5: карты, моды, игроки
     const tops = document.createElement('div');
     tops.className = 'player-host-tops';
-    tops.appendChild(buildTopList(t('player.host_top_maps'), s.top_maps));
-    tops.appendChild(buildTopList(t('player.host_top_mods'), s.top_mods));
-    tops.appendChild(buildTopList(t('player.host_top_players'), s.top_players));
+    tops.appendChild(buildTopList(
+        t('player.host_top_maps'),
+        s.top_maps,
+        (m) => (m.id != null ? `/games?map=${m.id}` : null)
+    ));
+    tops.appendChild(buildTopList(
+        t('player.host_top_mods'),
+        s.top_mods,
+        (m) => `/games?mod=${encodeURIComponent(m.name)}`
+    ));
+    tops.appendChild(buildTopList(
+        t('player.host_top_players'),
+        s.top_players,
+        (p) => `/?player=${encodeURIComponent(p.name)}`
+    ));
     card.appendChild(tops);
 
     container.appendChild(card);
 }
 
 /** Секция «Топ-5»: столбик из имён с количеством появлений. */
-function buildTopList(title: string, items: HostTopItem[]): HTMLElement {
+function buildTopList(
+    title: string,
+    items: HostTopItem[],
+    hrefFor: (item: HostTopItem) => string | null
+): HTMLElement {
     const section = document.createElement('div');
     section.className = 'player-host-top';
 
@@ -763,19 +780,29 @@ function buildTopList(title: string, items: HostTopItem[]): HTMLElement {
         list.appendChild(empty);
     } else {
         for (const item of items) {
-            const row = document.createElement('div');
-            row.className = 'player-host-top-row';
+            const href = hrefFor(item);
 
             const name = document.createElement('span');
             name.className = 'player-host-top-name';
             name.textContent = item.name;
+            name.title = item.name; // полное имя при обрезании
 
             const count = document.createElement('span');
             count.className = 'player-host-top-count';
             count.textContent = `${item.count} ×`;
 
-            row.append(name, count);
-            list.appendChild(row);
+            if (href) {
+                const a = document.createElement('a');
+                a.className = 'player-host-top-row is-link';
+                a.href = href;
+                a.append(name, count);
+                list.appendChild(a);
+            } else {
+                const div = document.createElement('div');
+                div.className = 'player-host-top-row';
+                div.append(name, count);
+                list.appendChild(div);
+            }
         }
     }
 

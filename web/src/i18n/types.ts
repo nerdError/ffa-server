@@ -403,6 +403,8 @@ export type TranslationKey =
     | 'admin.title_select_player'
     | 'admin.title_add_player'
     | 'admin.title_unassign'
+    | 'admin.title_name_en_placeholder'
+    | 'admin.title_name_en_title'
 
     // Цвета титулов
     | 'title.color_gold'

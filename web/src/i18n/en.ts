@@ -410,6 +410,8 @@ export const en: Record<TranslationKey, string> = {
     'admin.title_select_player': '— select a player —',
     'admin.title_add_player': '+ Award',
     'admin.title_unassign': 'Remove title',
+    'admin.title_name_en_placeholder': 'English translation (EN locale)',
+    'admin.title_name_en_title': 'Shown instead of the name when the site is in English. Empty — falls back to the Russian name.',
     'common.empty': 'empty',
 
     'title.color_gold': 'Gold',

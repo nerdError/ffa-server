@@ -3,6 +3,7 @@ import { supabaseAdmin } from './supabase-admin.js';
 export interface PlayerTitle {
   id: number;
   name: string;
+  name_en?: string | null;
   color: string;
   size?: string;
 }
@@ -21,7 +22,7 @@ export async function attachTitles(
 
   const { data, error } = await supabaseAdmin
     .from('player_titles')
-    .select('player_id, titles(id, name, color, size)')
+    .select('player_id, titles(id, name, name_en, color, size)')
     .in('player_id', ids);
 
   if (error) {

@@ -410,6 +410,8 @@ export const ru: Record<TranslationKey, string> = {
     'admin.title_select_player': '— выберите игрока —',
     'admin.title_add_player': '+ Выдать',
     'admin.title_unassign': 'Снять титул',
+    'admin.title_name_en_placeholder': 'Перевод на англ. (EN-локали)',
+    'admin.title_name_en_title': 'Показывается вместо названия, когда сайт на английском. Пусто — используется русское название.',
     'common.empty': 'пусто',
 
     'title.color_gold': 'Золото',

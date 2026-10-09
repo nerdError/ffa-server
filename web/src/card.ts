@@ -7,7 +7,7 @@ import terranIconUrl from '../assets/race/terran.svg';
 import zergIconUrl from '../assets/race/zerg.svg';
 import protossIconUrl from '../assets/race/protoss.svg';
 import randomIconUrl from '../assets/race/random.svg';
-import { applyTranslations, onLocaleChange, t } from './i18n';
+import { applyTranslations, onLocaleChange, getLocale, t } from './i18n';
 import { getLocalePlayerName } from './utils';
 
 onLocaleChange(() => {
@@ -99,10 +99,21 @@ export function buildPlayerCardElement(
     titleBlock.append(nameEl, raceEl);
     header.appendChild(titleBlock);
 
-    // Титулы — справа сверху. Сортируем по длине (самый длинный сверху).
+// Титулы — справа сверху. При EN-локали показываем английский перевод.
+    // Сортируем: сначала по размеру плашки (крупнее выше), затем по длине имени.
+    const locale = getLocale();
+    const titleLabel = (t: { name: string; name_en?: string | null }): string =>
+        locale === 'en' && t.name_en ? t.name_en : t.name;
+    const SIZE_RANK: Record<string, number> = {
+        small: 0, medium: 1, large: 2, xlarge: 3,
+    };
     const titles = (player.titles ?? [])
         .slice()
-        .sort((a, b) => b.name.length - a.name.length);
+        .sort((a, b) => {
+            const rankDiff = (SIZE_RANK[b.size ?? 'small'] ?? 0) - (SIZE_RANK[a.size ?? 'small'] ?? 0);
+            if (rankDiff !== 0) return rankDiff;
+            return titleLabel(b).length - titleLabel(a).length;
+        });
     if (titles.length > 0) {
         const titlesEl = document.createElement('div');
         titlesEl.className = 'pc-titles';
@@ -110,7 +121,7 @@ export function buildPlayerCardElement(
             const badge = document.createElement('span');
             badge.className = `pc-title pc-title--${title.size ?? 'small'}`;
             badge.style.setProperty('--title-color', title.color);
-            badge.textContent = title.name;
+            badge.textContent = titleLabel(title);
             titlesEl.appendChild(badge);
         }
         header.appendChild(titlesEl);

@@ -309,7 +309,7 @@ playersRouter.get('/:id/host-stats', async (req, res) => {
 
   const { data: games, error: gamesError } = await supabaseAdmin
     .from('games')
-    .select('id, played_at, game_formats(name), game_maps(name), game_mods(name), game_players(player_id, players(name))')
+    .select('id, played_at, game_formats(name), game_maps(id, name), game_mods(name), game_players(player_id, players(id, name))')
     .eq('host_id', host.id)
     .order('played_at', { ascending: false })
     .limit(100);
@@ -321,41 +321,53 @@ playersRouter.get('/:id/host-stats', async (req, res) => {
   const hosted = (games ?? []).map((g: any) => ({
     id: g.id,
     played_at: g.played_at,
-    format_name: g.game_formats?.name ?? null,
-    map_name: g.game_maps?.name ?? null,
+    map: g.game_maps ? { id: g.game_maps.id, name: g.game_maps.name } : null,
     mod_name: g.game_mods?.name ?? null,
-    player_names: (g.game_players ?? [])
-      .map((p: any) => p.players?.name ?? null)
-      .filter((n: unknown): n is string => typeof n === 'string'),
+    players: (g.game_players ?? [])
+      .map((p: any) => (p.players ? { id: p.players.id, name: p.players.name } : null))
+      .filter((x: unknown): x is { id: number; name: string } => Boolean(x)),
   }));
 
   const totalGames = hosted.length;
-  const totalPlayers = hosted.reduce((sum, g) => sum + g.player_names.length, 0);
+  const totalPlayers = hosted.reduce((sum, g) => sum + g.players.length, 0);
   const avgPlayers = totalGames ? Math.round((totalPlayers / totalGames) * 10) / 10 : 0;
 
-  // Топ-5 карт/модов по встречаемости среди проведённых игр
-  const topByCount = (key: (g: typeof hosted[number]) => string | null): { name: string; count: number }[] => {
-    const counts = new Map<string, number>();
+  // Топ-5 карт/игроков — считаем по id, сохраняя имя и id в значении
+  const topById = (
+    pick: (g: typeof hosted[number]) => { id: number; name: string } | null
+  ): { id: number; name: string; count: number }[] => {
+    const counts = new Map<number, { id: number; name: string; count: number }>();
     for (const g of hosted) {
-      const v = key(g);
+      const v = pick(g);
       if (!v) continue;
-      counts.set(v, (counts.get(v) ?? 0) + 1);
+      const cur = counts.get(v.id);
+      if (cur) cur.count += 1;
+      else counts.set(v.id, { id: v.id, name: v.name, count: 1 });
     }
-    return [...counts.entries()]
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
+    return [...counts.values()].sort((a, b) => b.count - a.count).slice(0, 5);
   };
 
-  // Топ-5 игроков: считаем каждое участие в проведённых играх
-  const playerCounts = new Map<string, number>();
+  // Топ-5 модов — фильтр по имени
+  const modCounts = new Map<string, number>();
   for (const g of hosted) {
-    for (const name of g.player_names) {
-      playerCounts.set(name, (playerCounts.get(name) ?? 0) + 1);
+    if (!g.mod_name) continue;
+    modCounts.set(g.mod_name, (modCounts.get(g.mod_name) ?? 0) + 1);
+  }
+  const topMods = [...modCounts.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  // Топ-5 игроков: считаем каждое участие в проведённых играх
+  const playerCounts = new Map<number, { name: string; count: number }>();
+  for (const g of hosted) {
+    for (const p of g.players) {
+      const cur = playerCounts.get(p.id);
+      if (cur) cur.count += 1;
+      else playerCounts.set(p.id, { name: p.name, count: 1 });
     }
   }
-  const topPlayers = [...playerCounts.entries()]
-    .map(([name, count]) => ({ name, count }))
+  const topPlayers = [...playerCounts.values()]
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 
@@ -366,8 +378,8 @@ playersRouter.get('/:id/host-stats', async (req, res) => {
       total_players: totalPlayers,
       avg_players: avgPlayers,
       last_played_at: hosted[0]?.played_at ?? null,
-      top_maps: topByCount((g) => g.map_name),
-      top_mods: topByCount((g) => g.mod_name),
+      top_maps: topById((g) => g.map),
+      top_mods: topMods,
       top_players: topPlayers,
     },
   });

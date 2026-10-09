@@ -29,7 +29,7 @@
 
 .player-host-top-title {
   margin: 0 0 10px;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -39,7 +39,7 @@
 .player-host-top-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .player-host-top-row {
@@ -47,9 +47,23 @@
   justify-content: space-between;
   align-items: center;
   gap: 10px;
-  padding: 4px 8px;
+  padding: 3px 8px;
   background: rgba(255, 255, 255, 0.02);
   border-radius: 3px;
+  text-decoration: none;
+}
+
+.player-host-top-row.is-link {
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.player-host-top-row.is-link:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.player-host-top-row.is-link:hover .player-host-top-name {
+  color: var(--gold);
 }
 
 .player-host-top-name {
@@ -57,6 +71,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--text-primary);
+  font-size: 0.85rem;
 }
 
 .player-host-top-count {

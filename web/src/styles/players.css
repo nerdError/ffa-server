@@ -171,16 +171,15 @@
    10. Действия
 */
 
-.players-table th:nth-child(1) { color: var(--text-secondary); }
-.players-table th:nth-child(2) { color: var(--text-secondary); }
-.players-table th:nth-child(3) { color: #e67e22; }
-.players-table th:nth-child(4) { color: #e74c3c; }
-.players-table th:nth-child(5) { color: #2ecc71; }
-.players-table th:nth-child(6) { color: #9b59b6; }
-.players-table th:nth-child(7) { color: #3498db; }
-.players-table th:nth-child(8) { color: #f1c40f; }
-.players-table th:nth-child(9) { color: var(--text-primary); }
-.players-table th:nth-child(10) { color: var(--text-primary); }
+.players-table th[data-sort-key="name"] { color: var(--text-secondary); }
+.players-table th[data-sort-key="races"] { color: var(--text-secondary); }
+.players-table th[data-sort-key="activity"] { color: var(--gold); }
+.players-table th[data-sort-key="adaptiveness"] { color: #e67e22; }
+.players-table th[data-sort-key="aggression"] { color: #e74c3c; }
+.players-table th[data-sort-key="turtle"] { color: #2ecc71; }
+.players-table th[data-sort-key="variety"] { color: #9b59b6; }
+.players-table th[data-sort-key="survival"] { color: #3498db; }
+.players-table th[data-sort-key="greed"] { color: #f1c40f; }
 
 /* Действия */
 

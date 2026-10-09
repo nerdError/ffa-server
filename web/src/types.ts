@@ -73,6 +73,7 @@ export interface PlayerWithStats {
 export interface PlayerTitle {
     id: number;
     name: string;
+    name_en?: string | null;
     color: string;
     size?: TitleSize;
 }
