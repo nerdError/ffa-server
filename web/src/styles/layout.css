@@ -315,7 +315,7 @@ main {
         min-width: 0;
     }
 
-    /* Действия в шапке — кнопки с текстом, одинакового размера, без переноса */
+    /* Действия в шапке — кнопки с полным текстом, перенос сам по ширине */
     .user-box .topbar-link {
         display: inline-flex;
         align-items: center;
@@ -323,31 +323,29 @@ main {
         gap: 6px;
         font-size: 0.78rem;
         padding: 10px 14px;
-        flex: 1 1 0;
-        min-width: 44px;
+        flex: 1 0 auto;
+        min-width: 0;
     }
 
     .user-box .btn-label {
         display: inline;
     }
 
-    /* «Мой профиль» и «Режим стримера» — верхний ряд */
+    /* «Мой профиль» и «Режим стримера» — сначала */
     .user-box .topbar-link--profile,
     .user-box .topbar-link:not(.topbar-link--profile):not(.topbar-link--admin) {
         order: 1;
-        flex: 1 1 0;
     }
 
-    /* «Админ» — нижний ряд вместе с «Выйти» */
+    /* «Админ» — после них */
     .user-box .topbar-link--admin {
         order: 2;
-        flex: 1 1 0;
     }
 
-    /* «Выйти» — та же нижняя строка (2 сверху / 2 снизу у админа) */
+    /* «Выйти» — последней, тоже растягивается по строке */
     .user-box>.btn-secondary {
-        order: 2;
-        flex: 1 1 0;
+        order: 3;
+        flex: 1 0 auto;
         padding: 12px 20px;
         font-size: 0.85rem;
     }
