@@ -172,6 +172,12 @@
   max-width: 560px;
   margin: 0 auto;
 }
+/* На ПК показываем карточку в полном размере (как в карточке игрока) */
+@media (min-width: 900px) {
+  .control-preview {
+    max-width: 960px;
+  }
+}
 .control-preview .player-card {
   width: 100%;
   max-width: 100%;
